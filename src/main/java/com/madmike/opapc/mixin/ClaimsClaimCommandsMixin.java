@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.Overwrite;
 import xaero.pac.common.server.api.OpenPACServerAPI;
 import xaero.pac.common.server.claims.command.ClaimsClaimCommands;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
-import net.minecraft.command.CommandSource;
+import net.minecraft.commands.CommandSourceStack;
 
 @Mixin(ClaimsClaimCommands.class)
 public class ClaimsClaimCommandsMixin {
