@@ -5,7 +5,7 @@
 	"name": "open-parties-and-party-claims",
 	"description": "This is an example description! Tell everyone what your mod is about!",
 	"authors": [
-		"Me!"
+		"Mad Mike"
 	],
 	"contact": {
 		"homepage": "https://fabricmc.net/",
@@ -20,6 +20,12 @@
 		],
 		"client": [
 			"com.madmike.opapc.OPAPCClient"
+		],
+		"cardinal-components-scoreboard": [
+			"com.madmike.opapc.components.OPAPCComponents"
+		],
+		"cardinal-components-entity": [
+			"com.madmike.opapc.components.OPAPCComponents"
 		]
 	},
 	"mixins": [

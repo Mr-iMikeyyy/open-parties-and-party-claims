@@ -1,0 +1,161 @@
+package com.madmike.opapc.command;
+
+import com.glisco.numismaticoverhaul.ModComponents;
+import com.glisco.numismaticoverhaul.currency.CurrencyComponent;
+import com.madmike.opapc.components.OPAPCComponents;
+import com.madmike.opapc.components.player.UnlockedStoreSlotsComponent;
+import com.madmike.opapc.components.scoreboard.KnownPartiesComponent;
+import com.madmike.opapc.components.scoreboard.OffersComponent;
+import com.madmike.opapc.data.KnownParty;
+import com.madmike.opapc.data.Offer;
+import com.madmike.opapc.util.CurrencyUtil;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.minecraft.item.ItemStack;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
+import xaero.pac.common.server.api.OpenPACServerAPI;
+import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
+
+import java.util.UUID;
+
+import static net.minecraft.server.command.CommandManager.argument;
+import static net.minecraft.server.command.CommandManager.literal;
+
+public class CommandsManager {
+    public static void registerCommands() {
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+            dispatcher.register(literal("opatr")
+                    .then(literal("upgrade")
+                            .executes(ctx -> {
+                                if (!(ctx.getSource().getEntity() instanceof ServerPlayerEntity player)) {
+                                    ctx.getSource().sendError(Text.literal("Only players can use /upgrade."));
+                                    return 0;
+                                }
+
+                                handleUpgradeCommand(player, ctx.getSource().getServer());
+                                return 1;
+                            })
+                    )
+                    .then(literal("totals")
+                            .executes(ctx -> {
+                                if (!(ctx.getSource().getEntity() instanceof ServerPlayerEntity player)) {
+                                    ctx.getSource().sendError(Text.literal("Only players can use /totals."));
+                                    return 0;
+                                }
+
+                                long totals = OPAPCComponents.SELLERS.get(ctx.getSource().getServer().getScoreboard()).getTotalSales();
+                                CurrencyUtil.CoinBreakdown coins = CurrencyUtil.fromTotalBronze(totals);
+
+                                player.sendMessage(Text.literal("Your total sales are: G: " + coins.gold() + ", S: " + coins.silver() + ", B: " + coins.bronze() + "."));
+                                return 1;
+                            })
+                    )
+            );
+            dispatcher.register(literal("sell")
+                    .then(argument("gold", IntegerArgumentType.integer(0))
+                            .executes(ctx -> {
+                                ServerPlayerEntity player = ctx.getSource().getPlayer();
+                                int gold = ctx.getArgument("gold", Integer.class);
+                                long price = CurrencyUtil.toTotalBronze(gold, 0, 0);
+                                return handleSellCommand(player, price, ctx.getSource().getServer());
+                            })
+                            .then(argument("silver", IntegerArgumentType.integer(0))
+                                    .executes(ctx -> {
+                                        ServerPlayerEntity player = ctx.getSource().getPlayer();
+                                        int gold = ctx.getArgument("gold", Integer.class);
+                                        int silver = ctx.getArgument("silver", Integer.class);
+                                        long price = CurrencyUtil.toTotalBronze(gold, silver, 0);
+                                        return handleSellCommand(player, price, ctx.getSource().getServer());
+                                    })
+                                    .then(argument("bronze", IntegerArgumentType.integer(0))
+                                            .executes(ctx -> {
+                                                ServerPlayerEntity player = ctx.getSource().getPlayer();
+                                                int gold = ctx.getArgument("gold", Integer.class);
+                                                int silver = ctx.getArgument("silver", Integer.class);
+                                                int bronze = ctx.getArgument("bronze", Integer.class);
+                                                long price = CurrencyUtil.toTotalBronze(gold, silver, bronze);
+                                                return handleSellCommand(player, price, ctx.getSource().getServer());
+                                            })
+                                    )
+                            )
+                    )
+            );
+        });
+    }
+
+    private static int handleSellCommand(ServerPlayerEntity player, long price, MinecraftServer server) {
+        if (price <= 0) {
+            player.sendMessage(Text.literal("Price needs to be larger than 0").formatted(Formatting.RED));
+            return 0;
+        }
+        ItemStack stack = player.getMainHandStack();
+
+        if (stack.isEmpty()) {
+            player.sendMessage(Text.literal("You're not holding any item to sell.").formatted(Formatting.RED), false);
+            return 0;
+        }
+
+        OffersComponent offers = OPAPCComponents.OFFERS.get(server.getScoreboard());
+        long usedSlots = offers.getOffers().values().stream().filter(e -> player.getUuid().equals(e.getOfferId())).count();
+
+        UnlockedStoreSlotsComponent unlockedSlotsComponent = OPAPCComponents.UNLOCKED_STORE_SLOTS.get(player);
+        int unlocked = unlockedSlotsComponent.getUnlockedSlots();
+
+        if (unlocked <= usedSlots) {
+            player.sendMessage(Text.literal("You don't have any available sell slots left.").formatted(Formatting.RED), false);
+            return 0;
+        }
+
+        IServerPartyAPI party = OpenPACServerAPI.get(server).getPartyManager().getPartyByMember(player.getUuid());
+        if (party != null) {
+            KnownPartiesComponent kpc = OPAPCComponents.KNOWN_PARTIES.get(server.getScoreboard());
+            kpc.addOrUpdateParty(new KnownParty(party.getId(), party.getDefaultName()));
+        }
+
+
+        ItemStack listedItem = stack.copy();
+        player.getMainHandStack().setCount(0);// remove the item
+
+        Offer offer = new Offer(
+                UUID.randomUUID(),
+                player.getUuid(),
+                listedItem,
+                price,
+                (party == null ? null : party.getId())
+        );
+
+        offers.addOffer(offer);
+
+        CurrencyUtil.CoinBreakdown bd = CurrencyUtil.fromTotalBronze(price);
+        player.sendMessage(Text.literal(String.format(
+                        "Listed item for %d gold, %d silver, %d bronze.",
+                        bd.gold(), bd.silver(), bd.bronze()))
+                .formatted(Formatting.GOLD), false);
+        return 1;
+    }
+
+    private static void handleUpgradeCommand(ServerPlayerEntity player, MinecraftServer server) {
+        UnlockedStoreSlotsComponent unlockedSlotsComponent = PlayerComponents.UNLOCKED_SLOTS.get(player);
+        int unlockedSlots = unlockedSlotsComponent.getUnlockedSlots();
+        if (unlockedSlots >= MAX_SLOTS) {
+            player.sendMessage(Text.literal("You’ve reached the maximum number of unlocked slots.").formatted(Formatting.GRAY));
+            return;
+        }
+
+        CurrencyComponent wallet = ModComponents.CURRENCY.get(player);
+
+        int cost = (unlockedSlots + 1) * 10000; // 1 gold = 10,000 bronze if using Numismatic default
+
+        if (wallet.getValue() >= cost) {
+            wallet.modify(-cost);
+            unlockedSlotsComponent.increment(1);
+            player.sendMessage(Text.literal("Upgraded your available sell slots by 1! It is now " + unlockedSlots).formatted(Formatting.GOLD));
+        } else {
+            CurrencyUtil.CoinBreakdown needed = CurrencyUtil.fromTotalBronze(cost);
+            player.sendMessage(Text.literal("Not enough funds to upgrade. You need G: " + needed.gold() + ", S: " + needed.silver() + ", B: " + needed.bronze()).formatted(Formatting.RED));
+        }
+    }
+}

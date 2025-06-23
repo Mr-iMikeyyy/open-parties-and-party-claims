@@ -1,4 +1,4 @@
-package com.madmike.opapc.mixin.client;
+package com.madmike.opapc.mixin;
 
 import net.minecraft.client.MinecraftClient;
 import org.spongepowered.asm.mixin.Mixin;

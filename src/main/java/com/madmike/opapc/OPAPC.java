@@ -1,11 +1,12 @@
 package com.madmike.opapc;
 
-import com.madmike.opapc.permission.LeaderOnlyPermissionSystem;
+import com.madmike.opapc.command.CommandsManager;
+import com.madmike.opapc.event.EventManager;
+import com.madmike.opapc.net.ServerReceiver;
 import net.fabricmc.api.ModInitializer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import xaero.pac.common.event.api.OPACServerAddonRegister;
 
 public class OPAPC implements ModInitializer {
 	public static final String MOD_ID = "opapc";
@@ -17,15 +18,17 @@ public class OPAPC implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
-		// This code runs as soon as Minecraft is in a mod-load-ready state.
-		// However, some things (like resources) may still be uninitialized.
-		// Proceed with mild caution.
+		LOGGER.info("Initializing OPATR...");
 
-		OPACServerAddonRegister.EVENT.register(server -> {
-			var manager = server.getPlayerPermissionSystemManager();
-			manager.register("leader_only", new LeaderOnlyPermissionSystem());
-		});
+		//Register Events
+		EventManager.register();
 
-		LOGGER.info("Hello Fabric world!");
+		// Register commands
+		CommandsManager.registerCommands();
+
+		// Register this server-side
+		ServerReceiver.register();
+
+		LOGGER.info("OPATR Initialized! Happy Trading!");
 	}
 }
