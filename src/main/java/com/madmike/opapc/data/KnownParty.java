@@ -12,6 +12,7 @@ public class KnownParty() {
     private String name;
     private int claims;
     private PartyClaimBlock partyClaimBlock;
+    private long donations;
 
     public KnownParty(UUID partyID, String name) {
         this.partyId = partyID;
@@ -24,7 +25,7 @@ public class KnownParty() {
         nbt.putUuid("PartyID", partyId);
         nbt.putString("Name", name);
         nbt.putInt("Claims", claims);
-        nbt.put
+        nbt.putLong
         return nbt;
     }
 

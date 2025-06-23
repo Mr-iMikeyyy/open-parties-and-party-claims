@@ -5,6 +5,7 @@ import com.madmike.opapc.components.player.UnlockedStoreSlotsComponent;
 import com.madmike.opapc.components.scoreboard.KnownPartiesComponent;
 import com.madmike.opapc.components.scoreboard.OffersComponent;
 import com.madmike.opapc.components.scoreboard.OfflineSalesComponent;
+import com.madmike.opapc.components.scoreboard.SellersComponent;
 import dev.onyxstudios.cca.api.v3.component.ComponentKey;
 import dev.onyxstudios.cca.api.v3.component.ComponentRegistry;
 import dev.onyxstudios.cca.api.v3.entity.EntityComponentFactoryRegistry;
@@ -32,10 +33,14 @@ public class OPAPCComponents implements ScoreboardComponentInitializer, EntityCo
     public static final ComponentKey<OfflineSalesComponent> OFFLINE_SALES =
             ComponentRegistry.getOrCreate(new Identifier(OPAPC.MOD_ID, "offline_sales"), OfflineSalesComponent.class);
 
+    public static final ComponentKey<OfflineSalesComponent> SELLERS =
+            ComponentRegistry.getOrCreate(new Identifier(OPAPC.MOD_ID, "sellers"), OfflineSalesComponent.class);
+
     @Override
     public void registerScoreboardComponentFactories(ScoreboardComponentFactoryRegistry scoreboardComponentFactoryRegistry) {
         scoreboardComponentFactoryRegistry.registerScoreboardComponent(OFFERS, OffersComponent::new);
         scoreboardComponentFactoryRegistry.registerScoreboardComponent(KNOWN_PARTIES, KnownPartiesComponent::new);
         scoreboardComponentFactoryRegistry.registerScoreboardComponent(OFFLINE_SALES, OfflineSalesComponent::new);
+        scoreboardComponentFactoryRegistry.registerScoreboardComponent(SELLERS, SellersComponent::new);
     }
 }

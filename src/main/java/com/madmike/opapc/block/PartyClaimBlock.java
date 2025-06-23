@@ -61,7 +61,7 @@ public class PartyClaimBlock extends Block {
         int currentBonus = claimComp.getClaims();
         int cost = (currentBonus + 1) * 10000;
 
-        claimComp.addDonation(value);
+        claimComp.(value);
         stack.decrement(1); // remove donated item
 
         player.sendMessage(Text.literal("Donated " + value + " bronze.").formatted(Formatting.GOLD));
