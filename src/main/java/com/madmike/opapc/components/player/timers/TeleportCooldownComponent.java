@@ -13,7 +13,7 @@ public class TeleportCooldownComponent implements Component {
         this.player = player;
     }
 
-    /** Call this when the player is damaged */
+    /** Call this when the player teleports */
     public void onDamaged() {
         lastTeleportTime = System.currentTimeMillis();
     }
