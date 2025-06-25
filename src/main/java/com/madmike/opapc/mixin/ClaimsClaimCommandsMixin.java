@@ -1,9 +1,7 @@
 package com.madmike.opapc.mixin;
 
-import com.glisco.numismaticoverhaul.ModComponents;
-import com.glisco.numismaticoverhaul.currency.CurrencyComponent;
-import com.madmike.opapc.claim.ClaimAdjacencyChecker;
-import com.madmike.opapc.claim.ClaimContextHolder;
+import com.madmike.opapc.util.claim.ClaimAdjacencyChecker;
+import com.madmike.opapc.util.claim.ClaimContextHolder;
 import com.madmike.opapc.components.OPAPCComponents;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.builder.ArgumentBuilder;
@@ -12,12 +10,14 @@ import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import xaero.pac.common.claims.player.IPlayerChunkClaim;
+import xaero.pac.common.claims.player.IPlayerClaimInfo;
 import xaero.pac.common.claims.player.IPlayerClaimPosList;
 import xaero.pac.common.claims.player.IPlayerDimensionClaims;
 import xaero.pac.common.parties.party.IPartyPlayerInfo;
@@ -25,15 +25,12 @@ import xaero.pac.common.parties.party.ally.IPartyAlly;
 import xaero.pac.common.parties.party.member.IPartyMember;
 import xaero.pac.common.server.IServerData;
 import xaero.pac.common.server.ServerData;
-import xaero.pac.common.server.api.OpenPACServerAPI;
 import xaero.pac.common.server.claims.IServerClaimsManager;
 import xaero.pac.common.server.claims.IServerDimensionClaimsManager;
 import xaero.pac.common.server.claims.IServerRegionClaims;
 import xaero.pac.common.server.claims.command.ClaimsClaimCommands;
 import xaero.pac.common.server.claims.player.IServerPlayerClaimInfo;
 import xaero.pac.common.server.parties.party.IServerParty;
-import xaero.pac.common.server.player.config.api.IPlayerConfigAPI;
-import xaero.pac.common.server.player.config.api.PlayerConfigOptions;
 import xaero.pac.common.server.player.data.ServerPlayerData;
 import xaero.pac.common.server.player.data.api.ServerPlayerDataAPI;
 
@@ -83,7 +80,7 @@ public abstract class ClaimsClaimCommandsMixin {
             var party = serverData.getPartyManager().getPartyByMember(player.getUuid());
 
             if (party == null) {
-                context.getSource().sendError(Text.literal("Must be in a party to claim chunks."));
+                context.getSource().sendError(Text.literal("Must be in a party and it's leader to claim chunks."));
                 return 0;
             }
 
@@ -92,20 +89,7 @@ public abstract class ClaimsClaimCommandsMixin {
                 return 0;
             }
 
-            // Assign party claims to party leader
-            IPlayerConfigAPI iPlayerConfigAPI = OpenPACServerAPI.get(server).getPlayerConfigs().getLoadedConfig(player.getUuid());
-            int partyClaims = OPAPCComponents.KNOWN_PARTIES.get(server.getScoreboard()).get(party.getId()).getClaims();
-            iPlayerConfigAPI.tryToSet(PlayerConfigOptions.BONUS_CHUNK_CLAIMS, partyClaims); // optional if you're increasing cap
-
             ChunkPos target = player.getChunkPos();
-
-            // You can re-enable the claim count check if desired
-            /*
-            if (cm.getPlayerInfo(player.getUuid()).getClaimCount() >= SOME_LIMIT) {
-                context.getSource().sendError(Text.literal("Your party has reached its maximum allowed claims."));
-                return 0;
-            }
-            */
 
             if (isClaim) {
                 if (!ClaimAdjacencyChecker.isAdjacentToExistingClaim(party, player.getWorld().getRegistryKey(), target, cm)) {
@@ -117,6 +101,18 @@ public abstract class ClaimsClaimCommandsMixin {
                     context.getSource().sendError(Text.literal("You cannot unclaim a chunk that would split your party's territory."));
                     return 0;
                 }
+            }
+
+            int unlockedPartyClaims = OPAPCComponents.KNOWN_PARTIES.get(server.getScoreboard()).get(party.getId()).getClaims();
+            IPlayerClaimInfo<IPlayerDimensionClaims<IPlayerClaimPosList>> info = cm.getPlayerInfo(player.getUuid());
+            int totalOverworldClaims = info.getDimension(World.OVERWORLD.getValue())
+                    .getStream()
+                    .mapToInt(e -> e.getCount())
+                    .sum();
+
+            if (totalOverworldClaims >= unlockedPartyClaims) {
+                context.getSource().sendError(Text.literal("You've ran out of party claims"));
+                return 0;
             }
 
             return originalCommand.run(context);

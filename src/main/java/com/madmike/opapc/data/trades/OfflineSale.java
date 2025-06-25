@@ -1,4 +1,4 @@
-package com.madmike.opapc.data;
+package com.madmike.opapc.data.trades;
 
 import net.minecraft.nbt.NbtCompound;
 

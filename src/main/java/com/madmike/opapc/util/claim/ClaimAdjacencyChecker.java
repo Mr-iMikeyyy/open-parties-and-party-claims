@@ -1,4 +1,4 @@
-package com.madmike.opapc.claim;
+package com.madmike.opapc.util.claim;
 
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.util.math.ChunkPos;

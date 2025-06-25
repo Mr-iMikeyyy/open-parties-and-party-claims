@@ -1,7 +1,7 @@
-package com.madmike.opapc.components.scoreboard;
+package com.madmike.opapc.components.scoreboard.trades;
 
 import com.madmike.opapc.components.OPAPCComponents;
-import com.madmike.opapc.data.OfflineSale;
+import com.madmike.opapc.data.trades.OfflineSale;
 import dev.onyxstudios.cca.api.v3.component.Component;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;

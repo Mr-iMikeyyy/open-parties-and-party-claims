@@ -2,9 +2,9 @@ package com.madmike.opapc.gui;
 
 import com.glisco.numismaticoverhaul.ModComponents;
 import com.madmike.opapc.components.OPAPCComponents;
-import com.madmike.opapc.components.scoreboard.KnownPartiesComponent;
-import com.madmike.opapc.data.KnownParty;
-import com.madmike.opapc.data.Offer;
+import com.madmike.opapc.components.scoreboard.parties.PartyNamesComponent;
+import com.madmike.opapc.data.parties.PartyName;
+import com.madmike.opapc.data.trades.Offer;
 import io.wispforest.owo.ui.base.BaseOwoScreen;
 import io.wispforest.owo.ui.component.CheckboxComponent;
 import io.wispforest.owo.ui.component.Components;
@@ -26,6 +26,8 @@ import xaero.pac.common.parties.party.ally.api.IPartyAllyAPI;
 
 import java.util.*;
 import java.util.function.Predicate;
+
+import static com.madmike.opapc.util.CurrencyUtil.formatPrice;
 
 
 public class TradingScreen extends BaseOwoScreen<FlowLayout> {
@@ -173,7 +175,7 @@ public class TradingScreen extends BaseOwoScreen<FlowLayout> {
             IClientPartyAPI shopperParty = OpenPACClientAPI.get().getClientPartyStorage().getParty();
 
             assert MinecraftClient.getInstance().world != null;
-            KnownPartiesComponent knownParties = OPAPCComponents.KNOWN_PARTIES.get(MinecraftClient.getInstance().world.getScoreboard());
+            PartyNamesComponent knownParties = OPAPCComponents.KNOWN_PARTIES.get(MinecraftClient.getInstance().world.getScoreboard());
 
 
             if (shopperParty != null) {
@@ -187,7 +189,7 @@ public class TradingScreen extends BaseOwoScreen<FlowLayout> {
                         tabs.add(new TradingScreenTab(knownParties.get(e) + " (Ally)", e)));
 
                 //Add The rest of the parties
-                for (UUID partyID : knownParties.getKnownParties().stream().map(KnownParty::getPartyId).toList()) {
+                for (UUID partyID : knownParties.getPartyNameHashMap().stream().map(PartyName::getPartyId).toList()) {
                     if (!allyIDList.contains(partyID) && !partyID.equals(shopperParty.getId())) {
                         tabs.add(new TradingScreenTab(Objects.requireNonNull(knownParties.get(partyID)).getName(), partyID));
                     }
@@ -198,7 +200,7 @@ public class TradingScreen extends BaseOwoScreen<FlowLayout> {
                 // Add Scallywags
                 tabs.add(new TradingScreenTab("Scallywag", scallywagsTabID));
                 //Add The rest of the parties
-                for (UUID partyID : knownParties.getKnownParties().stream().map(KnownParty::getPartyId).toList()) {
+                for (UUID partyID : knownParties.getPartyNameHashMap().stream().map(PartyName::getPartyId).toList()) {
                     tabs.add(new TradingScreenTab(knownParties.get(partyID).getName(), partyID));
                 }
             }
@@ -212,7 +214,7 @@ public class TradingScreen extends BaseOwoScreen<FlowLayout> {
 
         currentTab = tab;
 
-        List<Offer> allOffers = new ArrayList<>();
+        Map<UUID, Offer> allOffers = new HashMap<>();
 
         World world = MinecraftClient.getInstance().world;
 
@@ -239,9 +241,10 @@ public class TradingScreen extends BaseOwoScreen<FlowLayout> {
             UUID shopperID = player.getUuid();
             if (tab.partyId().equals(myOffersTabID)) {
                 //MY offers
-                List<TradeOffer> offers = allOffers.stream().filter(e -> e.sellerID().equals(player.getUuid())).filter(matchesSearch).toList();
-                for (TradeOffer offer : offers) {
-                    offerListContainer.child(createOfferRow(offer, formatPrice(offer.price(), false, false), false, true));
+                List<Offer> myOffers = allOffers.get(player.getUuid());
+                List<Offer> offers = allOffers.stream().filter(e -> e.getSellerId().equals(player.getUuid())).filter(matchesSearch).toList();
+                for (Offer offer : offers) {
+                    offerListContainer.child(createOfferRow(offer, formatPrice(offer.getPrice(), false, false), false, true));
                 }
                 return;
             }
@@ -252,8 +255,8 @@ public class TradingScreen extends BaseOwoScreen<FlowLayout> {
 
             if (shopperParty != null) { // in a party
                 if (tab.partyId() == shopperParty.getId()) { // Party Offers
-                    List<TradeOffer> offers = allOffers.stream().filter(e -> shopperParty.getId().equals(e.partyID()) && !e.sellerID().equals(shopperID)).filter(matchesSearch).toList();
-                    for (TradeOffer offer : offers) {
+                    List<Offer> offers = allOffers.stream().filter(e -> shopperParty.getId().equals(e.getPartyId()) && !e.getSellerId().equals(shopperID)).filter(matchesSearch).toList();
+                    for (Offer offer : offers) {
                         offerListContainer.child(createOfferRow(offer, formatPrice(offer.price(), false, false), false, false));
                     }
                 } else if (shopperParty.getAllyPartiesStream()// Ally Offers

@@ -1,4 +1,4 @@
-package com.madmike.opapc.components.player;
+package com.madmike.opapc.components.player.trades;
 
 import com.madmike.opapc.components.OPAPCComponents;
 import dev.onyxstudios.cca.api.v3.component.Component;
@@ -22,17 +22,17 @@ public class UnlockedStoreSlotsComponent implements Component, AutoSyncedCompone
 
     public void setUnlockedSlots(int slots) {
         this.unlockedSlots = slots;
-        OPAPCComponents.UNLOCKED_SLOTS.sync(player);
+        OPAPCComponents.UNLOCKED_STORE_SLOTS.sync(player);
     }
 
     public void increment(int amount) {
         this.unlockedSlots += amount;
-        OPAPCComponents.UNLOCKED_SLOTS.sync(player);
+        OPAPCComponents.UNLOCKED_STORE_SLOTS.sync(player);
     }
 
     public void reset() {
         this.unlockedSlots = 5;
-       OPAPCComponents.UNLOCKED_SLOTS.sync(player);
+       OPAPCComponents.UNLOCKED_STORE_SLOTS.sync(player);
     }
 
     @Override

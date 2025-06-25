@@ -1,4 +1,4 @@
-package com.madmike.opapc.data;
+package com.madmike.opapc.data.trades;
 
 public record Seller(String name, long totalSales) {
 }

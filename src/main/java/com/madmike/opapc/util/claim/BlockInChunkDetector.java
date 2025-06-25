@@ -1,4 +1,4 @@
-package com.madmike.opapc.claim;
+package com.madmike.opapc.util.claim;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;

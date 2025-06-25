@@ -1,7 +1,7 @@
-package com.madmike.opapc.components.scoreboard;
+package com.madmike.opapc.components.scoreboard.parties;
 
 import com.madmike.opapc.components.OPAPCComponents;
-import com.madmike.opapc.data.KnownParty;
+import com.madmike.opapc.data.parties.PartyName;
 import com.madmike.opapc.net.packets.TradeScreenRefreshS2CSender;
 import dev.onyxstudios.cca.api.v3.component.Component;
 import dev.onyxstudios.cca.api.v3.component.sync.AutoSyncedComponent;
@@ -16,38 +16,38 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class KnownPartiesComponent implements Component, AutoSyncedComponent {
+public class PartyNamesComponent implements Component, AutoSyncedComponent {
 
     private final Scoreboard provider;
-    private final Map<UUID, KnownParty> knownParties = new HashMap<>();
+    private final Map<UUID, PartyName> partyNameHashMap = new HashMap<>();
     private final MinecraftServer server;
 
-    public KnownPartiesComponent(Scoreboard provider, MinecraftServer server) {
+    public PartyNamesComponent(Scoreboard provider, MinecraftServer server) {
         this.provider = provider;
         this.server = server;
     }
 
-    public Collection<KnownParty> getKnownParties() {
-        return knownParties.values();
+    public Collection<PartyName> getPartyNameHashMap() {
+        return partyNameHashMap.values();
     }
 
-    public @Nullable KnownParty get(UUID id) {
-        return knownParties.get(id);
+    public @Nullable PartyName get(UUID id) {
+        return partyNameHashMap.get(id);
     }
 
-    public void addOrUpdateParty(KnownParty newParty) {
+    public void addOrUpdatePartyName(PartyName newParty) {
         UUID id = newParty.getPartyId();
-        KnownParty existing = knownParties.get(id);
+        PartyName existing = partyNameHashMap.get(id);
 
         if (existing == null || !existing.getName().equals(newParty.getName())) {
-            knownParties.put(id, newParty);
+            partyNameHashMap.put(id, newParty);
             OPAPCComponents.KNOWN_PARTIES.sync(provider);
             TradeScreenRefreshS2CSender.sendRebuildTabsToAll(server);
         }
     }
 
     public void removeParty(UUID id) {
-        if (knownParties.remove(id) != null) {
+        if (partyNameHashMap.remove(id) != null) {
             OPAPCComponents.KNOWN_PARTIES.sync(this.provider);
             TradeScreenRefreshS2CSender.sendRebuildTabsToAll(server);
         }
@@ -55,18 +55,18 @@ public class KnownPartiesComponent implements Component, AutoSyncedComponent {
 
     @Override
     public void readFromNbt(NbtCompound tag) {
-        knownParties.clear();
+        partyNameHashMap.clear();
         NbtList list = tag.getList("KnownParties", NbtCompound.COMPOUND_TYPE);
         for (int i = 0; i < list.size(); i++) {
-            KnownParty party = KnownParty.fromNbt(list.getCompound(i));
-            knownParties.put(party.getPartyId(), party);
+            PartyName party = PartyName.fromNbt(list.getCompound(i));
+            partyNameHashMap.put(party.getPartyId(), party);
         }
     }
 
     @Override
     public void writeToNbt(NbtCompound tag) {
         NbtList list = new NbtList();
-        for (KnownParty party : knownParties.values()) {
+        for (PartyName party : partyNameHashMap.values()) {
             list.add(party.toNbt());
         }
         tag.put("KnownParties", list);

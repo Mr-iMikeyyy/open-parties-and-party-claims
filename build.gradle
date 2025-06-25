@@ -12,6 +12,9 @@ base {
 
 
 repositories {
+
+	mavenCentral()
+
 	maven {
 		name = "Modrinth"
 		url = uri("https://api.modrinth.com/maven")
@@ -58,6 +61,8 @@ dependencies {
 	modImplementation("dev.onyxstudios.cardinal-components-api:cardinal-components-scoreboard:5.2.3") // for scoreboard/global
 
 	modImplementation("maven.modrinth:open-parties-and-claims:fabric-1.20.1-0.24.0")
+
+	implementation 'com.electronwill.night-config:toml:3.6.0'
 
 }
 

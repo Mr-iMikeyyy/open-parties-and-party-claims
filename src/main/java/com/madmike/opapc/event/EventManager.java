@@ -3,12 +3,14 @@ package com.madmike.opapc.event;
 import com.glisco.numismaticoverhaul.ModComponents;
 import com.glisco.numismaticoverhaul.currency.CurrencyComponent;
 import com.madmike.opapc.components.OPAPCComponents;
-import com.madmike.opapc.components.scoreboard.OfflineSalesComponent;
-import com.madmike.opapc.data.OfflineSale;
+import com.madmike.opapc.components.scoreboard.trades.OfflineSalesComponent;
+import com.madmike.opapc.data.trades.OfflineSale;
 import com.madmike.opapc.util.CurrencyUtil;
+import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
+import net.minecraft.util.ActionResult;
 
 import java.util.*;
 
@@ -47,7 +49,7 @@ public class EventManager {
 //            // ✅ Update known party names
 //            KnownPartiesComponent comp = ScoreboardComponents.KNOWN_PARTIES.get(server.getScoreboard());
 //            for (IServerPartyAPI party : allPartiesList) {
-//                comp.addOrUpdateParty(new KnownParty(party.getId(), party.getDefaultName()));
+//                comp.addOrUpdatePartyName(new KnownParty(party.getId(), party.getDefaultName()));
 //            }
 //        });
 
@@ -68,12 +70,19 @@ public class EventManager {
                 wallet.modify(totalProfit);
 
                 // Notify player
-                Text cb = CurrencyUtil.formatPrice(totalProfit, false, false);
-                player.sendMessage(Text.literal("§6You made " + cb + " coins while you were away!"), false);
+                Text coins = CurrencyUtil.formatPrice(totalProfit, false, false);
+                player.sendMessage(Text.literal("§6You made " + coins + " coins while you were away!"), false);
 
                 // Remove sales
                 component.clearSales(playerId);
             }
+        });
+
+        AttackEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
+            if (!world.isClient && player instanceof ServerPlayerEntity) {
+                OPAPCComponents.COMBAT_TIMER.get(player).onDamaged();
+            }
+            return ActionResult.PASS;
         });
     }
 }
