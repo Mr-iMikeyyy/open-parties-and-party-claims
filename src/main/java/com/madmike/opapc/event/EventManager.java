@@ -17,42 +17,6 @@ import java.util.*;
 public class EventManager {
     public static void register() {
 
-//        ServerTickEvents.END_SERVER_TICK.register(server -> {
-//            if (server.getTicks() % 60 != 0) return; // ~3s at 20 TPS
-//
-//            IPartyManagerAPI partyManager = OpenPACServerAPI.get(server).getPartyManager();
-//            List<IServerPartyAPI> allPartiesList = partyManager.getAllStream().toList();
-//
-//            // ✅ Cache player -> party lookup for this tick
-//            Map<UUID, UUID> memberToParty = new HashMap<>();
-//            for (IServerPartyAPI party : allPartiesList) {
-//                UUID partyId = party.getId();
-//                for (UUID member : party.getMemberInfoStream().map(IPartyMemberAPI::getUUID).toList()) {
-//                    memberToParty.put(member, partyId);
-//                }
-//            }
-//
-//            // ✅ Update each player's known party if changed
-//            for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-//                PartyComponent comp = PlayerComponents.PARTY.get(player);
-//                UUID playerId = player.getUuid();
-//
-//                UUID currentParty = comp.getPartyId();
-//                UUID actualParty = memberToParty.get(playerId); // cached
-//
-//                if (!Objects.equals(currentParty, actualParty)) {
-//                    comp.setPartyId(actualParty);
-//                    ScoreboardComponents.OFFERS.get(server.getScoreboard()).updatePartyForPlayer(playerId, actualParty);
-//                }
-//            }
-//
-//            // ✅ Update known party names
-//            KnownPartiesComponent comp = ScoreboardComponents.KNOWN_PARTIES.get(server.getScoreboard());
-//            for (IServerPartyAPI party : allPartiesList) {
-//                comp.addOrUpdatePartyName(new KnownParty(party.getId(), party.getDefaultName()));
-//            }
-//        });
-
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             ServerPlayerEntity player = handler.getPlayer();
             UUID playerId = player.getUuid();
@@ -76,6 +40,8 @@ public class EventManager {
                 // Remove sales
                 component.clearSales(playerId);
             }
+
+            OPAPCComponents.SELLERS.get(server.getScoreboard()).updateSellerNameIfChanged(playerId, player.getName().getString());
         });
 
         AttackEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
@@ -84,5 +50,6 @@ public class EventManager {
             }
             return ActionResult.PASS;
         });
+
     }
 }

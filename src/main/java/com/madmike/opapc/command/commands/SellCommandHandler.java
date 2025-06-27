@@ -1,4 +1,4 @@
-package com.madmike.opapc.command;
+package com.madmike.opapc.command.commands;
 
 import com.madmike.opapc.components.OPAPCComponents;
 import com.madmike.opapc.components.player.trades.UnlockedStoreSlotsComponent;
@@ -41,11 +41,6 @@ public class SellCommandHandler {
         }
 
         IServerPartyAPI party = OpenPACServerAPI.get(server).getPartyManager().getPartyByMember(player.getUuid());
-//        if (party != null) {
-//            KnownPartiesComponent kpc = OPAPCComponents.KNOWN_PARTIES.get(server.getScoreboard());
-//            kpc.addOrUpdatePartyName(new KnownParty(party.getId(), party.getDefaultName()));
-//        }
-
 
         ItemStack listedItem = stack.copy();
         player.getMainHandStack().setCount(0);// remove the item

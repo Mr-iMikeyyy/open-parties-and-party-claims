@@ -1,6 +1,6 @@
 package com.madmike.opapc.mixin;
 
-import com.madmike.opapc.features.block.PartyClaimBlock;
+import com.madmike.opapc.components.scoreboard.trades.OffersComponent;
 import com.madmike.opapc.components.OPAPCComponents;
 import com.madmike.opapc.data.parties.PartyName;
 import net.minecraft.server.MinecraftServer;
@@ -16,12 +16,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import xaero.pac.common.claims.player.api.IPlayerClaimPosListAPI;
 import xaero.pac.common.parties.party.member.PartyMember;
+import xaero.pac.common.parties.party.member.api.IPartyMemberAPI;
 import xaero.pac.common.server.api.OpenPACServerAPI;
 import xaero.pac.common.server.claims.api.IServerClaimsManagerAPI;
 import xaero.pac.common.server.parties.party.PartyManager;
 import xaero.pac.common.server.parties.party.ServerParty;
 
 import java.util.List;
+import java.util.UUID;
+
+import static com.madmike.opapc.command.commands.AbandonCommandHandler.handleAbandonCommand;
 
 @Mixin(PartyManager.class)
 public abstract class PartyManagerMixin {
@@ -66,7 +70,7 @@ public abstract class PartyManagerMixin {
     private void createPartyForOwner(ServerPlayerEntity owner, CallbackInfoReturnable<ServerParty> cir) {
         ServerParty created = cir.getReturnValue();
         if (created != null) {
-            OPAPCComponents.KNOWN_PARTIES.get(server).addOrUpdatePartyName(new PartyName(created.getId(), created.getDefaultName()));
+            OPAPCComponents.PARTY_NAMES.get(server.getScoreboard()).addOrUpdatePartyName(new PartyName(created.getId(), created.getDefaultName()));
         }
     }
 
@@ -74,18 +78,15 @@ public abstract class PartyManagerMixin {
     private void onRemoveTypedParty(ServerParty party, CallbackInfo ci) {
         if (party != null) {
             OpenPACServerAPI api = OpenPACServerAPI.get(server);
-            IServerClaimsManagerAPI scm = api.getServerClaimsManager();
-            List<ChunkPos> chunksToUnclaim = scm
-                    .getPlayerInfo(party.getOwner().getUUID())
-                    .getDimension(World.OVERWORLD.getValue())
-                    .getStream()
-                    .flatMap(IPlayerClaimPosListAPI::getStream) // IPlayerClaimPosListAPI -> Stream<ChunkPos>
-                    .toList();
-            for (ChunkPos chunk : chunksToUnclaim) {
-                scm.unclaim(World.OVERWORLD.getValue(), chunk.x, chunk.z);
-            }
 
-            //TODO: remove party blocks, set store offers party values to null
+            handleAbandonCommand(party.getOwner(), party.getId(), api, server);
+
+            OffersComponent comp = OPAPCComponents.OFFERS.get(server.getScoreboard());
+            List<UUID> idList = party.getMemberInfoStream().map(IPartyMemberAPI::getUUID).toList();
+
+            for (UUID id : idList) {
+                comp.updatePartyForPlayer(id, null);
+            }
         }
     }
 }

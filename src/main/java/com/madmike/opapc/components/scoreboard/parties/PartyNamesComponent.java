@@ -41,14 +41,14 @@ public class PartyNamesComponent implements Component, AutoSyncedComponent {
 
         if (existing == null || !existing.getName().equals(newParty.getName())) {
             partyNameHashMap.put(id, newParty);
-            OPAPCComponents.KNOWN_PARTIES.sync(provider);
+            OPAPCComponents.PARTY_NAMES.sync(provider);
             TradeScreenRefreshS2CSender.sendRebuildTabsToAll(server);
         }
     }
 
     public void removeParty(UUID id) {
         if (partyNameHashMap.remove(id) != null) {
-            OPAPCComponents.KNOWN_PARTIES.sync(this.provider);
+            OPAPCComponents.PARTY_NAMES.sync(this.provider);
             TradeScreenRefreshS2CSender.sendRebuildTabsToAll(server);
         }
     }

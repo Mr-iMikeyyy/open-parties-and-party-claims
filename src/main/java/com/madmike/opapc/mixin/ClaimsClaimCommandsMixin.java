@@ -1,5 +1,7 @@
 package com.madmike.opapc.mixin;
 
+import com.madmike.opapc.data.parties.claims.PartyClaim;
+import com.madmike.opapc.features.block.PartyClaimBlock;
 import com.madmike.opapc.util.claim.ClaimAdjacencyChecker;
 import com.madmike.opapc.util.claim.ClaimContextHolder;
 import com.madmike.opapc.components.OPAPCComponents;
@@ -20,6 +22,7 @@ import xaero.pac.common.claims.player.IPlayerChunkClaim;
 import xaero.pac.common.claims.player.IPlayerClaimInfo;
 import xaero.pac.common.claims.player.IPlayerClaimPosList;
 import xaero.pac.common.claims.player.IPlayerDimensionClaims;
+import xaero.pac.common.claims.player.api.IPlayerClaimPosListAPI;
 import xaero.pac.common.parties.party.IPartyPlayerInfo;
 import xaero.pac.common.parties.party.ally.IPartyAlly;
 import xaero.pac.common.parties.party.member.IPartyMember;
@@ -33,6 +36,11 @@ import xaero.pac.common.server.claims.player.IServerPlayerClaimInfo;
 import xaero.pac.common.server.parties.party.IServerParty;
 import xaero.pac.common.server.player.data.ServerPlayerData;
 import xaero.pac.common.server.player.data.api.ServerPlayerDataAPI;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.madmike.opapc.util.claim.NetherClaimAdjuster.mirrorOverworldClaimsToNether;
 
 @Mixin(ClaimsClaimCommands.class)
 public abstract class ClaimsClaimCommandsMixin {
@@ -59,10 +67,15 @@ public abstract class ClaimsClaimCommandsMixin {
             Command<ServerCommandSource> originalCommand
     ) {
         return builder.executes(context -> {
+            //get whether it's claim or unclaim
             boolean isClaim = ClaimContextHolder.SHOULD_CLAIM.get();
+            //get the player
             ServerPlayerEntity player = context.getSource().getPlayer();
+            //get the server
             MinecraftServer server = context.getSource().getServer();
+            //get opac server data
             IServerData<IServerClaimsManager<IPlayerChunkClaim, IServerPlayerClaimInfo<IPlayerDimensionClaims<IPlayerClaimPosList>>, IServerDimensionClaimsManager<IServerRegionClaims>>, IServerParty<IPartyMember, IPartyPlayerInfo, IPartyAlly>> serverData = ServerData.from(server);
+            //get player data
             ServerPlayerData playerData;
             if (player != null) {
                 playerData = (ServerPlayerData) ServerPlayerDataAPI.from(player);
@@ -103,11 +116,16 @@ public abstract class ClaimsClaimCommandsMixin {
                 }
             }
 
-            int unlockedPartyClaims = OPAPCComponents.KNOWN_PARTIES.get(server.getScoreboard()).get(party.getId()).getClaims();
+            PartyClaim partyClaim = OPAPCComponents.PARTY_CLAIMS.get(server.getScoreboard()).getClaim(party.getId());
+            if (partyClaim == null) {
+                context.getSource().sendError(Text.literal("Your first claim is made by placing a Party Claim Block. Careful where you place it! It's position is semi permanent!"));
+                return 0;
+            }
+            int unlockedPartyClaims = partyClaim.getBoughtClaims();
             IPlayerClaimInfo<IPlayerDimensionClaims<IPlayerClaimPosList>> info = cm.getPlayerInfo(player.getUuid());
             int totalOverworldClaims = info.getDimension(World.OVERWORLD.getValue())
                     .getStream()
-                    .mapToInt(e -> e.getCount())
+                    .mapToInt(IPlayerClaimPosListAPI::getCount)
                     .sum();
 
             if (totalOverworldClaims >= unlockedPartyClaims) {
@@ -115,7 +133,20 @@ public abstract class ClaimsClaimCommandsMixin {
                 return 0;
             }
 
-            return originalCommand.run(context);
+            int result = originalCommand.run(context);
+
+            //  Inject post-success logic only if the claim went through
+            if (result > 0) {
+                IPlayerClaimInfo<IPlayerDimensionClaims<IPlayerClaimPosList>> newInfo = cm.getPlayerInfo(player.getUuid());
+                List<ChunkPos> overworldChunks = new ArrayList<>();
+                newInfo.getDimension(World.OVERWORLD.getValue()).getStream().forEach(e -> e.getStream().forEach(overworldChunks::add));
+                List<ChunkPos> currentNetherChunks = new ArrayList<>();
+                newInfo.getDimension(World.NETHER.getValue()).getStream().forEach(e -> e.getStream().forEach(overworldChunks::add));
+
+                mirrorOverworldClaimsToNether(cm, party.getId(), overworldChunks, currentNetherChunks);
+            }
+
+            return result;
         });
     }
 }

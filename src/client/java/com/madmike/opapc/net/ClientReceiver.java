@@ -1,7 +1,6 @@
 package com.madmike.opapc.net;
 
 import com.madmike.opapc.gui.TradingScreen;
-import com.madmike.opapc.net.packets.TradeScreenRefreshS2CSender;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 
 import static com.madmike.opapc.net.packets.PacketIds.REBUILD_TABS;

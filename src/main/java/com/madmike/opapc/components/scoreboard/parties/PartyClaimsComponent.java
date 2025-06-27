@@ -1,6 +1,5 @@
-package com.madmike.opapc.components.scoreboard.parties.claims;
+package com.madmike.opapc.components.scoreboard.parties;
 
-import com.madmike.opapc.data.parties.claims.Donor;
 import com.madmike.opapc.data.parties.claims.PartyClaim;
 import dev.onyxstudios.cca.api.v3.component.Component;
 import net.minecraft.nbt.NbtCompound;
@@ -8,6 +7,7 @@ import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.math.BlockPos;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -54,8 +54,8 @@ public class PartyClaimsComponent implements Component {
         nbt.put("PartyClaims", claimsList);
     }
 
-    // 🔍 Get claim by party ID (creates if missing)
-    public PartyClaim getOrCreateClaim(UUID partyId) {
+    // 🔍 Create claim by party ID (creates if missing)
+    public PartyClaim createClaim(UUID partyId, BlockPos blockPos) {
         return partyClaims.computeIfAbsent(partyId, PartyClaim::new);
     }
 
@@ -75,5 +75,11 @@ public class PartyClaimsComponent implements Component {
 
     public MinecraftServer getServer() {
         return server;
+    }
+
+    public void removeClaim(UUID partyId) {
+        PartyClaim claim = partyClaims.get(partyId);
+        claim.deletePcbBlock(server.getOverworld());
+        partyClaims.remove(partyId);
     }
 }

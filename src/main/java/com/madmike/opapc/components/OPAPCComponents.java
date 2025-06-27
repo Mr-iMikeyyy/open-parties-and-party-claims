@@ -4,7 +4,7 @@ import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.components.player.timers.CombatTimerComponent;
 import com.madmike.opapc.components.player.trades.UnlockedStoreSlotsComponent;
 import com.madmike.opapc.components.scoreboard.parties.PartyNamesComponent;
-import com.madmike.opapc.components.scoreboard.parties.claims.PartyClaimsComponent;
+import com.madmike.opapc.components.scoreboard.parties.PartyClaimsComponent;
 import com.madmike.opapc.components.scoreboard.trades.OffersComponent;
 import com.madmike.opapc.components.scoreboard.trades.OfflineSalesComponent;
 import com.madmike.opapc.components.scoreboard.trades.SellersComponent;

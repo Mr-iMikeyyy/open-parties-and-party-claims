@@ -1,4 +1,4 @@
-package com.madmike.opapc.command;
+package com.madmike.opapc.command.commands;
 
 import com.glisco.numismaticoverhaul.ModComponents;
 import com.glisco.numismaticoverhaul.currency.CurrencyComponent;

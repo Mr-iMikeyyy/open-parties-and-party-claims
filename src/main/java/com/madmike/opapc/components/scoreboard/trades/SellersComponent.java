@@ -1,59 +1,79 @@
 package com.madmike.opapc.components.scoreboard.trades;
 
-import com.madmike.opapc.data.trades.Seller;
+import com.madmike.opapc.data.trades.SellerInfo;
 import dev.onyxstudios.cca.api.v3.component.Component;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.scoreboard.Scoreboard;
+import net.minecraft.server.MinecraftServer;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 public class SellersComponent implements Component {
 
-    private final Map<UUID, Seller> sellers = new HashMap<>();
+    private final Map<UUID, SellerInfo> sellers = new HashMap<>();
+    private final Scoreboard scoreboard;
+    private final MinecraftServer server;
 
-    public Map<UUID, Seller> getSellers() {
-        return sellers;
+    public SellersComponent(Scoreboard scoreboard, MinecraftServer server) {
+        this.scoreboard = scoreboard;
+        this.server = server;
     }
 
-    public Seller getSeller(UUID playerId) {
+    public SellerInfo getSellerInfo(UUID playerId) {
         return sellers.get(playerId);
     }
 
-    public void addSale(UUID playerId, String name, long saleAmount) {
-        sellers.merge(playerId, new Seller(name, saleAmount), (old, update) ->
-                new Seller(update.name(), old.totalSales() + update.totalSales())
-        );
+    public void setSellerName(UUID playerId, String name) {
+        SellerInfo current = sellers.get(playerId);
+        if (current != null) {
+            sellers.put(playerId, new SellerInfo(playerId, name, current.totalSales()));
+        } else {
+            sellers.put(playerId, new SellerInfo(playerId, name, 0L));
+        }
+    }
+
+    public void addSale(UUID playerId, long saleAmount) {
+        SellerInfo current = sellers.get(playerId);
+        if (current != null) {
+            sellers.put(playerId, current.addSales(saleAmount));
+        } else {
+            sellers.put(playerId, new SellerInfo(playerId, "Unknown", saleAmount));
+        }
+    }
+
+    public Collection<SellerInfo> getAllSellers() {
+        return sellers.values();
+    }
+
+    public void updateSellerNameIfChanged(UUID playerId, String currentName) {
+        SellerInfo current = sellers.get(playerId);
+        if (current != null && !current.name().equals(currentName)) {
+            sellers.put(playerId, current.withName(currentName));
+        }
     }
 
     @Override
     public void readFromNbt(NbtCompound nbt) {
         sellers.clear();
-        NbtList list = nbt.getList("Sellers", NbtElement.COMPOUND_TYPE);
-
-        for (NbtElement element : list) {
+        NbtList sellerList = nbt.getList("Sellers", NbtElement.COMPOUND_TYPE);
+        for (NbtElement element : sellerList) {
             NbtCompound sellerNbt = (NbtCompound) element;
-            UUID id = sellerNbt.getUuid("Id");
-            String name = sellerNbt.getString("Name");
-            long totalSales = sellerNbt.getLong("Sales");
-            sellers.put(id, new Seller(name, totalSales));
+            SellerInfo info = SellerInfo.fromNbt(sellerNbt);
+            sellers.put(info.id(), info);
         }
     }
 
     @Override
     public void writeToNbt(NbtCompound nbt) {
-        NbtList list = new NbtList();
-
-        for (Map.Entry<UUID, Seller> entry : sellers.entrySet()) {
-            NbtCompound sellerNbt = new NbtCompound();
-            sellerNbt.putUuid("Id", entry.getKey());
-            sellerNbt.putString("Name", entry.getValue().name());
-            sellerNbt.putLong("Sales", entry.getValue().totalSales());
-            list.add(sellerNbt);
+        NbtList sellerList = new NbtList();
+        for (SellerInfo info : sellers.values()) {
+            sellerList.add(info.toNbt());
         }
-
-        nbt.put("Sellers", list);
+        nbt.put("Sellers", sellerList);
     }
 }

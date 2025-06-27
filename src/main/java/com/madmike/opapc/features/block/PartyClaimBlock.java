@@ -9,11 +9,9 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.BlockWithEntity;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.decoration.DisplayEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
@@ -23,8 +21,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
-import org.jetbrains.annotations.Nullable;
-import xaero.pac.common.server.api.OpenPACServerAPI;
 
 import java.util.List;
 import java.util.UUID;
@@ -38,17 +34,6 @@ public class PartyClaimBlock extends BlockWithEntity {
     @Override
     public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
         return new PartyClaimBlockEntity(pos, state);
-    }
-
-    @Override
-    public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
-        if (placer instanceof ServerPlayerEntity player) {
-            UUID partyId = OpenPACServerAPI.get(player.getServer()).getPartyManager().getPartyByOwner(player.getUuid()).getId();
-            BlockEntity be = world.getBlockEntity(pos);
-            if (be instanceof PartyClaimBlockEntity claimEntity) {
-                claimEntity.setPartyId(partyId);
-            }
-        }
     }
 
     @Override
@@ -81,7 +66,7 @@ public class PartyClaimBlock extends BlockWithEntity {
             return ActionResult.FAIL;
         }
 
-        PartyClaim claim = OPAPCComponents.PARTY_CLAIMS.get(player.getScoreboard()).getOrCreateClaim(partyId);
+        PartyClaim claim = OPAPCComponents.PARTY_CLAIMS.get(player.getScoreboard()).getClaim(partyId);
         claim.addDonation(player.getUuid(), player.getName().getString(), value);
         return ActionResult.CONSUME;
     }

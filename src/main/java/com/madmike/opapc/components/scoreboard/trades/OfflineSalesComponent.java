@@ -48,7 +48,6 @@ public class OfflineSalesComponent implements Component {
     public void addSale(UUID sellerID, long profit) {
         OfflineSale sale = new OfflineSale(sellerID, profit);
         offlineSales.computeIfAbsent(sellerID, k -> new ArrayList<>()).add(sale);
-        OPAPCComponents.OFFLINE_SALES.sync(scoreboard);
     }
 
     // Get all sales for a player

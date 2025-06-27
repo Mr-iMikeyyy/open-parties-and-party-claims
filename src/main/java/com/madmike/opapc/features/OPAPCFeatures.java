@@ -14,21 +14,14 @@ import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
 
 public class OPAPCFeatures {
-    public static final Block PARTY_CLAIM_BLOCK = Registry.register(
-            Registries.BLOCK,
-            new Identifier(OPAPC.MOD_ID, "party_claim_block"),
-            new PartyClaimBlock(FabricBlockSettings.create().strength(1.5f))
-    );
 
-    public static final Item PARTY_CLAIM_BLOCK_ITEM = Registry.register(
-            Registries.ITEM,
-            new Identifier(OPAPC.MOD_ID, "party_claim_block"),
-            new PartyClaimBlockItem(PARTY_CLAIM_BLOCK, new Item.Settings())
-    );
+    public static final Block PARTY_CLAIM_BLOCK = new PartyClaimBlock(FabricBlockSettings.create().strength(-1.0f, 3600000.0f).dropsNothing());
+    public static final Item PARTY_CLAIM_BLOCK_ITEM = new PartyClaimBlockItem(PARTY_CLAIM_BLOCK, new Item.Settings());
+    public static BlockEntityType<PartyClaimBlockEntity> PARTY_CLAIM_BLOCK_ENTITY = FabricBlockEntityTypeBuilder.create(PartyClaimBlockEntity::new, PARTY_CLAIM_BLOCK).build();
 
-    public static final BlockEntityType<PartyClaimBlockEntity> PARTY_CLAIM = Registry.register(
-            Registries.BLOCK_ENTITY_TYPE,
-            new Identifier(OPAPC.MOD_ID, "party_claim"),
-            FabricBlockEntityTypeBuilder.create(PartyClaimBlockEntity::new, OPAPCFeatures.PARTY_CLAIM_BLOCK).build()
-    );
+    public static void register() {
+        Registry.register(Registries.BLOCK, new Identifier(OPAPC.MOD_ID, "party_claim_block"), PARTY_CLAIM_BLOCK);
+        Registry.register(Registries.ITEM, new Identifier(OPAPC.MOD_ID, "party_claim_block"), PARTY_CLAIM_BLOCK_ITEM);
+        Registry.register(Registries.BLOCK_ENTITY_TYPE, new Identifier(OPAPC.MOD_ID, "my_cool_block_entity"), PARTY_CLAIM_BLOCK_ENTITY);
+    }
 }

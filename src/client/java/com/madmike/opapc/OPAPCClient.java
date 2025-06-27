@@ -16,7 +16,6 @@ public class OPAPCClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
 
-
 		// Register the keybind
 		openTradeKeybind = KeyBindingHelper.registerKeyBinding(new KeyBinding(
 				"key.open_trading_screen",

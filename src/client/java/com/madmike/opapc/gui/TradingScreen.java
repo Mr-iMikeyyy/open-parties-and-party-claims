@@ -1,10 +1,13 @@
 package com.madmike.opapc.gui;
 
 import com.glisco.numismaticoverhaul.ModComponents;
+import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.components.OPAPCComponents;
 import com.madmike.opapc.components.scoreboard.parties.PartyNamesComponent;
 import com.madmike.opapc.data.parties.PartyName;
 import com.madmike.opapc.data.trades.Offer;
+import com.madmike.opapc.net.packets.BuyOfferC2SPacket;
+import com.madmike.opapc.net.packets.RemoveOfferC2SPacket;
 import io.wispforest.owo.ui.base.BaseOwoScreen;
 import io.wispforest.owo.ui.component.CheckboxComponent;
 import io.wispforest.owo.ui.component.Components;
@@ -175,7 +178,7 @@ public class TradingScreen extends BaseOwoScreen<FlowLayout> {
             IClientPartyAPI shopperParty = OpenPACClientAPI.get().getClientPartyStorage().getParty();
 
             assert MinecraftClient.getInstance().world != null;
-            PartyNamesComponent knownParties = OPAPCComponents.KNOWN_PARTIES.get(MinecraftClient.getInstance().world.getScoreboard());
+            PartyNamesComponent partyNames = OPAPCComponents.PARTY_NAMES.get(MinecraftClient.getInstance().world.getScoreboard());
 
 
             if (shopperParty != null) {
@@ -186,12 +189,12 @@ public class TradingScreen extends BaseOwoScreen<FlowLayout> {
                 List<UUID> allyIDList = shopperParty.getAllyPartiesStream().map(IPartyAllyAPI::getPartyId).toList();
 
                 allyIDList.forEach(e ->
-                        tabs.add(new TradingScreenTab(knownParties.get(e) + " (Ally)", e)));
+                        tabs.add(new TradingScreenTab(partyNames.get(e) + " (Ally)", e)));
 
                 //Add The rest of the parties
-                for (UUID partyID : knownParties.getPartyNameHashMap().stream().map(PartyName::getPartyId).toList()) {
+                for (UUID partyID : partyNames.getPartyNameHashMap().stream().map(PartyName::getPartyId).toList()) {
                     if (!allyIDList.contains(partyID) && !partyID.equals(shopperParty.getId())) {
-                        tabs.add(new TradingScreenTab(Objects.requireNonNull(knownParties.get(partyID)).getName(), partyID));
+                        tabs.add(new TradingScreenTab(Objects.requireNonNull(partyNames.get(partyID)).getName(), partyID));
                     }
                 }
                 // Add Scallywags
@@ -200,8 +203,8 @@ public class TradingScreen extends BaseOwoScreen<FlowLayout> {
                 // Add Scallywags
                 tabs.add(new TradingScreenTab("Scallywag", scallywagsTabID));
                 //Add The rest of the parties
-                for (UUID partyID : knownParties.getPartyNameHashMap().stream().map(PartyName::getPartyId).toList()) {
-                    tabs.add(new TradingScreenTab(knownParties.get(partyID).getName(), partyID));
+                for (UUID partyID : partyNames.getPartyNameHashMap().stream().map(PartyName::getPartyId).toList()) {
+                    tabs.add(new TradingScreenTab(partyNames.get(partyID).getName(), partyID));
                 }
             }
         }
@@ -241,8 +244,7 @@ public class TradingScreen extends BaseOwoScreen<FlowLayout> {
             UUID shopperID = player.getUuid();
             if (tab.partyId().equals(myOffersTabID)) {
                 //MY offers
-                List<Offer> myOffers = allOffers.get(player.getUuid());
-                List<Offer> offers = allOffers.stream().filter(e -> e.getSellerId().equals(player.getUuid())).filter(matchesSearch).toList();
+                List<Offer> offers = allOffers.values().stream().filter(e -> e.getSellerId().equals(shopperID)).toList();
                 for (Offer offer : offers) {
                     offerListContainer.child(createOfferRow(offer, formatPrice(offer.getPrice(), false, false), false, true));
                 }
@@ -255,40 +257,40 @@ public class TradingScreen extends BaseOwoScreen<FlowLayout> {
 
             if (shopperParty != null) { // in a party
                 if (tab.partyId() == shopperParty.getId()) { // Party Offers
-                    List<Offer> offers = allOffers.stream().filter(e -> shopperParty.getId().equals(e.getPartyId()) && !e.getSellerId().equals(shopperID)).filter(matchesSearch).toList();
+                    List<Offer> offers = allOffers.values().stream().filter(e -> shopperParty.getId().equals(e.getPartyId()) && !e.getSellerId().equals(shopperID)).filter(matchesSearch).toList();
                     for (Offer offer : offers) {
-                        offerListContainer.child(createOfferRow(offer, formatPrice(offer.price(), false, false), false, false));
+                        offerListContainer.child(createOfferRow(offer, formatPrice(offer.getPrice(), false, false), false, false));
                     }
                 } else if (shopperParty.getAllyPartiesStream()// Ally Offers
                         .map(IPartyAllyAPI::getPartyId)
                         .toList()
                         .contains(tab.partyId())) {
-                    List<TradeOffer> offers = allOffers.stream().filter(e -> tab.partyId().equals(e.partyID())).filter(matchesSearch).toList();
-                    for (TradeOffer offer : offers) {
-                        offerListContainer.child(createOfferRow(offer, formatPrice(offer.price(), true, false), true, false));
+                    List<Offer> offers = allOffers.values().stream().filter(e -> tab.partyId().equals(e.getPartyId())).filter(matchesSearch).toList();
+                    for (Offer offer : offers) {
+                        offerListContainer.child(createOfferRow(offer, formatPrice(offer.getPrice(), true, false), true, false));
                     }
                 } else if (tab.partyId() == scallywagsTabID) { //scallywag offers
-                    List<TradeOffer> offers = allOffers.stream().filter(e -> e.partyID() == null).filter(matchesSearch).toList();
-                    for (TradeOffer offer : offers) {
-                        offerListContainer.child(createOfferRow(offer, formatPrice(offer.price(), false, true), true, false));
+                    List<Offer> offers = allOffers.values().stream().filter(e -> e.getPartyId() == null).filter(matchesSearch).toList();
+                    for (Offer offer : offers) {
+                        offerListContainer.child(createOfferRow(offer, formatPrice(offer.getPrice(), false, true), true, false));
                     }
                 } else if (tab.partyId() != null) {// other party offers
 
-                    List<TradeOffer> offers = allOffers.stream().filter(e -> tab.partyId().equals(e.partyID())).filter(matchesSearch).toList();
-                    for (TradeOffer offer : offers) {
-                        offerListContainer.child(createOfferRow(offer, formatPrice(offer.price(), false, false), true, false));
+                    List<Offer> offers = allOffers.values().stream().filter(e -> tab.partyId().equals(e.getPartyId())).filter(matchesSearch).toList();
+                    for (Offer offer : offers) {
+                        offerListContainer.child(createOfferRow(offer, formatPrice(offer.getPrice(), false, false), true, false));
                     }
                 }
             } else { // not in a party
                 if (tab.partyId() == scallywagsTabID) { //Scallywag
-                    List<TradeOffer> offers = allOffers.stream().filter(e -> e.partyID() == null && !shopperID.equals(e.sellerID())).filter(matchesSearch).toList();
-                    for (TradeOffer offer : offers) {
-                        offerListContainer.child(createOfferRow(offer, formatPrice(offer.price(), true, false), true, false));
+                    List<Offer> offers = allOffers.values().stream().filter(e -> e.getPartyId() == null && !shopperID.equals(e.getSellerId())).filter(matchesSearch).toList();
+                    for (Offer offer : offers) {
+                        offerListContainer.child(createOfferRow(offer, formatPrice(offer.getPrice(), true, false), true, false));
                     }
                 } else { // Society
-                    List<TradeOffer> offers = allOffers.stream().filter(e -> tab.partyId().equals(e.partyID())).filter(matchesSearch).toList();
-                    for (TradeOffer offer : offers) {
-                        offerListContainer.child(createOfferRow(offer, formatPrice(offer.price(), false, true), true, false));
+                    List<Offer> offers = allOffers.values().stream().filter(e -> tab.partyId().equals(e.getPartyId())).filter(matchesSearch).toList();
+                    for (Offer offer : offers) {
+                        offerListContainer.child(createOfferRow(offer, formatPrice(offer.getPrice(), false, true), true, false));
                     }
                 }
             }
@@ -296,17 +298,15 @@ public class TradingScreen extends BaseOwoScreen<FlowLayout> {
         }
     }
 
-
-
-    private Component createOfferRow(TradeOffer offer, Text priceText, boolean showBuyButton, boolean showRemoveButton) {
-        OPATR.LOGGER.info("Rendering offer row: {}", offer.offerID());
+    private Component createOfferRow(Offer offer, Text priceText, boolean showBuyButton, boolean showRemoveButton) {
+        OPAPC.LOGGER.info("Rendering offer row: {}", offer.getOfferId());
         FlowLayout row = Containers.horizontalFlow(Sizing.fill(100), Sizing.fixed(20)).gap(6);
-        row.child(Components.item(offer.item()).showOverlay(true).setTooltipFromStack(true));
+        row.child(Components.item(offer.getItem()).showOverlay(true).setTooltipFromStack(true));
         row.child(Components.label(priceText).horizontalTextAlignment(HorizontalAlignment.CENTER));
-        if (showBuyButton) row.child(Components.button(Text.literal("Buy"), b -> BuyOfferC2SPacket.send(offer.offerID())));
+        if (showBuyButton) row.child(Components.button(Text.literal("Buy"), b -> BuyOfferC2SPacket.send(offer.getOfferId())));
         if (showRemoveButton) {
             row.child(Components.button(Text.literal("Remove").formatted(Formatting.RED), b -> {
-                RemoveOfferC2SPacket.send(offer.offerID());
+                RemoveOfferC2SPacket.send(offer.getOfferId());
             }));
         }
         return row;

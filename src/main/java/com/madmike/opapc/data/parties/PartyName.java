@@ -4,7 +4,7 @@ import net.minecraft.nbt.NbtCompound;
 
 import java.util.UUID;
 
-public class PartyName() {
+public class PartyName {
 
     private final UUID partyId;
     private String name;
@@ -37,8 +37,5 @@ public class PartyName() {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public boolean getPartyClaimBlock() {
     }
 }

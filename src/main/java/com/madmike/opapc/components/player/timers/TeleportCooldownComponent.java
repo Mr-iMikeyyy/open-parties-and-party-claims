@@ -13,12 +13,10 @@ public class TeleportCooldownComponent implements Component {
         this.player = player;
     }
 
-    /** Call this when the player teleports */
-    public void onDamaged() {
+    public void onTele() {
         lastTeleportTime = System.currentTimeMillis();
     }
 
-    /** Call this when you want to check if the player is still in combat */
     public boolean hasCooldown() {
         long durationMs = OPAPCConfig.teleportCooldownInSeconds * 1000L;
         return System.currentTimeMillis() - lastTeleportTime < durationMs;

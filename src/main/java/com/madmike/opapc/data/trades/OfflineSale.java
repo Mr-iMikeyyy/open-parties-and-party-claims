@@ -13,8 +13,8 @@ public record OfflineSale(UUID sellerID, long profitAmount) {
     }
 
     public static OfflineSale fromNbt(NbtCompound nbt) {
-        UUID partyID = nbt.getUuid("SellerID");
+        UUID sellerId = nbt.getUuid("SellerID");
         long profit = nbt.getLong("Profit");
-        return new OfflineSale(partyID, profit);
+        return new OfflineSale(sellerId, profit);
     }
 }
