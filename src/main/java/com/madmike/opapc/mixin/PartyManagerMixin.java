@@ -25,7 +25,7 @@ import xaero.pac.common.server.parties.party.ServerParty;
 import java.util.List;
 import java.util.UUID;
 
-import static com.madmike.opapc.command.commands.AbandonCommandHandler.handleAbandonCommand;
+import static com.madmike.opapc.command.commands.claims.AbandonCommandHandler.handleAbandonCommand;
 
 @Mixin(PartyManager.class)
 public abstract class PartyManagerMixin {

@@ -10,15 +10,9 @@ import java.util.UUID;
 
 public class PartyClaimBlockEntity extends BlockEntity {
     private UUID partyId;
-    private final UUID blockId;
 
     public PartyClaimBlockEntity(BlockPos pos, BlockState state) {
         super(OPAPCFeatures.PARTY_CLAIM_BLOCK_ENTITY, pos, state);
-        this.blockId = UUID.randomUUID();
-    }
-
-    public UUID getBlockId() {
-        return blockId;
     }
 
     public UUID getPartyId() {
@@ -27,7 +21,7 @@ public class PartyClaimBlockEntity extends BlockEntity {
 
     public void setPartyId(UUID partyId) {
         this.partyId = partyId;
-        markDirty(); // triggers a save
+        markDirty();
     }
 
     @Override

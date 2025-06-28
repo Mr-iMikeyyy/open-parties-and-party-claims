@@ -9,9 +9,12 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.BlockWithEntity;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.decoration.DisplayEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
@@ -21,6 +24,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import xaero.pac.common.server.api.OpenPACServerAPI;
+import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 
 import java.util.List;
 import java.util.UUID;
@@ -34,6 +39,29 @@ public class PartyClaimBlock extends BlockWithEntity {
     @Override
     public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
         return new PartyClaimBlockEntity(pos, state);
+    }
+
+    @Override
+    public void onPlaced(World world, BlockPos pos, BlockState state, LivingEntity placer, ItemStack itemStack) {
+        super.onPlaced(world, pos, state, placer, itemStack);
+
+        if (world.isClient) return; // only on server
+
+        if (!(placer instanceof ServerPlayerEntity serverPlayer)) return;
+
+        MinecraftServer server = serverPlayer.getServer();
+        if (server == null) return;
+
+        OpenPACServerAPI api = OpenPACServerAPI.get(server);
+        IServerPartyAPI party = api.getPartyManager().getPartyByOwner(serverPlayer.getUuid());
+
+        if (party == null) return;
+
+        BlockEntity be = world.getBlockEntity(pos);
+        if (be instanceof PartyClaimBlockEntity claimBe) {
+            claimBe.setPartyId(party.getId());
+            claimBe.markDirty();
+        }
     }
 
     @Override

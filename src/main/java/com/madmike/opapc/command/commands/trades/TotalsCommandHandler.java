@@ -1,4 +1,4 @@
-package com.madmike.opapc.command.commands;
+package com.madmike.opapc.command.commands.trades;
 
 import com.madmike.opapc.components.OPAPCComponents;
 import com.madmike.opapc.util.CurrencyUtil;

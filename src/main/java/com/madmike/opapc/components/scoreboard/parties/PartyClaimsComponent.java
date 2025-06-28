@@ -7,7 +7,6 @@ import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.math.BlockPos;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -55,7 +54,7 @@ public class PartyClaimsComponent implements Component {
     }
 
     // 🔍 Create claim by party ID (creates if missing)
-    public PartyClaim createClaim(UUID partyId, BlockPos blockPos) {
+    public PartyClaim createClaim(UUID partyId) {
         return partyClaims.computeIfAbsent(partyId, PartyClaim::new);
     }
 
@@ -79,7 +78,7 @@ public class PartyClaimsComponent implements Component {
 
     public void removeClaim(UUID partyId) {
         PartyClaim claim = partyClaims.get(partyId);
-        claim.deletePcbBlock(server.getOverworld());
+        claim.deletePcbBlock(server);
         partyClaims.remove(partyId);
     }
 }

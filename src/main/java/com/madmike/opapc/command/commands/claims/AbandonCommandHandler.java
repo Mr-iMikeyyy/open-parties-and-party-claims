@@ -1,4 +1,4 @@
-package com.madmike.opapc.command.commands;
+package com.madmike.opapc.command.commands.claims;
 
 import com.madmike.opapc.components.OPAPCComponents;
 import net.minecraft.server.MinecraftServer;

@@ -22,6 +22,6 @@ public class OPAPCFeatures {
     public static void register() {
         Registry.register(Registries.BLOCK, new Identifier(OPAPC.MOD_ID, "party_claim_block"), PARTY_CLAIM_BLOCK);
         Registry.register(Registries.ITEM, new Identifier(OPAPC.MOD_ID, "party_claim_block"), PARTY_CLAIM_BLOCK_ITEM);
-        Registry.register(Registries.BLOCK_ENTITY_TYPE, new Identifier(OPAPC.MOD_ID, "my_cool_block_entity"), PARTY_CLAIM_BLOCK_ENTITY);
+        Registry.register(Registries.BLOCK_ENTITY_TYPE, new Identifier(OPAPC.MOD_ID, "party_claim_block_entity"), PARTY_CLAIM_BLOCK_ENTITY);
     }
 }

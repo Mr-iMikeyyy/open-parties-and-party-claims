@@ -1,10 +1,16 @@
 package com.madmike.opapc.data.parties.claims;
 
+import com.madmike.opapc.features.entity.PartyClaimBlockEntity;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,18 +21,19 @@ public class PartyClaim {
     private UUID partyId;
     private int boughtClaims = 0;
     private long currentDonationAmount = 0;
-    private BlockPos pcb;
+
+    private BlockPos pcbPos;
 
     public PartyClaim(UUID partyId) {
         this.partyId = partyId;
     }
 
-    public void setPcb(BlockPos pcb) {
-        this.pcb = pcb;
+    public void setPcb(BlockPos pcbPos) {
+        this.pcbPos = pcbPos;
     }
 
-    public BlockPos getPcbeBlockPos() {
-        return pcb;
+    public BlockPos getPcbBlockPos() {
+        return pcbPos;
     }
 
     public Map<UUID, Donor> getDonations() {
@@ -41,6 +48,14 @@ public class PartyClaim {
         return currentDonationAmount;
     }
 
+    public @Nullable PartyClaimBlockEntity getBlockEntity(MinecraftServer server) {
+        if (pcbPos == null) return null;
+        ServerWorld world = server.getWorld(World.OVERWORLD);
+        if (world == null) return null;
+        BlockEntity be = world.getBlockEntity(pcbPos);
+        return be instanceof PartyClaimBlockEntity claimBe ? claimBe : null;
+    }
+
     public NbtCompound writeToNbt() {
         NbtCompound nbt = new NbtCompound();
 
@@ -48,10 +63,10 @@ public class PartyClaim {
         nbt.putInt("BoughtClaims", boughtClaims);
         nbt.putLong("CurrentDonationAmount", currentDonationAmount);
 
-        if (pcb != null) {
-            nbt.putInt("PcbeX", pcb.getX());
-            nbt.putInt("PcbeY", pcb.getY());
-            nbt.putInt("PcbeZ", pcb.getZ());
+        if (pcbPos != null) {
+            nbt.putInt("PcbX", pcbPos.getX());
+            nbt.putInt("PcbY", pcbPos.getY());
+            nbt.putInt("PcbZ", pcbPos.getZ());
         }
 
         NbtList donorList = new NbtList();
@@ -68,10 +83,11 @@ public class PartyClaim {
         this.boughtClaims = nbt.getInt("BoughtClaims");
         this.currentDonationAmount = nbt.getLong("CurrentDonationAmount");
 
-        if (nbt.contains("PcbeX") && nbt.contains("PcbeY") && nbt.contains("PcbeZ")) {
-            this.pcb = new BlockPos(nbt.getInt("PcbeX"), nbt.getInt("PcbeY"), nbt.getInt("PcbeZ"));
+        if (nbt.contains("PcbX") && nbt.contains("PcbY") && nbt.contains("PcbZ") && nbt.contains("PcbDimension")) {
+            this.pcbPos = new BlockPos(nbt.getInt("PcbX"), nbt.getInt("PcbY"), nbt.getInt("PcbZ"));
+            Identifier dimId = new Identifier(nbt.getString("PcbDimension"));
         } else {
-            this.pcb = null;
+            this.pcbPos = null;
         }
 
         this.donations.clear();
@@ -87,27 +103,25 @@ public class PartyClaim {
     }
 
     public void addDonation(UUID playerId, String name, long value) {
-        // Update donor contribution
         Donor existing = donations.get(playerId);
         long total = value + (existing != null ? existing.amount() : 0);
         donations.put(playerId, new Donor(playerId, name, total));
 
-        // Add to current pool
         currentDonationAmount += value;
 
-        // Check if enough for a new claim
         while (currentDonationAmount >= (boughtClaims + 1) * 10_000L) {
             currentDonationAmount -= (boughtClaims + 1) * 10_000L;
             boughtClaims++;
         }
     }
 
-    public void deletePcbBlock(World world) {
-        if (pcb != null) {
-            if (world.isChunkLoaded(pcb)) {
-                world.removeBlock(pcb, false); // remove block without dropping items
+    public void deletePcbBlock(MinecraftServer server) {
+        if (pcbPos != null) {
+            ServerWorld world = server.getWorld(World.OVERWORLD);
+            if (world != null && world.isChunkLoaded(pcbPos)) {
+                world.removeBlock(pcbPos, false);
             }
-            pcb = null;
+            pcbPos = null;
         }
     }
 }
