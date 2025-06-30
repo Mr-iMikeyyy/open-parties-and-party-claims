@@ -2,16 +2,14 @@ package com.madmike.opapc.util;
 
 import com.glisco.numismaticoverhaul.item.MoneyBagItem;
 import com.glisco.numismaticoverhaul.item.NumismaticOverhaulItems;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
-import java.util.ArrayList;
-import java.util.List;
+import net.minecraft.ChatFormatting;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 
 public class CurrencyUtil {
+
     public static final int BRONZE_PER_SILVER = 100;
     public static final int SILVER_PER_GOLD = 100;
     public static final int BRONZE_PER_GOLD = BRONZE_PER_SILVER * SILVER_PER_GOLD;
@@ -43,7 +41,7 @@ public class CurrencyUtil {
         } else if (item == NumismaticOverhaulItems.GOLD_COIN) {
             return count * 10_000L;
         } else if (item instanceof MoneyBagItem) {
-            NbtCompound nbt = stack.getOrCreateNbt();
+            CompoundTag nbt = stack.getOrCreateTag();
             if (nbt.contains("Value")) {
                 return nbt.getLong("Value");
             }
@@ -52,18 +50,16 @@ public class CurrencyUtil {
         return 0;
     }
 
-    public static Text formatPrice(long price, boolean discounted, boolean upcharged) {
+    public static Component formatPrice(long price, boolean discounted, boolean upcharged) {
         CoinBreakdown coins = fromTotalBronze(price);
-        Text text;
+        Component text;
         String priceString = "G: " + coins.gold() + ", S: " + coins.silver() + ", B: " + coins.bronze();
         if (discounted) {
-            text = Text.literal(priceString).formatted(Formatting.GREEN);
-        }
-        else if (upcharged) {
-            text = Text.literal(priceString).formatted(Formatting.RED);
-        }
-        else {
-            text = Text.literal(priceString);
+            text = Component.literal(priceString).withStyle(ChatFormatting.GREEN);
+        } else if (upcharged) {
+            text = Component.literal(priceString).withStyle(ChatFormatting.RED);
+        } else {
+            text = Component.literal(priceString);
         }
         return text;
     }

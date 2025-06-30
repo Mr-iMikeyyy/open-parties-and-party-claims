@@ -2,14 +2,14 @@ package com.madmike.opapc.components.player.timers;
 
 import com.madmike.opapc.config.OPAPCConfig;
 import dev.onyxstudios.cca.api.v3.component.Component;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.entity.player.Player;
 
 public class CombatTimerComponent implements Component {
     private long lastDamageTime = 0;
-    PlayerEntity player;
+    private final Player player;
 
-    public CombatTimerComponent(PlayerEntity player) {
+    public CombatTimerComponent(Player player) {
         this.player = player;
     }
 
@@ -24,13 +24,24 @@ public class CombatTimerComponent implements Component {
         return System.currentTimeMillis() - lastDamageTime < durationMs;
     }
 
+    public long getRemainingTimeMs() {
+        long durationMs = OPAPCConfig.combatDurationSeconds * 1000L;
+        long remaining = durationMs - (System.currentTimeMillis() - lastDamageTime);
+        return Math.max(remaining, 0);
+    }
+
+    public int getRemainingTimeSeconds() {
+        long remainingMs = getRemainingTimeMs();
+        return (int) Math.ceil(remainingMs / 1000.0);
+    }
+
     @Override
-    public void readFromNbt(NbtCompound tag) {
+    public void readFromNbt(CompoundTag tag) {
         this.lastDamageTime = tag.getLong("LastDamageTime");
     }
 
     @Override
-    public void writeToNbt(NbtCompound tag) {
+    public void writeToNbt(CompoundTag tag) {
         tag.putLong("LastDamageTime", this.lastDamageTime);
     }
 }

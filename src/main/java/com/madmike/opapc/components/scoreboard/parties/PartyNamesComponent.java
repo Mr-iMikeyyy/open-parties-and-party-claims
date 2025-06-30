@@ -3,12 +3,12 @@ package com.madmike.opapc.components.scoreboard.parties;
 import com.madmike.opapc.components.OPAPCComponents;
 import com.madmike.opapc.data.parties.PartyName;
 import com.madmike.opapc.net.packets.TradeScreenRefreshS2CSender;
-import dev.onyxstudios.cca.api.v3.component.Component;
 import dev.onyxstudios.cca.api.v3.component.sync.AutoSyncedComponent;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.scoreboard.Scoreboard;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.scores.Scoreboard;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
@@ -16,7 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class PartyNamesComponent implements Component, AutoSyncedComponent {
+public class PartyNamesComponent implements dev.onyxstudios.cca.api.v3.component.Component, AutoSyncedComponent {
 
     private final Scoreboard provider;
     private final Map<UUID, PartyName> partyNameHashMap = new HashMap<>();
@@ -54,9 +54,9 @@ public class PartyNamesComponent implements Component, AutoSyncedComponent {
     }
 
     @Override
-    public void readFromNbt(NbtCompound tag) {
+    public void readFromNbt(CompoundTag tag) {
         partyNameHashMap.clear();
-        NbtList list = tag.getList("KnownParties", NbtCompound.COMPOUND_TYPE);
+        ListTag list = tag.getList("KnownParties", Tag.TAG_COMPOUND);
         for (int i = 0; i < list.size(); i++) {
             PartyName party = PartyName.fromNbt(list.getCompound(i));
             partyNameHashMap.put(party.getPartyId(), party);
@@ -64,8 +64,8 @@ public class PartyNamesComponent implements Component, AutoSyncedComponent {
     }
 
     @Override
-    public void writeToNbt(NbtCompound tag) {
-        NbtList list = new NbtList();
+    public void writeToNbt(CompoundTag tag) {
+        ListTag list = new ListTag();
         for (PartyName party : partyNameHashMap.values()) {
             list.add(party.toNbt());
         }

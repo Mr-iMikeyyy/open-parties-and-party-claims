@@ -3,7 +3,7 @@
 	"id": "opapc",
 	"version": "${version}",
 	"name": "open-parties-and-party-claims",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"description": "An overhaul to the open parties and claims mod to allow for cooperation in growing party claims and the ability to trade, raid, war, and more with other parties.",
 	"authors": [
 		"Mad Mike"
 	],
@@ -29,19 +29,27 @@
 		]
 	},
 	"mixins": [
-		"opapc.mixins.json",
-		{
-			"config": "opapc.client.mixins.json",
-			"environment": "client"
-		}
+		"opapc.mixins.json"
 	],
 	"depends": {
-		"fabricloader": ">=0.16.14",
+		"fabricloader": ">=0.16.10",
 		"minecraft": "~1.20.1",
 		"java": ">=17",
 		"fabric-api": "*"
 	},
 	"suggests": {
 		"another-mod": "*"
+	},
+	"custom": {
+		"cardinal-components": [
+			"opapc:unlocked_store_slots",
+			"opapc:combat_timer",
+			"opapc:tele_timer",
+			"opapc:offers",
+			"opapc:party_names",
+			"opapc:party_claims",
+			"opapc:offline_sales",
+			"opapc:sellers"
+		]
 	}
 }

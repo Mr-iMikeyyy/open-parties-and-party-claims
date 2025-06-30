@@ -1,6 +1,6 @@
 package com.madmike.opapc.data.parties;
 
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
 
 import java.util.UUID;
 
@@ -14,15 +14,15 @@ public class PartyName {
         this.name = name;
     }
 
-    public NbtCompound toNbt() {
-        NbtCompound nbt = new NbtCompound();
-        nbt.putUuid("PartyId", partyId);
+    public CompoundTag toNbt() {
+        CompoundTag nbt = new CompoundTag();
+        nbt.putUUID("PartyId", partyId);
         nbt.putString("Name", name);
         return nbt;
     }
 
-    public static PartyName fromNbt(NbtCompound nbt) {
-        UUID partyID = nbt.getUuid("PartyId");
+    public static PartyName fromNbt(CompoundTag nbt) {
+        UUID partyID = nbt.getUUID("PartyId");
         String name = nbt.getString("Name");
         return new PartyName(partyID, name);
     }

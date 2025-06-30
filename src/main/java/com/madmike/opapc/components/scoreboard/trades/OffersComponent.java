@@ -5,29 +5,26 @@ import com.glisco.numismaticoverhaul.currency.CurrencyComponent;
 import com.madmike.opapc.components.OPAPCComponents;
 import com.madmike.opapc.data.trades.Offer;
 import com.madmike.opapc.net.packets.TradeScreenRefreshS2CSender;
-import dev.onyxstudios.cca.api.v3.component.Component;
 import dev.onyxstudios.cca.api.v3.component.sync.AutoSyncedComponent;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.scoreboard.Scoreboard;
+import net.minecraft.network.chat.Component;
+import net.minecraft.ChatFormatting;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.scores.Scoreboard;
 import org.jetbrains.annotations.Nullable;
 import xaero.pac.common.server.api.OpenPACServerAPI;
-import xaero.pac.common.server.parties.party.api.IPartyManagerAPI;
-import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-public class OffersComponent implements Component, AutoSyncedComponent {
+public class OffersComponent implements dev.onyxstudios.cca.api.v3.component.Component, AutoSyncedComponent {
 
     private final Map<UUID, Offer> offers = new HashMap<>();
     private final Scoreboard provider;
@@ -35,7 +32,7 @@ public class OffersComponent implements Component, AutoSyncedComponent {
 
     public OffersComponent(Scoreboard provider, MinecraftServer server) {
         this.provider = provider;
-        this.server = server; // Removed unused 'server' parameter
+        this.server = server;
     }
 
     public Map<UUID, Offer> getOffers() {
@@ -51,9 +48,9 @@ public class OffersComponent implements Component, AutoSyncedComponent {
     public void removeOffer(UUID offerId) {
         Offer offer = offers.get(offerId);
         if (offer != null) {
-            ServerPlayerEntity seller = server.getPlayerManager().getPlayer(offer.getSellerId());
+            ServerPlayer seller = server.getPlayerList().getPlayer(offer.getSellerId());
             if (seller != null) {
-                seller.giveItemStack(offer.getItem());
+                seller.getInventory().placeItemBackInInventory(offer.getItem());
             }
             offers.remove(offerId);
             OPAPCComponents.OFFERS.sync(provider);
@@ -61,70 +58,62 @@ public class OffersComponent implements Component, AutoSyncedComponent {
         }
     }
 
-    public void buyOffer(UUID offerId, PlayerEntity buyer) {
-        IPartyManagerAPI partyManager = OpenPACServerAPI.get(server).getPartyManager();
-        UUID buyerId = buyer.getUuid();
-        IServerPartyAPI buyerParty = partyManager.getPartyByMember(buyerId);
+    public void buyOffer(UUID offerId, Player buyer) {
+        var partyManager = OpenPACServerAPI.get(server).getPartyManager();
+        UUID buyerId = buyer.getUUID();
+        var buyerParty = partyManager.getPartyByMember(buyerId);
 
         if (offers.containsKey(offerId)) {
             Offer offer = offers.get(offerId);
             UUID sellerId = offer.getSellerId();
-            IServerPartyAPI sellerParty = offer.getPartyId() != null
+            var sellerParty = offer.getPartyId() != null
                     ? partyManager.getPartyById(offer.getOfferId())
                     : null;
 
             double multiplier = 1.0;
-
-            // Determine economic relationship
             boolean buyerInParty = buyerParty != null;
             boolean sellerInParty = sellerParty != null;
 
             if (!buyerInParty && !sellerInParty) {
-                multiplier = 0.5; // scallywag to scallywag
+                multiplier = 0.5;
             } else if (buyerInParty && sellerInParty && buyerParty.isAlly(sellerParty.getId())) {
-                multiplier = 0.5; // allies
+                multiplier = 0.5;
             } else if (buyerInParty != sellerInParty) {
-                multiplier = 2.0; // one is a scallywag, the other is not
+                multiplier = 2.0;
             }
 
             long adjustedPrice = Math.round(offer.getPrice() * multiplier);
             CurrencyComponent buyerWallet = ModComponents.CURRENCY.get(buyer);
 
-            // Check if buyer can afford
             if (buyerWallet.getValue() < adjustedPrice) {
-                buyer.sendMessage(Text.literal("You can't afford this (" + adjustedPrice + " coins).").formatted(Formatting.RED), false);
+                buyer.displayClientMessage(Component.literal("You can't afford this (" + adjustedPrice + " coins).").withStyle(ChatFormatting.RED), false);
                 return;
             }
 
-            // Transfer item
             ItemStack stack = offer.getItem().copy();
-            if (!buyer.getInventory().insertStack(stack)) {
-                buyer.sendMessage(Text.literal("Not enough inventory space."), false);
+            if (!buyer.getInventory().add(stack)) {
+                buyer.displayClientMessage(Component.literal("Not enough inventory space."), false);
                 return;
             }
 
-            // Currency exchange
             buyerWallet.modify(-adjustedPrice);
 
-            ServerPlayerEntity seller = server.getPlayerManager() != null ? server.getPlayerManager().getPlayer(sellerId) : null;
-
+            ServerPlayer seller = server.getPlayerList().getPlayer(sellerId);
             if (seller != null) {
                 ModComponents.CURRENCY.get(seller).modify(adjustedPrice);
             } else {
                 OPAPCComponents.OFFLINE_SALES.get(provider).addSale(sellerId, adjustedPrice);
             }
 
-            //Update Seller Record
             OPAPCComponents.SELLERS.get(provider).addSale(sellerId, adjustedPrice);
 
-            // Remove offer and sync
             removeOffer(offerId);
 
-            buyer.sendMessage(Text.literal("Purchase successful for " + adjustedPrice + " coins!").formatted(Formatting.GOLD), false);
+            buyer.displayClientMessage(Component.literal("Purchase successful for " + adjustedPrice + " coins!").withStyle(ChatFormatting.GOLD), false);
             return;
         }
 
-        buyer.sendMessage(Text.literal("Offer not found.").formatted(Formatting.RED), false);
+        buyer.displayClientMessage(Component.literal("Offer not found.").withStyle(ChatFormatting.RED), false);
     }
 
     public Offer getOffer(UUID offerId) {
@@ -132,18 +121,18 @@ public class OffersComponent implements Component, AutoSyncedComponent {
     }
 
     @Override
-    public void readFromNbt(NbtCompound tag) {
+    public void readFromNbt(CompoundTag tag) {
         offers.clear();
-        NbtList list = tag.getList("Offers", NbtElement.COMPOUND_TYPE);
-        for (NbtElement e : list) {
-            Offer offer = Offer.fromNbt((NbtCompound) e);
+        ListTag list = tag.getList("Offers", Tag.TAG_COMPOUND);
+        for (Tag e : list) {
+            Offer offer = Offer.fromNbt((CompoundTag) e);
             offers.put(offer.getOfferId(), offer);
         }
     }
 
     @Override
-    public void writeToNbt(NbtCompound tag) {
-        NbtList list = new NbtList();
+    public void writeToNbt(CompoundTag tag) {
+        ListTag list = new ListTag();
         for (Offer offer : offers.values()) {
             list.add(offer.toNbt());
         }
@@ -151,11 +140,11 @@ public class OffersComponent implements Component, AutoSyncedComponent {
     }
 
     public void updatePartyForPlayer(UUID playerId, @Nullable UUID newPartyId) {
-        List<Offer> offersToChange = offers.values().stream().filter(e -> e.getSellerId().equals(playerId)).toList();
+        List<Offer> offersToChange = offers.values().stream()
+                .filter(e -> e.getSellerId().equals(playerId))
+                .toList();
         if (!offersToChange.isEmpty()) {
-            offersToChange.forEach(e -> {
-                e.setPartyId(newPartyId);
-            });
+            offersToChange.forEach(e -> e.setPartyId(newPartyId));
             OPAPCComponents.OFFERS.sync(this.provider);
         }
     }

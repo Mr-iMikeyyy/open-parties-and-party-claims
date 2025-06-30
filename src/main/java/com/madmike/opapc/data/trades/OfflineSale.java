@@ -1,19 +1,20 @@
 package com.madmike.opapc.data.trades;
 
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
 
 import java.util.UUID;
 
 public record OfflineSale(UUID sellerID, long profitAmount) {
-    public NbtCompound toNbt() {
-        NbtCompound nbt = new NbtCompound();
-        nbt.putUuid("SellerID", sellerID);
+
+    public CompoundTag toNbt() {
+        CompoundTag nbt = new CompoundTag();
+        nbt.putUUID("SellerID", sellerID);
         nbt.putLong("Profit", profitAmount);
         return nbt;
     }
 
-    public static OfflineSale fromNbt(NbtCompound nbt) {
-        UUID sellerId = nbt.getUuid("SellerID");
+    public static OfflineSale fromNbt(CompoundTag nbt) {
+        UUID sellerId = nbt.getUUID("SellerID");
         long profit = nbt.getLong("Profit");
         return new OfflineSale(sellerId, profit);
     }

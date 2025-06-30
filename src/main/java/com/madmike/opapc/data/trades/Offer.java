@@ -1,8 +1,8 @@
 package com.madmike.opapc.data.trades;
 
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.PacketByteBuf;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 import java.util.UUID;
 
@@ -22,15 +22,15 @@ public class Offer {
         this.partyId = partyId;
     }
 
-    public NbtCompound toNbt() {
-        NbtCompound nbt = new NbtCompound();
-        nbt.putUuid("OfferID", this.offerId);
-        nbt.putUuid("Seller", this.sellerId);
-        nbt.put("Item", this.item.writeNbt(new NbtCompound()));
+    public CompoundTag toNbt() {
+        CompoundTag nbt = new CompoundTag();
+        nbt.putUUID("OfferID", this.offerId);
+        nbt.putUUID("Seller", this.sellerId);
+        nbt.put("Item", this.item.save(new CompoundTag()));
         nbt.putLong("Price", this.price);
 
         if (this.partyId != null) {
-            nbt.putUuid("PartyID", this.partyId);
+            nbt.putUUID("PartyID", this.partyId);
             nbt.putBoolean("HasParty", true);
         } else {
             nbt.putBoolean("HasParty", false);
@@ -39,32 +39,32 @@ public class Offer {
         return nbt;
     }
 
-    public static Offer fromNbt(NbtCompound nbt) {
-        UUID offerId = nbt.getUuid("OfferID"); // ✅ match case
-        UUID seller = nbt.getUuid("Seller");
-        ItemStack item = ItemStack.fromNbt(nbt.getCompound("Item"));
+    public static Offer fromNbt(CompoundTag nbt) {
+        UUID offerId = nbt.getUUID("OfferID");
+        UUID seller = nbt.getUUID("Seller");
+        ItemStack item = ItemStack.of(nbt.getCompound("Item"));
         long price = nbt.getLong("Price");
 
-        UUID party = nbt.getBoolean("HasParty") ? nbt.getUuid("PartyID") : null; // ✅ match case
+        UUID party = nbt.getBoolean("HasParty") ? nbt.getUUID("PartyID") : null;
 
         return new Offer(offerId, seller, item, price, party);
     }
 
-    public void writeToBuf(PacketByteBuf buf) {
-        buf.writeUuid(offerId);
-        buf.writeUuid(sellerId);
-        buf.writeItemStack(item);
+    public void writeToBuf(FriendlyByteBuf buf) {
+        buf.writeUUID(offerId);
+        buf.writeUUID(sellerId);
+        buf.writeItem(item);
         buf.writeLong(price);
         buf.writeBoolean(partyId != null);
-        if (partyId != null) buf.writeUuid(partyId);
+        if (partyId != null) buf.writeUUID(partyId);
     }
 
-    public static Offer readFromBuf(PacketByteBuf buf) {
-        UUID offerId = buf.readUuid();
-        UUID seller = buf.readUuid();
-        ItemStack item = buf.readItemStack();
+    public static Offer readFromBuf(FriendlyByteBuf buf) {
+        UUID offerId = buf.readUUID();
+        UUID seller = buf.readUUID();
+        ItemStack item = buf.readItem();
         long price = buf.readLong();
-        UUID party = buf.readBoolean() ? buf.readUuid() : null;
+        UUID party = buf.readBoolean() ? buf.readUUID() : null;
         return new Offer(offerId, seller, item, price, party);
     }
 

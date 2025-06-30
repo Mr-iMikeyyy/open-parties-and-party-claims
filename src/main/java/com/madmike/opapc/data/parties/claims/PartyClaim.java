@@ -1,15 +1,16 @@
 package com.madmike.opapc.data.parties.claims;
 
 import com.madmike.opapc.features.entity.PartyClaimBlockEntity;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtList;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
@@ -17,6 +18,7 @@ import java.util.Map;
 import java.util.UUID;
 
 public class PartyClaim {
+
     private final Map<UUID, Donor> donations = new HashMap<>();
     private UUID partyId;
     private int boughtClaims = 0;
@@ -50,16 +52,16 @@ public class PartyClaim {
 
     public @Nullable PartyClaimBlockEntity getBlockEntity(MinecraftServer server) {
         if (pcbPos == null) return null;
-        ServerWorld world = server.getWorld(World.OVERWORLD);
+        ServerLevel world = server.getLevel(Level.OVERWORLD);
         if (world == null) return null;
         BlockEntity be = world.getBlockEntity(pcbPos);
         return be instanceof PartyClaimBlockEntity claimBe ? claimBe : null;
     }
 
-    public NbtCompound writeToNbt() {
-        NbtCompound nbt = new NbtCompound();
+    public CompoundTag writeToNbt() {
+        CompoundTag nbt = new CompoundTag();
 
-        nbt.putUuid("PartyId", partyId);
+        nbt.putUUID("PartyId", partyId);
         nbt.putInt("BoughtClaims", boughtClaims);
         nbt.putLong("CurrentDonationAmount", currentDonationAmount);
 
@@ -69,7 +71,7 @@ public class PartyClaim {
             nbt.putInt("PcbZ", pcbPos.getZ());
         }
 
-        NbtList donorList = new NbtList();
+        ListTag donorList = new ListTag();
         for (Donor donor : donations.values()) {
             donorList.add(donor.toNbt());
         }
@@ -78,22 +80,21 @@ public class PartyClaim {
         return nbt;
     }
 
-    public void readFromNbt(NbtCompound nbt) {
-        this.partyId = nbt.getUuid("PartyId");
+    public void readFromNbt(CompoundTag nbt) {
+        this.partyId = nbt.getUUID("PartyId");
         this.boughtClaims = nbt.getInt("BoughtClaims");
         this.currentDonationAmount = nbt.getLong("CurrentDonationAmount");
 
-        if (nbt.contains("PcbX") && nbt.contains("PcbY") && nbt.contains("PcbZ") && nbt.contains("PcbDimension")) {
+        if (nbt.contains("PcbX") && nbt.contains("PcbY") && nbt.contains("PcbZ")) {
             this.pcbPos = new BlockPos(nbt.getInt("PcbX"), nbt.getInt("PcbY"), nbt.getInt("PcbZ"));
-            Identifier dimId = new Identifier(nbt.getString("PcbDimension"));
         } else {
             this.pcbPos = null;
         }
 
         this.donations.clear();
-        NbtList donorList = nbt.getList("Donations", NbtElement.COMPOUND_TYPE);
-        for (NbtElement element : donorList) {
-            Donor donor = Donor.fromNbt((NbtCompound) element);
+        ListTag donorList = nbt.getList("Donations", Tag.TAG_COMPOUND);
+        for (Tag element : donorList) {
+            Donor donor = Donor.fromNbt((CompoundTag) element);
             this.donations.put(donor.playerId(), donor);
         }
     }
@@ -117,8 +118,8 @@ public class PartyClaim {
 
     public void deletePcbBlock(MinecraftServer server) {
         if (pcbPos != null) {
-            ServerWorld world = server.getWorld(World.OVERWORLD);
-            if (world != null && world.isChunkLoaded(pcbPos)) {
+            ServerLevel world = server.getLevel(Level.OVERWORLD);
+            if (world != null && world.isLoaded(pcbPos)) {
                 world.removeBlock(pcbPos, false);
             }
             pcbPos = null;

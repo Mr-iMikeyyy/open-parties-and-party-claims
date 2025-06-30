@@ -4,7 +4,8 @@
   "compatibilityLevel": "JAVA_17",
   "mixins": [
     "ClaimsClaimCommandsMixin",
-    "WitherSkullBlockMixin"
+    "WitherSkullBlockMixin",
+    "PartyManagerMixin"
   ],
   "injectors": {
     "defaultRequire": 1

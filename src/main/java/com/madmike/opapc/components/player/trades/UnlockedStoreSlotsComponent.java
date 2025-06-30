@@ -2,17 +2,15 @@ package com.madmike.opapc.components.player.trades;
 
 import com.madmike.opapc.components.OPAPCComponents;
 import dev.onyxstudios.cca.api.v3.component.Component;
-import dev.onyxstudios.cca.api.v3.component.sync.AutoSyncedComponent;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.entity.player.Player;
 
-public class UnlockedStoreSlotsComponent implements Component, AutoSyncedComponent {
+public class UnlockedStoreSlotsComponent implements Component {
 
-    private final PlayerEntity player;
+    private final Player player;
     private int unlockedSlots = 5;
 
-    public UnlockedStoreSlotsComponent(PlayerEntity player) {
+    public UnlockedStoreSlotsComponent(Player player) {
         this.player = player;
     }
 
@@ -32,21 +30,17 @@ public class UnlockedStoreSlotsComponent implements Component, AutoSyncedCompone
 
     public void reset() {
         this.unlockedSlots = 5;
-       OPAPCComponents.UNLOCKED_STORE_SLOTS.sync(player);
+        OPAPCComponents.UNLOCKED_STORE_SLOTS.sync(player);
     }
 
     @Override
-    public void readFromNbt(NbtCompound tag) {
+    public void readFromNbt(CompoundTag tag) {
         this.unlockedSlots = tag.getInt("UnlockedSlots");
     }
 
     @Override
-    public void writeToNbt(NbtCompound tag) {
+    public void writeToNbt(CompoundTag tag) {
         tag.putInt("UnlockedSlots", this.unlockedSlots);
     }
 
-    @Override
-    public boolean shouldSyncWith(ServerPlayerEntity player) {
-        return player == this.player; // only sync with the provider itself
-    }
 }

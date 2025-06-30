@@ -2,11 +2,11 @@ package com.madmike.opapc.components.scoreboard.trades;
 
 import com.madmike.opapc.data.trades.SellerInfo;
 import dev.onyxstudios.cca.api.v3.component.Component;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.scoreboard.Scoreboard;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.scores.Scoreboard;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -58,19 +58,19 @@ public class SellersComponent implements Component {
     }
 
     @Override
-    public void readFromNbt(NbtCompound nbt) {
+    public void readFromNbt(CompoundTag nbt) {
         sellers.clear();
-        NbtList sellerList = nbt.getList("Sellers", NbtElement.COMPOUND_TYPE);
-        for (NbtElement element : sellerList) {
-            NbtCompound sellerNbt = (NbtCompound) element;
+        ListTag sellerList = nbt.getList("Sellers", Tag.TAG_COMPOUND);
+        for (Tag element : sellerList) {
+            CompoundTag sellerNbt = (CompoundTag) element;
             SellerInfo info = SellerInfo.fromNbt(sellerNbt);
             sellers.put(info.id(), info);
         }
     }
 
     @Override
-    public void writeToNbt(NbtCompound nbt) {
-        NbtList sellerList = new NbtList();
+    public void writeToNbt(CompoundTag nbt) {
+        ListTag sellerList = new ListTag();
         for (SellerInfo info : sellers.values()) {
             sellerList.add(info.toNbt());
         }

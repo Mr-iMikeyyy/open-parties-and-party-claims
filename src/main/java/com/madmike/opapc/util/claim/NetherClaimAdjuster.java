@@ -1,9 +1,8 @@
 package com.madmike.opapc.util.claim;
 
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.world.World;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 import xaero.pac.common.server.claims.api.IServerClaimsManagerAPI;
 
 import java.util.HashSet;
@@ -12,13 +11,14 @@ import java.util.Set;
 import java.util.UUID;
 
 public class NetherClaimAdjuster {
+
     public static void mirrorOverworldClaimsToNether(
             IServerClaimsManagerAPI cm,
             UUID playerId,
             List<ChunkPos> overworldChunks,
             List<ChunkPos> currentNetherClaims
     ) {
-        Identifier netherId = World.NETHER.getValue();
+        ResourceLocation netherId = Level.NETHER.location();
 
         Set<ChunkPos> netherChunksToClaim = new HashSet<>();
         Set<ChunkPos> currentClaimsSet = new HashSet<>(currentNetherClaims);

@@ -1,52 +1,44 @@
 package com.madmike.opapc.util.claim;
 
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.world.World;
-import xaero.pac.common.claims.player.IPlayerChunkClaim;
-import xaero.pac.common.claims.player.IPlayerClaimPosList;
-import xaero.pac.common.claims.player.IPlayerDimensionClaims;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 import xaero.pac.common.claims.player.api.IPlayerClaimPosListAPI;
-import xaero.pac.common.server.claims.IServerClaimsManager;
-import xaero.pac.common.server.claims.IServerDimensionClaimsManager;
-import xaero.pac.common.server.claims.IServerRegionClaims;
-import xaero.pac.common.server.claims.player.IServerPlayerClaimInfo;
+import xaero.pac.common.server.api.OpenPACServerAPI;
 import xaero.pac.common.server.claims.player.api.IServerPlayerClaimInfoAPI;
 import xaero.pac.common.server.parties.party.IServerParty;
+import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 
 import java.util.*;
 
 public class ClaimAdjacencyChecker {
 
     public static boolean wouldBreakAdjacency(
-            IServerParty<?, ?, ?> party,
-            RegistryKey<World> dimension,
+            IServerPartyAPI party,
+            ResourceKey<Level> dimension,
             ChunkPos toUnclaim,
-            IServerClaimsManager<IPlayerChunkClaim, IServerPlayerClaimInfo<IPlayerDimensionClaims<IPlayerClaimPosList>>, IServerDimensionClaimsManager<IServerRegionClaims>> claimsManager
+            OpenPACServerAPI api
     ) {
-        // Get the party leader’s claim info
-        IServerPlayerClaimInfoAPI leaderInfo = claimsManager.getPlayerInfoStream()
+        IServerPlayerClaimInfoAPI leaderInfo = api.getServerClaimsManager().getPlayerInfoStream()
                 .filter(e -> e.getPlayerId().equals(party.getOwner().getUUID()))
                 .findFirst()
                 .orElse(null);
 
         if (leaderInfo == null) return false;
 
-        List<IPlayerClaimPosListAPI> allLists = leaderInfo.getDimension(dimension.getValue()).getStream().toList();
+        List<IPlayerClaimPosListAPI> allLists = leaderInfo.getDimension(dimension.location()).getStream().toList();
         Set<ChunkPos> allClaims = new HashSet<>();
 
         for (IPlayerClaimPosListAPI list : allLists) {
             list.getStream().forEach(allClaims::add);
         }
 
-        // Remove the chunk being unclaimed
         allClaims.remove(toUnclaim);
 
         if (allClaims.isEmpty()) {
-            return true; // If no claims remain, it's trivially connected
+            return true; // If no claims remain, they are trivially connected
         }
 
-        // BFS from one remaining chunk
         Set<ChunkPos> visited = new HashSet<>();
         Queue<ChunkPos> toVisit = new ArrayDeque<>();
         ChunkPos start = allClaims.iterator().next();
@@ -63,35 +55,33 @@ public class ClaimAdjacencyChecker {
             }
         }
 
-        return visited.size() != allClaims.size(); // disconnected if BFS didn't reach all
+        return visited.size() != allClaims.size(); // True if disconnected after removal
     }
 
     public static boolean isAdjacentToExistingClaim(
-            IServerParty<?, ?, ?> party,
-            RegistryKey<World> dimension,
+            IServerPartyAPI party,
+            ResourceKey<Level> dimension,
             ChunkPos targetChunk,
-            IServerClaimsManager<IPlayerChunkClaim, IServerPlayerClaimInfo<IPlayerDimensionClaims<IPlayerClaimPosList>>, IServerDimensionClaimsManager<IServerRegionClaims>> claimsManager
+            OpenPACServerAPI api
     ) {
-        IServerPlayerClaimInfoAPI leaderInfo = claimsManager.getPlayerInfoStream()
+        IServerPlayerClaimInfoAPI leaderInfo = api.getServerClaimsManager().getPlayerInfoStream()
                 .filter(e -> e.getPlayerId().equals(party.getOwner().getUUID()))
                 .findFirst()
                 .orElse(null);
 
         if (leaderInfo == null) return false;
 
-        List<IPlayerClaimPosListAPI> allLists = leaderInfo.getDimension(dimension.getValue()).getStream().toList();
+        List<IPlayerClaimPosListAPI> allLists = leaderInfo.getDimension(dimension.location()).getStream().toList();
         Set<ChunkPos> allClaims = new HashSet<>();
 
         for (IPlayerClaimPosListAPI list : allLists) {
             list.getStream().forEach(allClaims::add);
         }
 
-        // First claim is always allowed
         if (allClaims.isEmpty()) {
-            return true;
+            return true; // First claim always allowed
         }
 
-        // Check for adjacency
         for (ChunkPos neighbor : getNeighbors(targetChunk)) {
             if (allClaims.contains(neighbor)) {
                 return true;

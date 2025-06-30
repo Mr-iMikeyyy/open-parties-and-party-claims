@@ -1,14 +1,15 @@
 package com.madmike.opapc.features.entity;
 
 import com.madmike.opapc.features.OPAPCFeatures;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.UUID;
 
 public class PartyClaimBlockEntity extends BlockEntity {
+
     private UUID partyId;
 
     public PartyClaimBlockEntity(BlockPos pos, BlockState state) {
@@ -21,22 +22,22 @@ public class PartyClaimBlockEntity extends BlockEntity {
 
     public void setPartyId(UUID partyId) {
         this.partyId = partyId;
-        markDirty();
+        setChanged();
     }
 
     @Override
-    public void readNbt(NbtCompound nbt) {
-        super.readNbt(nbt);
-        if (nbt.containsUuid("PartyId")) {
-            partyId = nbt.getUuid("PartyId");
+    public void load(CompoundTag tag) {
+        super.load(tag);
+        if (tag.hasUUID("PartyId")) {
+            partyId = tag.getUUID("PartyId");
         }
     }
 
     @Override
-    protected void writeNbt(NbtCompound nbt) {
-        super.writeNbt(nbt);
+    protected void saveAdditional(CompoundTag tag) {
+        super.saveAdditional(tag);
         if (partyId != null) {
-            nbt.putUuid("PartyId", partyId);
+            tag.putUUID("PartyId", partyId);
         }
     }
 }

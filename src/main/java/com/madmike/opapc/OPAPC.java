@@ -1,7 +1,9 @@
 package com.madmike.opapc;
 
 import com.madmike.opapc.command.CommandsManager;
+import com.madmike.opapc.components.OPAPCComponents;
 import com.madmike.opapc.event.EventManager;
+import com.madmike.opapc.features.OPAPCFeatures;
 import com.madmike.opapc.net.ServerReceiver;
 import net.fabricmc.api.ModInitializer;
 
@@ -28,6 +30,8 @@ public class OPAPC implements ModInitializer {
 
 		// Register this server-side
 		ServerReceiver.register();
+
+		OPAPCFeatures.register();
 
 		LOGGER.info("OPATR Initialized! Happy Trading!");
 	}

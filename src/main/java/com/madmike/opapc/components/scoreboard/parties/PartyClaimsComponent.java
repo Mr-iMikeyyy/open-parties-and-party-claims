@@ -1,22 +1,19 @@
 package com.madmike.opapc.components.scoreboard.parties;
 
 import com.madmike.opapc.data.parties.claims.PartyClaim;
-import dev.onyxstudios.cca.api.v3.component.Component;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.scoreboard.Scoreboard;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.scores.Scoreboard;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class PartyClaimsComponent implements Component {
+public class PartyClaimsComponent implements dev.onyxstudios.cca.api.v3.component.Component {
     private final Scoreboard scoreboard;
     private final MinecraftServer server;
-
-    // Key: Party UUID
     private final Map<UUID, PartyClaim> partyClaims = new HashMap<>();
 
     public PartyClaimsComponent(Scoreboard scoreboard, MinecraftServer server) {
@@ -24,46 +21,41 @@ public class PartyClaimsComponent implements Component {
         this.server = server;
     }
 
-    // 🔽 Deserialize from NBT
     @Override
-    public void readFromNbt(NbtCompound nbt) {
+    public void readFromNbt(CompoundTag nbt) {
         this.partyClaims.clear();
 
-        NbtList claimsList = nbt.getList("PartyClaims", NbtElement.COMPOUND_TYPE);
-        for (NbtElement element : claimsList) {
-            NbtCompound claimNbt = (NbtCompound) element;
-            UUID partyId = claimNbt.getUuid("PartyId");
+        ListTag claimsList = nbt.getList("PartyClaims", Tag.TAG_COMPOUND);
+        for (Tag element : claimsList) {
+            CompoundTag claimTag = (CompoundTag) element;
+            UUID partyId = claimTag.getUUID("PartyId");
 
             PartyClaim claim = new PartyClaim(partyId);
-            claim.readFromNbt(claimNbt);
+            claim.readFromNbt(claimTag);
 
             this.partyClaims.put(partyId, claim);
         }
     }
 
-    // 🔼 Serialize to NBT
     @Override
-    public void writeToNbt(NbtCompound nbt) {
-        NbtList claimsList = new NbtList();
+    public void writeToNbt(CompoundTag nbt) {
+        ListTag claimsList = new ListTag();
         for (PartyClaim claim : partyClaims.values()) {
-            NbtCompound claimNbt = claim.writeToNbt();
-            claimNbt.putUuid("PartyId", claim.getPartyId()); // Ensure the ID is saved
-            claimsList.add(claimNbt);
+            CompoundTag claimTag = claim.writeToNbt();
+            claimTag.putUUID("PartyId", claim.getPartyId());
+            claimsList.add(claimTag);
         }
         nbt.put("PartyClaims", claimsList);
     }
 
-    // 🔍 Create claim by party ID (creates if missing)
     public PartyClaim createClaim(UUID partyId) {
         return partyClaims.computeIfAbsent(partyId, PartyClaim::new);
     }
 
-    // ❓ Lookup claim without creating
     public PartyClaim getClaim(UUID partyId) {
         return partyClaims.get(partyId);
     }
 
-    // 📊 Getters for infrastructure
     public Map<UUID, PartyClaim> getAllClaims() {
         return partyClaims;
     }
@@ -78,7 +70,9 @@ public class PartyClaimsComponent implements Component {
 
     public void removeClaim(UUID partyId) {
         PartyClaim claim = partyClaims.get(partyId);
-        claim.deletePcbBlock(server);
-        partyClaims.remove(partyId);
+        if (claim != null) {
+            claim.deletePcbBlock(server);
+            partyClaims.remove(partyId);
+        }
     }
 }
