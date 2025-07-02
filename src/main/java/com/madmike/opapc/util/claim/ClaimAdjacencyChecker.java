@@ -6,7 +6,6 @@ import net.minecraft.world.level.Level;
 import xaero.pac.common.claims.player.api.IPlayerClaimPosListAPI;
 import xaero.pac.common.server.api.OpenPACServerAPI;
 import xaero.pac.common.server.claims.player.api.IServerPlayerClaimInfoAPI;
-import xaero.pac.common.server.parties.party.IServerParty;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 
 import java.util.*;

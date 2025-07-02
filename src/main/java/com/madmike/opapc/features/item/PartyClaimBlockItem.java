@@ -12,6 +12,7 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import org.jetbrains.annotations.NotNull;
 import xaero.pac.common.claims.player.api.IPlayerChunkClaimAPI;
 import xaero.pac.common.server.api.OpenPACServerAPI;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
@@ -23,7 +24,7 @@ public class PartyClaimBlockItem extends BlockItem {
     }
 
     @Override
-    public InteractionResult place(BlockPlaceContext context) {
+    public @NotNull InteractionResult place(BlockPlaceContext context) {
         var player = context.getPlayer();
         if (!(player instanceof ServerPlayer serverPlayer)) {
             return InteractionResult.FAIL;

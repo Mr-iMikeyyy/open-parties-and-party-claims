@@ -57,12 +57,13 @@ dependencies {
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-	modImplementation("maven.modrinth:numismatic-overhaul:0.2.14+1.20")
+
 	modImplementation("io.wispforest:owo-lib:0.11.2+1.20")
 	modImplementation("dev.onyxstudios.cardinal-components-api:cardinal-components-base:5.2.3")
 	modImplementation("dev.onyxstudios.cardinal-components-api:cardinal-components-entity:5.2.3") // for players
 	modImplementation("dev.onyxstudios.cardinal-components-api:cardinal-components-scoreboard:5.2.3") // for scoreboard/global
 
+	modImplementation("maven.modrinth:numismatic-overhaul:0.2.14+1.20")
 	modImplementation("maven.modrinth:open-parties-and-claims:fabric-1.20.1-0.24.0")
 
 	implementation 'com.electronwill.night-config:toml:3.6.0'
