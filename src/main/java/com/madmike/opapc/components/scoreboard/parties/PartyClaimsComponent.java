@@ -6,6 +6,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.scores.Scoreboard;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -38,7 +39,7 @@ public class PartyClaimsComponent implements dev.onyxstudios.cca.api.v3.componen
     }
 
     @Override
-    public void writeToNbt(CompoundTag nbt) {
+    public void writeToNbt(@NotNull CompoundTag nbt) {
         ListTag claimsList = new ListTag();
         for (PartyClaim claim : partyClaims.values()) {
             CompoundTag claimTag = claim.writeToNbt();
@@ -71,7 +72,6 @@ public class PartyClaimsComponent implements dev.onyxstudios.cca.api.v3.componen
     public void removeClaim(UUID partyId) {
         PartyClaim claim = partyClaims.get(partyId);
         if (claim != null) {
-            claim.deletePcbBlock(server);
             partyClaims.remove(partyId);
         }
     }

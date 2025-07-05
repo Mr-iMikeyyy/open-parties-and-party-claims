@@ -70,7 +70,7 @@ public class ClaimAdjacencyChecker {
 
         if (leaderInfo == null) return false;
 
-        List<IPlayerClaimPosListAPI> allLists = leaderInfo.getDimension(dimension.location()).getStream().toList();
+        List<IPlayerClaimPosListAPI> allLists = leaderInfo.getDimension(Level.OVERWORLD.location()).getStream().toList();
         Set<ChunkPos> allClaims = new HashSet<>();
 
         for (IPlayerClaimPosListAPI list : allLists) {

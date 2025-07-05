@@ -65,6 +65,7 @@ dependencies {
 
 	modImplementation("maven.modrinth:numismatic-overhaul:0.2.14+1.20")
 	modImplementation("maven.modrinth:open-parties-and-claims:fabric-1.20.1-0.24.0")
+	modImplementation("maven.modrinth:xaeros-world-map:Fwao7ZwU")
 
 	implementation 'com.electronwill.night-config:toml:3.6.0'
 

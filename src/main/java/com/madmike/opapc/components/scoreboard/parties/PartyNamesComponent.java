@@ -27,8 +27,8 @@ public class PartyNamesComponent implements dev.onyxstudios.cca.api.v3.component
         this.server = server;
     }
 
-    public Collection<PartyName> getPartyNameHashMap() {
-        return partyNameHashMap.values();
+    public Map<UUID, PartyName> getPartyNameHashMap() {
+        return partyNameHashMap;
     }
 
     public @Nullable PartyName get(UUID id) {
@@ -46,7 +46,7 @@ public class PartyNamesComponent implements dev.onyxstudios.cca.api.v3.component
         }
     }
 
-    public void removeParty(UUID id) {
+    public void removeParty(UUID id) { //TODO OOOOOOOOOOOOOOOOOOOOOOOOOO
         if (partyNameHashMap.remove(id) != null) {
             OPAPCComponents.PARTY_NAMES.sync(this.provider);
             TradeScreenRefreshS2CSender.sendRebuildTabsToAll(server);

@@ -152,7 +152,7 @@ public class TradingScreen extends BaseOwoScreen<FlowLayout> {
                 List<UUID> allyIDList = shopperParty.getAllyPartiesStream().map(IPartyAllyAPI::getPartyId).toList();
                 allyIDList.forEach(e -> tabs.add(new TradingScreenTab(partyNames.get(e) + " (Ally)", e)));
 
-                for (UUID partyID : partyNames.getPartyNameHashMap().stream().map(PartyName::getPartyId).toList()) {
+                for (UUID partyID : partyNames.getPartyNameHashMap().keySet().stream().toList()) {
                     if (!allyIDList.contains(partyID) && !partyID.equals(shopperParty.getId())) {
                         tabs.add(new TradingScreenTab(Objects.requireNonNull(partyNames.get(partyID)).getName(), partyID));
                     }
@@ -160,7 +160,7 @@ public class TradingScreen extends BaseOwoScreen<FlowLayout> {
                 tabs.add(new TradingScreenTab("Scallywag", scallywagsTabID));
             } else {
                 tabs.add(new TradingScreenTab("Scallywag", scallywagsTabID));
-                for (UUID partyID : partyNames.getPartyNameHashMap().stream().map(PartyName::getPartyId).toList()) {
+                for (UUID partyID : partyNames.getPartyNameHashMap().keySet().stream().toList()) {
                     tabs.add(new TradingScreenTab(partyNames.get(partyID).getName(), partyID));
                 }
             }
@@ -177,7 +177,7 @@ public class TradingScreen extends BaseOwoScreen<FlowLayout> {
         if (world != null) {
             Scoreboard sb = world.getScoreboard();
             if (sb != null) {
-                allOffers = OPAPCComponents.OFFERS.get(Minecraft.getInstance().level.getScoreboard()).getOffers();
+                allOffers = OPAPCComponents.OFFERS.get(sb).getOffers();
             }
         }
 
