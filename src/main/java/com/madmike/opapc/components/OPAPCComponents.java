@@ -9,6 +9,7 @@ import com.madmike.opapc.components.scoreboard.parties.PartyClaimsComponent;
 import com.madmike.opapc.components.scoreboard.trades.OffersComponent;
 import com.madmike.opapc.components.scoreboard.trades.OfflineSalesComponent;
 import com.madmike.opapc.components.scoreboard.trades.SellersComponent;
+import com.madmike.opapc.components.scoreboard.war.WarStatsComponent;
 import dev.onyxstudios.cca.api.v3.component.ComponentKey;
 import dev.onyxstudios.cca.api.v3.component.ComponentRegistryV3;
 import dev.onyxstudios.cca.api.v3.entity.EntityComponentFactoryRegistry;
@@ -44,6 +45,9 @@ public class OPAPCComponents implements ScoreboardComponentInitializer, EntityCo
     public static final ComponentKey<SellersComponent> SELLERS =
             ComponentRegistryV3.INSTANCE.getOrCreate(new ResourceLocation(OPAPC.MOD_ID, "sellers"), SellersComponent.class);
 
+    public static final ComponentKey<WarStatsComponent> WAR_STATS =
+            ComponentRegistryV3.INSTANCE.getOrCreate(new ResourceLocation(OPAPC.MOD_ID, "war_stats"), WarStatsComponent.class);
+
     @Override
     public void registerEntityComponentFactories(EntityComponentFactoryRegistry registry) {
         registry.registerForPlayers(UNLOCKED_STORE_SLOTS, UnlockedStoreSlotsComponent::new, RespawnCopyStrategy.ALWAYS_COPY);
@@ -58,5 +62,6 @@ public class OPAPCComponents implements ScoreboardComponentInitializer, EntityCo
         registry.registerScoreboardComponent(PARTY_CLAIMS, PartyClaimsComponent::new);
         registry.registerScoreboardComponent(OFFLINE_SALES, OfflineSalesComponent::new);
         registry.registerScoreboardComponent(SELLERS, SellersComponent::new);
+        registry.registerScoreboardComponent(WAR_STATS, WarStatsComponent::new);
     }
 }

@@ -10,6 +10,7 @@ import com.madmike.opapc.data.parties.claims.Donor;
 import com.madmike.opapc.data.parties.claims.PartyClaim;
 import com.madmike.opapc.util.CurrencyUtil;
 import com.madmike.opapc.util.claim.ClaimAdjacencyChecker;
+import com.madmike.opapc.war.WarManager;
 import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -40,6 +41,7 @@ import static com.madmike.opapc.command.commands.trades.Top3CommandHandler.handl
 import static com.madmike.opapc.command.commands.trades.TotalsCommandHandler.handleTotalsCommand;
 import static com.madmike.opapc.command.commands.trades.UpgradeCommandHandler.handleUpgradeCommand;
 import static com.madmike.opapc.command.commands.claims.ListPartyClaimsCommandHandler.handleListPartyClaimsCommand;
+import static com.madmike.opapc.util.claim.NetherClaimAdjuster.mirrorOverworldClaimsToNether;
 import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
 
@@ -109,6 +111,9 @@ public class CommandsManager {
 
             dispatcher.register(literal("home")
                     .executes(ctx -> {
+
+                        //TODO check if in a claim or raid and deny if so
+
                         ServerPlayer player = ctx.getSource().getPlayer();
                         if (player == null) return 0;
 
@@ -137,6 +142,8 @@ public class CommandsManager {
 
             dispatcher.register(literal("guild")
                     .executes(ctx -> {
+
+                        //TODO check if in war and deny if so
                         ServerPlayer player = ctx.getSource().getPlayer();
                         if (player == null) return 0;
 
@@ -210,6 +217,7 @@ public class CommandsManager {
                             player.sendSystemMessage(Component.literal("Your guild's teleport spot needs to be within your claim."));
                             return 0;
                         }
+
                         claim.setTeleportPos(player.getOnPos());
                         player.sendSystemMessage(Component.literal("Guild Teleport Set!"));
                         return 1;
@@ -292,23 +300,23 @@ public class CommandsManager {
                             player.sendSystemMessage(result.getResultType().message);
                             if (result.getResultType().success) {
                                 comp.createClaim(party.getId());
+                                mirrorOverworldClaimsToNether(cm, player);
                                 return 1;
                             }
                         }
 
-                        int unlockedPartyClaims = partyClaim.getBoughtClaims();
                         IServerPlayerClaimInfoAPI info = cm.getPlayerInfo(player.getUUID());
                         int totalOverworldClaims = info.getDimension(Level.OVERWORLD.location())
                                 .getStream()
                                 .mapToInt(IPlayerClaimPosListAPI::getCount)
                                 .sum();
 
-                        if (totalOverworldClaims >= unlockedPartyClaims) {
+                        if (totalOverworldClaims >= partyClaim.getBoughtClaims()) {
                             ctx.getSource().sendFailure(Component.literal("You've run out of party claims."));
                             return 0;
                         }
 
-                        if (!ClaimAdjacencyChecker.isAdjacentToExistingClaim(party, player.level().dimension(), target, api)) {
+                        if (!ClaimAdjacencyChecker.isAdjacentToExistingClaim(player, target, api)) {
                             ctx.getSource().sendFailure(Component.literal("Claim must be adjacent to an existing party claim."));
                             return 0;
                         }
@@ -349,7 +357,7 @@ public class CommandsManager {
                         ChunkPos target = player.chunkPosition();
 
                         // Unclaim logic: ensure unclaim does not break adjacency/contiguity
-                        if (!ClaimAdjacencyChecker.wouldBreakAdjacency(party, player.level().dimension(), target, api)) {
+                        if (ClaimAdjacencyChecker.wouldBreakAdjacency(player, target, api)) {
                             ctx.getSource().sendFailure(Component.literal("You cannot unclaim a chunk that would split your party's territory."));
                             return 0;
                         }
@@ -477,7 +485,7 @@ public class CommandsManager {
                                         : server.getProfileCache().get(entry.getKey()).map(GameProfile::getName).orElse("Unknown");
 
                                 ctx.getSource().sendSystemMessage(Component.literal(
-                                        String.format("§b%d. §a%s §7- §6%d coins", i + 1, donatorName, entry.getValue().amount())
+                                        String.format("§b%d. §a%s §7- §6%d Gold", i + 1, donatorName, CurrencyUtil.fromTotalBronze(entry.getValue().amount()).gold())
                                 ));
                             }
                         } else {
@@ -524,6 +532,35 @@ public class CommandsManager {
                         return 1;
                     }
             ));
+            dispatcher.register(literal("war")
+                    .then(literal("declare")
+                            .executes(ctx -> {
+                                ServerPlayer player = ctx.getSource().getPlayer();
+                                UUID attackerPartyId = PartyAPI.getPartyId(player);
+                                UUID defenderPartyId = PartyArgumentType.getParty(ctx, "party").getId();
+                                int attackerClaims = PartyAPI.getClaimsBought(attackerPartyId);
+                                int defenderClaims = PartyAPI.getClaimsBought(defenderPartyId);
+                                if (WarManager.INSTANCE.canDeclareWar(attackerPartyId, defenderPartyId, attackerClaims, defenderClaims, config, player)) {
+                                    WarManager.INSTANCE.declareWar(attackerPartyId, defenderPartyId, player.getWorld(), config);
+                                    player.sendMessage(Text.literal("War declared on party: " + defenderPartyId));
+                                }
+                                return 1;
+                            }))
+                    .then(literal("info")
+                            .executes(ctx -> {
+                                ServerPlayer player = ctx.getSource().getPlayer();
+                                // Display active wars for the player’s party
+                                WarManager.INSTANCE.displayWarInfo(player);
+                                return 1;
+                            }))
+                    .then(literal("end")
+                            .executes(ctx -> {
+                                ServerPlayer player = ctx.getSource().getPlayer();
+                                UUID defenderPartyId = PartyArgumentType.getParty(ctx, "party").getId();
+                                WarManager.INSTANCE.endWar(defenderPartyId, player.getWorld());
+                                player.sendSystemMessage(Component.literal("Ended war with party: " + defenderPartyId));
+                                return 1;
+                            })));
         });
     }
 }

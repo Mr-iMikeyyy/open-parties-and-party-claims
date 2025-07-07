@@ -5,6 +5,7 @@ import com.glisco.numismaticoverhaul.currency.CurrencyComponent;
 import com.madmike.opapc.components.OPAPCComponents;
 import com.madmike.opapc.data.trades.OfflineSale;
 import com.madmike.opapc.util.CurrencyUtil;
+import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
@@ -57,5 +58,6 @@ public class EventManager {
         ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.BUILDING_BLOCKS).register(entries -> {
             entries.accept(PARTY_CLAIM_BLOCK_ITEM);
         });
+        ServerLivingEntityEvents.ALLOW_DEATH.register(); //
     }
 }

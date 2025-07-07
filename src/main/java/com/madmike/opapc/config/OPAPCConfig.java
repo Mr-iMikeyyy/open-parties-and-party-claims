@@ -15,13 +15,16 @@ public class OPAPCConfig {
     public static double scallywagDiscount;
     public static int combatDurationSeconds;
     public static int teleportCooldownInSeconds;
+    public static boolean canOnlyAttackLargerClaims;
+    public static int maxAttackerLives;
+    public static int warDuration;
 
     public static void load() {
         config = CommentedFileConfig.builder(CONFIG_PATH).autosave().build();
         config.load();
 
         config.setComment("maxStoreSlotsPerPlayer", "Maximum number of offers available by default to the player");
-        maxStoreSlotsPerPlayer = config.getOrElse("maxStoreSlotsPerPlayer", 5);
+        maxStoreSlotsPerPlayer = config.getOrElse("maxStoreSlotsPerPlayer", 30);
 
         config.setComment("maxClaimsPerParty", "Maximum number of claims allowed per party");
         maxClaimsPerParty = config.getOrElse("maxClaimsPerParty", 5);
@@ -35,8 +38,17 @@ public class OPAPCConfig {
         config.setComment("combatDurationSeconds", "Duration (in seconds) that a player stays in combat after taking damage");
         combatDurationSeconds = config.getOrElse("combatDurationSeconds", 60);
 
-        config.setComment("teleportCooldownInSeconds", "Duration (in seconds) that a player stays in combat after taking damage");
+        config.setComment("teleportCooldownInSeconds", "Duration (in seconds) that a player is not allowed to teleport after teleporting");
         teleportCooldownInSeconds = config.getOrElse("teleportCooldownInSeconds", 300);
+
+        config.setComment("canOnlyAttackLargerClaims", "Restrict declaring wars against claims smaller than the attacker's");
+        canOnlyAttackLargerClaims = config.getOrElse("canOnlyAttackLargerClaims", true);
+
+        config.setComment("maxAttackerLives", "Number of lives the attackers have when invading a claim");
+        maxAttackerLives = config.getOrElse("maxAttackerLives", 10);
+
+        config.setComment("warDuration", "Duration (in minutes) that wars last");
+        warDuration = config.getOrElse("warDuration", 10);
 
         config.save();
     }

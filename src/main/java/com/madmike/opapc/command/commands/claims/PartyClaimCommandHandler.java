@@ -1,5 +1,6 @@
 package com.madmike.opapc.command.commands.claims;
 
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import xaero.pac.common.claims.player.api.IPlayerChunkClaimAPI;
@@ -15,9 +16,7 @@ public class PartyClaimCommandHandler {
         ClaimResult<IPlayerChunkClaimAPI> result = cm.tryToClaim(Level.OVERWORLD.location(), player.getUUID(), 0, player.chunkPosition().x, player.chunkPosition().z, player.chunkPosition().x, player.chunkPosition().z, false);
 
         player.sendSystemMessage(result.getResultType().message, true);
-
         if (result.getResultType().success) {
-
             mirrorOverworldClaimsToNether(cm, player);
 
             return 1;

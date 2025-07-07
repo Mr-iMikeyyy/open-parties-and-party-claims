@@ -21,8 +21,6 @@ public class PartyUnclaimCommandHandler {
 
         if (result.getResultType().success) {
 
-
-            pc.setBoughtClaims(pc.getBoughtClaims() - 1);
             if (pc.getBoughtClaims() <= 0) {
                 OPAPCComponents.PARTY_CLAIMS.get(player.getScoreboard()).removeClaim(pc.getPartyId());
                 return 1;
