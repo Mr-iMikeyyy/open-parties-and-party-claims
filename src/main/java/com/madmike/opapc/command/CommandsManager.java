@@ -27,6 +27,7 @@ import xaero.pac.common.parties.party.member.api.IPartyMemberAPI;
 import xaero.pac.common.server.api.OpenPACServerAPI;
 import xaero.pac.common.server.claims.api.IServerClaimsManagerAPI;
 import xaero.pac.common.server.claims.player.api.IServerPlayerClaimInfoAPI;
+import xaero.pac.common.server.parties.party.api.IPartyManagerAPI;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 
 import java.util.*;
@@ -536,7 +537,27 @@ public class CommandsManager {
                     .then(literal("declare")
                             .executes(ctx -> {
                                 ServerPlayer player = ctx.getSource().getPlayer();
-                                UUID attackerPartyId = PartyAPI.getPartyId(player);
+                                if (player == null) {
+                                    ctx.getSource().sendFailure(Component.literal("Must be a player to use this command."));
+                                    return 0;
+                                }
+                                OpenPACServerAPI api = OpenPACServerAPI.get(ctx.getSource().getServer());
+                                IPartyManagerAPI pm = api.getPartyManager();
+                                IServerPartyAPI attackingParty = pm.getPartyByOwner(player.getUUID());
+
+                                if (attackingParty == null) {
+                                    ctx.getSource().sendFailure(Component.literal("Must own a party to declare a war"));
+                                    return 0;
+                                }
+
+                                if (WarManager.INSTANCE.getActiveWars().con)
+
+                                if (attackerClaims >= defenderClaims && OPAPCConfig.canOnlyAttackLargerClaims) {
+                                    player.sendSystemMessage(Component.literal("You can only declare war on parties with more claims than you."));
+                                    return false;
+                                }
+
+                                UUID attackerPartyId =
                                 UUID defenderPartyId = PartyArgumentType.getParty(ctx, "party").getId();
                                 int attackerClaims = PartyAPI.getClaimsBought(attackerPartyId);
                                 int defenderClaims = PartyAPI.getClaimsBought(defenderPartyId);

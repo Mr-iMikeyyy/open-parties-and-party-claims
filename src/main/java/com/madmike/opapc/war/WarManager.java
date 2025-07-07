@@ -1,12 +1,14 @@
 package com.madmike.opapc.war;
 
 import com.madmike.opapc.config.OPAPCConfig;
+import com.madmike.opapc.data.war.WarData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,8 +17,11 @@ import java.util.UUID;
 public class WarManager {
     public static final WarManager INSTANCE = new WarManager();
 
-    private record WarData(UUID attackerParty, UUID defenderParty, long startTime, int attackerLivesRemaining) {}
     private final Map<UUID, WarData> activeWars = new HashMap<>();
+
+    public Map<UUID, WarData> getActiveWars() {
+        return activeWars;
+    }
 
     private WarManager() {}
 
@@ -32,8 +37,9 @@ public class WarManager {
         return true;
     }
 
-    public void declareWar(UUID attackerPartyId, UUID defenderPartyId) {
-        activeWars.put(defenderPartyId, new WarData(attackerPartyId, defenderPartyId, System.currentTimeMillis(), OPAPCConfig.maxAttackerLives));
+    public void declareWar(IServerPartyAPI attackerParty, IServerPartyAPI defenderParty) {
+        UUID rand = UUID.randomUUID();
+        activeWars.put(rand, new WarData(rand, attackerParty, defenderParty));
         // Drop protections via OPAPC permission API here
     }
 
