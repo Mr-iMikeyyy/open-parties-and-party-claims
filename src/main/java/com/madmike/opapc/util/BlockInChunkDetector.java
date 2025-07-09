@@ -1,4 +1,4 @@
-package com.madmike.opapc.util.claim;
+package com.madmike.opapc.util;
 
 
 import net.minecraft.core.BlockPos;

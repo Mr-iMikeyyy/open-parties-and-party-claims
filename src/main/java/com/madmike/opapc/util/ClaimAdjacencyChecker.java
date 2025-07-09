@@ -1,4 +1,4 @@
-package com.madmike.opapc.util.claim;
+package com.madmike.opapc.util;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;

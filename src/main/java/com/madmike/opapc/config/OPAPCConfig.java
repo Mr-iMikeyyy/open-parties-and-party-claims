@@ -1,8 +1,16 @@
 package com.madmike.opapc.config;
 
 import com.electronwill.nightconfig.core.file.CommentedFileConfig;
+import com.madmike.opapc.OPAPC;
 import net.fabricmc.loader.api.FabricLoader;
 import java.nio.file.Path;
+import java.time.DateTimeException;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 public class OPAPCConfig {
     private static final Path CONFIG_PATH = FabricLoader.getInstance().getConfigDir().resolve("opapc.toml");
@@ -18,6 +26,12 @@ public class OPAPCConfig {
     public static boolean canOnlyAttackLargerClaims;
     public static int maxAttackerLives;
     public static int warDuration;
+    public static int insuranceDurationDays;
+    public static int unclaimBlocksPerWar;
+    public static List<String> restartTimesRaw;
+    public static List<LocalTime> restartTimes = new ArrayList<>();
+    public static String restartTimezoneRaw;
+    public static ZoneId restartZoneId = ZoneId.systemDefault(); // fallback if not set
 
     public static void load() {
         config = CommentedFileConfig.builder(CONFIG_PATH).autosave().build();
@@ -49,6 +63,32 @@ public class OPAPCConfig {
 
         config.setComment("warDuration", "Duration (in minutes) that wars last");
         warDuration = config.getOrElse("warDuration", 10);
+
+        config.setComment("insuranceDurationDays", "How long (in days) insurance lasts after claiming (default: 3 days)");
+        insuranceDurationDays = config.getOrElse("insuranceDurationDays", 3);
+
+        config.setComment("unclaimBlocksPerWar", "Max amount of unclaim blocks allowed to spawn per war.");
+        insuranceDurationDays = config.getOrElse("unclaimBlocksPerWar", 10);
+
+        config.setComment("restartTimes", "List of daily server restart times in HH:mm format (e.g., \"04:00\", \"12:00\", \"20:00\"). The mod will block wars and duels 30 min before these times.");
+        restartTimesRaw = config.getOrElse("restartTimes", List.of());
+        restartTimes = restartTimesRaw.stream().map(timeStr -> {
+            try {
+                return LocalTime.parse(timeStr);
+            } catch (DateTimeParseException e) {
+                OPAPC.LOGGER.warn("Invalid restart time format in config: " + timeStr + " (expected HH:mm). Skipping.");
+                return null;
+            }
+        }).filter(Objects::nonNull).toList();
+
+        config.setComment("restartTimezone", "Timezone ID for restartTimes, e.g., \"America/New_York\" or \"Europe/London\". Uses system default if invalid or unset.");
+        restartTimezoneRaw = config.getOrElse("restartTimezone", ZoneId.systemDefault().toString());
+        try {
+            restartZoneId = ZoneId.of(restartTimezoneRaw);
+        } catch (DateTimeException e) {
+            OPAPC.LOGGER.warn("Invalid timezone ID in config: " + restartTimezoneRaw + ". Falling back to system default.");
+            restartZoneId = ZoneId.systemDefault();
+        }
 
         config.save();
     }

@@ -1,5 +1,6 @@
 package com.madmike.opapc.data.parties.claims;
 
+import com.madmike.opapc.config.OPAPCConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -13,16 +14,29 @@ public class PartyClaim {
 
     private final Map<UUID, Donor> donations = new HashMap<>();
     private UUID partyId;
+    private int boughtClaims = 1;
+    private BlockPos teleportPos = null;
+    private long lastInsuranceTime;
+
+    public PartyClaim(UUID partyId) {
+
+        this.partyId = partyId;
+        this.lastInsuranceTime = System.currentTimeMillis();
+
+    }
+
+    public boolean isInsured() {
+        long currentTime = System.currentTimeMillis();
+        long insuranceDurationMillis = OPAPCConfig.insuranceDurationDays * 24L * 60 * 60 * 1000;
+        return currentTime - lastInsuranceTime <= insuranceDurationMillis;
+    }
+
+    public void renewInsurance() {
+        this.lastInsuranceTime = System.currentTimeMillis();
+    }
 
     public void setBoughtClaims(int boughtClaims) {
         this.boughtClaims = boughtClaims;
-    }
-
-    private int boughtClaims = 1;
-    private BlockPos teleportPos = null;
-
-    public PartyClaim(UUID partyId) {
-        this.partyId = partyId;
     }
 
     public Map<UUID, Donor> getDonations() {

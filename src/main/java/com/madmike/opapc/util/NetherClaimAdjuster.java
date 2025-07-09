@@ -1,6 +1,5 @@
-package com.madmike.opapc.util.claim;
+package com.madmike.opapc.util;
 
-import com.madmike.opapc.OPAPC;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;

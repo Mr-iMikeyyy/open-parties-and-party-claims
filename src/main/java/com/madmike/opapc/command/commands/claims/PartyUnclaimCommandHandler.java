@@ -8,7 +8,7 @@ import xaero.pac.common.claims.player.api.IPlayerChunkClaimAPI;
 import xaero.pac.common.claims.result.api.ClaimResult;
 import xaero.pac.common.server.claims.api.IServerClaimsManagerAPI;
 
-import static com.madmike.opapc.util.claim.NetherClaimAdjuster.mirrorOverworldClaimsToNether;
+import static com.madmike.opapc.util.NetherClaimAdjuster.mirrorOverworldClaimsToNether;
 
 public class PartyUnclaimCommandHandler {
     public static int handlePartyUnclaimCommand(IServerClaimsManagerAPI cm, ServerPlayer player, PartyClaim pc) {

@@ -2,7 +2,6 @@ package com.madmike.opapc.components.scoreboard.war;
 
 import com.madmike.opapc.data.war.WarStat;
 import dev.onyxstudios.cca.api.v3.component.ComponentV3;
-import dev.onyxstudios.cca.api.v3.component.sync.AutoSyncedComponent;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -13,7 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class WarStatsComponent implements ComponentV3, AutoSyncedComponent {
+public class WarStatsComponent implements ComponentV3 {
     private final Map<UUID, WarStat> warStats = new HashMap<>();
     private final Scoreboard provider;
     private final MinecraftServer server;

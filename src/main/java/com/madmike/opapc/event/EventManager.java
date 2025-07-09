@@ -5,7 +5,9 @@ import com.glisco.numismaticoverhaul.currency.CurrencyComponent;
 import com.madmike.opapc.components.OPAPCComponents;
 import com.madmike.opapc.data.trades.OfflineSale;
 import com.madmike.opapc.util.CurrencyUtil;
+import com.madmike.opapc.war.WarManager;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
@@ -58,6 +60,31 @@ public class EventManager {
         ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.BUILDING_BLOCKS).register(entries -> {
             entries.accept(PARTY_CLAIM_BLOCK_ITEM);
         });
-        ServerLivingEntityEvents.ALLOW_DEATH.register(); //
+
+        ServerLivingEntityEvents.ALLOW_DEATH.register((entity, damageSource, amount) -> {
+
+            //Checks if a duel is happening.
+            if (dm.isDuelOngoing()) {
+
+                //Checks if entity that died is a player
+                if (entity instanceof net.minecraft.entity.player.PlayerEntity) {
+
+                    //Checks if the player is in a duel
+                    if (dm.getDuelLives().containsKey(entity.getUuid())) {
+
+                        //Calculates score and teleports player
+                        dm.onPlayerDeath((ServerPlayerEntity) entity);
+
+                        //Cheats Death
+                        return false;
+                    }
+                }
+            }
+            return true; // Allows death
+        }); //TODO if in war check if defending or attacking, if defending respawn near unclaim block, if attacking respawn outside claim nearest unclaim block.
+
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            WarManager.INSTANCE.tick();
+        });
     }
 }

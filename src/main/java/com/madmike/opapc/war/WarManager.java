@@ -4,51 +4,51 @@ import com.madmike.opapc.config.OPAPCConfig;
 import com.madmike.opapc.data.war.WarData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.Level;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public class WarManager {
     public static final WarManager INSTANCE = new WarManager();
 
-    private final Map<UUID, WarData> activeWars = new HashMap<>();
-
-    public Map<UUID, WarData> getActiveWars() {
-        return activeWars;
-    }
+    private final List<WarData> activeWars = new ArrayList<>();
 
     private WarManager() {}
+
+    public List<WarData> getActiveWars() {
+        return activeWars;
+    }
 
     public boolean canDeclareWar(UUID attackerPartyId, UUID defenderPartyId, int attackerClaims, int defenderClaims, ServerPlayer player) {
         if (attackerClaims >= defenderClaims && OPAPCConfig.canOnlyAttackLargerClaims) {
             player.sendSystemMessage(Component.literal("You can only declare war on parties with more claims than you."));
             return false;
         }
-        if (activeWars.containsKey(defenderPartyId)) {
-            player.sendSystemMessage(Component.literal("This party is already under attack."));
-            return false;
+        for (WarData war : activeWars) {
+            if (war.getAttackingParty().getId().equals(attackerPartyId)) {
+                player.sendSystemMessage(Component.literal("You can only declare war on parties with more claims than you."));
+                return false;
+            }
+            if (war.getDefendingParty().getId().equals(defenderPartyId)) {
+                player.sendSystemMessage(Component.literal("This party is already under attack."));
+                return false;
+            }
         }
         return true;
     }
 
     public void declareWar(IServerPartyAPI attackerParty, IServerPartyAPI defenderParty) {
-        UUID rand = UUID.randomUUID();
-        activeWars.put(rand, new WarData(rand, attackerParty, defenderParty));
+        activeWars.add(new WarData(attackerParty, defenderParty));
         // Drop protections via OPAPC permission API here
     }
 
-    public void tick(ServerLevel world) {
+    public void tick() {
         long currentTime = System.currentTimeMillis();
-        activeWars.entrySet().removeIf(entry -> {
-            WarData data = entry.getValue();
-            if (currentTime - data.startTime() >= OPAPCConfig.warDuration || data.attackerLivesRemaining() <= 0) {
-                endWar(entry.getKey(), world);
+        activeWars.removeIf(war -> {
+            if (currentTime - war.getStartTime() >= OPAPCConfig.warDuration || war.getAttackerLivesRemaining() <= 0) {
+                endWar(war);
                 return true;
             }
             return false;
@@ -79,13 +79,11 @@ public class WarManager {
         }
     }
 
-    public void endWar(UUID defenderPartyId, Level level) {
-        WarData data = activeWars.remove(defenderPartyId);
-        if (data != null) {
+    public void endWar(WarData war) {
             // Restore protections via OPAPC permission API here
             // Award claims stolen or rewards if attackers won
             // Optionally notify parties
-        }
+        activeWars.remove(war);
     }
 
     private BlockPos findSafePosOutsideClaim(ServerPlayer player) {
