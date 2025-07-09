@@ -1,7 +1,6 @@
 package com.madmike.opapc.data.war;
 
 import com.madmike.opapc.config.OPAPCConfig;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 
@@ -16,7 +15,7 @@ public class WarData {
     private int unclaimBlocksLeft;
 
     public WarData(IServerPartyAPI attackingParty, IServerPartyAPI defendingParty) {
-        this.attackingParty =attackingParty;
+        this.attackingParty = attackingParty;
         this.defendingParty = defendingParty;
         this.startTime = System.currentTimeMillis();
         this.attackerLivesRemaining = OPAPCConfig.maxAttackerLives;

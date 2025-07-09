@@ -28,7 +28,7 @@ public class WarManager {
         }
         for (WarData war : activeWars) {
             if (war.getAttackingParty().getId().equals(attackerPartyId)) {
-                player.sendSystemMessage(Component.literal("You can only declare war on parties with more claims than you."));
+                player.sendSystemMessage(Component.literal("You are already in a war!"));
                 return false;
             }
             if (war.getDefendingParty().getId().equals(defenderPartyId)) {

@@ -8,6 +8,7 @@ import com.madmike.opapc.config.OPAPCConfig;
 import com.madmike.opapc.data.parties.PartyName;
 import com.madmike.opapc.data.parties.claims.Donor;
 import com.madmike.opapc.data.parties.claims.PartyClaim;
+import com.madmike.opapc.data.war.WarData;
 import com.madmike.opapc.util.CurrencyUtil;
 import com.madmike.opapc.util.ClaimAdjacencyChecker;
 import com.madmike.opapc.war.WarManager;
@@ -644,38 +645,85 @@ public class CommandsManager {
             ));
             dispatcher.register(literal("war")
                     .then(literal("declare")
-                            .executes(ctx -> {
-                                ServerPlayer player = ctx.getSource().getPlayer();
+                            .then(argument("party", StringArgumentType.string()).suggests((context, builder) -> {
+
+                                //Check if player
+                                MinecraftServer server = context.getSource().getServer();
+                                ServerPlayer player = context.getSource().getPlayer();
                                 if (player == null) {
-                                    ctx.getSource().sendFailure(Component.literal("Must be a player to use this command."));
-                                    return 0;
-                                }
-                                OpenPACServerAPI api = OpenPACServerAPI.get(ctx.getSource().getServer());
-                                IPartyManagerAPI pm = api.getPartyManager();
-                                IServerPartyAPI attackingParty = pm.getPartyByOwner(player.getUUID());
-
-                                if (attackingParty == null) {
-                                    ctx.getSource().sendFailure(Component.literal("Must own a party to declare a war"));
-                                    return 0;
+                                    return null;
                                 }
 
-                                if (WarManager.INSTANCE.getActiveWars().con)
-
-                                if (attackerClaims >= defenderClaims && OPAPCConfig.canOnlyAttackLargerClaims) {
-                                    player.sendSystemMessage(Component.literal("You can only declare war on parties with more claims than you."));
-                                    return false;
+                                //Check if owner of party
+                                OpenPACServerAPI api = OpenPACServerAPI.get(server);
+                                IServerPartyAPI party = api.getPartyManager().getPartyByOwner(context.getSource().getPlayer().getUUID());
+                                if (party == null) {
+                                    return null;
                                 }
 
-                                UUID attackerPartyId =
-                                UUID defenderPartyId = PartyArgumentType.getParty(ctx, "party").getId();
-                                int attackerClaims = PartyAPI.getClaimsBought(attackerPartyId);
-                                int defenderClaims = PartyAPI.getClaimsBought(defenderPartyId);
-                                if (WarManager.INSTANCE.canDeclareWar(attackerPartyId, defenderPartyId, attackerClaims, defenderClaims, config, player)) {
-                                    WarManager.INSTANCE.declareWar(attackerPartyId, defenderPartyId, player.getWorld(), config);
-                                    player.sendMessage(Text.literal("War declared on party: " + defenderPartyId));
+                                PartyClaimsComponent comp = OPAPCComponents.PARTY_CLAIMS.get(server.getScoreboard());
+                                PartyClaim attackingClaim = comp.getClaim(party.getId());
+                                Map<UUID, PartyClaim> allClaims = comp.getAllClaims();
+                                List<UUID> idsToLookUp = new ArrayList<>();
+
+                                for (Map.Entry<UUID, PartyClaim> entry : allClaims.entrySet()) {
+                                    if (!entry.getValue().isInsured() && entry.getValue().getBoughtClaims() <= attackingClaim.getBoughtClaims() && !entry.getValue().getPartyId().equals(attackingClaim.getPartyId())) {
+                                        idsToLookUp.add(entry.getKey());
+                                    }
                                 }
-                                return 1;
+
+                                // Assuming you have a way to get all party names
+                                Map<UUID, PartyName> partyNameMap = OPAPCComponents.PARTY_NAMES.get(server.getScoreboard()).getPartyNameHashMap();
+
+                                for (UUID id : idsToLookUp) {
+                                    builder.suggest(api.getPartyManager().getPartyById(id).getDefaultName());
+                                }
+
+                                return builder.buildFuture();
                             }))
+                                    .executes(ctx -> {
+                                        ServerPlayer player = ctx.getSource().getPlayer();
+                                        if (player == null) {
+                                            ctx.getSource().sendFailure(Component.literal("Must be a player to use this command."));
+                                            return 0;
+                                        }
+                                        OpenPACServerAPI api = OpenPACServerAPI.get(ctx.getSource().getServer());
+                                        IPartyManagerAPI pm = api.getPartyManager();
+                                        IServerPartyAPI attackingParty = pm.getPartyByOwner(player.getUUID());
+
+                                        if (attackingParty == null) {
+                                            ctx.getSource().sendFailure(Component.literal("Must own a party to declare a war"));
+                                            return 0;
+                                        }
+
+                                        List<WarData> activeWars = WarManager.INSTANCE.getActiveWars();
+
+                                        for (WarData war : activeWars) {
+                                            if (war.getAttackingParty().getId().equals(attackingParty.getId())) {
+                                                player.sendSystemMessage(Component.literal("You are already in a war!"));
+                                                return false;
+                                            }
+                                            if (war.getDefendingParty().getId().equals(defenderPartyId)) {
+                                                player.sendSystemMessage(Component.literal("This party is already under attack."));
+                                                return false;
+                                            }
+                                        }
+
+                                        if (attackerClaims >= defenderClaims && OPAPCConfig.canOnlyAttackLargerClaims) {
+                                            player.sendSystemMessage(Component.literal("You can only declare war on parties with more claims than you."));
+                                            return false;
+                                        }
+
+                                        UUID attackerPartyId =
+                                        UUID defenderPartyId = PartyArgumentType.getParty(ctx, "party").getId();
+                                        int attackerClaims = PartyAPI.getClaimsBought(attackerPartyId);
+                                        int defenderClaims = PartyAPI.getClaimsBought(defenderPartyId);
+                                        if (WarManager.INSTANCE.canDeclareWar(attackerPartyId, defenderPartyId, attackerClaims, defenderClaims, config, player)) {
+                                            WarManager.INSTANCE.declareWar(attackerPartyId, defenderPartyId, player.getWorld(), config);
+                                            player.sendMessage(Text.literal("War declared on party: " + defenderPartyId));
+                                        }
+                                        return 1;
+                                    }))
                     .then(literal("info")
                             .executes(ctx -> {
                                 ServerPlayer player = ctx.getSource().getPlayer();
