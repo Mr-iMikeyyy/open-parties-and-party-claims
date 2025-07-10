@@ -48,7 +48,7 @@ public class WarManager {
         long currentTime = System.currentTimeMillis();
         activeWars.removeIf(war -> {
             if (currentTime - war.getStartTime() >= OPAPCConfig.warDuration || war.getAttackerLivesRemaining() <= 0) {
-                endWar(war);
+                endWar(war, EndOfWarType.TIMEOUT);
                 return true;
             }
             return false;
@@ -79,10 +79,34 @@ public class WarManager {
         }
     }
 
-    public void endWar(WarData war) {
-            // Restore protections via OPAPC permission API here
-            // Award claims stolen or rewards if attackers won
-            // Optionally notify parties
+    public enum EndOfWarType {
+        TIMEOUT,
+        DEATHS,
+        FORFEIT,
+        ALL_BLOCKS_BROKEN
+    }
+
+    public void endWar(WarData war, EndOfWarType endType) {
+        // Restore protections via OPAPC permission API here
+
+        // Award claims stolen or rewards if attackers won
+
+        // Optionally notify parties based on end type
+        switch (endType) {
+            case TIMEOUT -> {
+                // handle timeout-specific logic
+            }
+            case DEATHS -> {
+                // handle all attacker lives lost logic
+            }
+            case FORFEIT -> {
+                // handle forfeiting logic
+            }
+            case ALL_BLOCKS_BROKEN -> {
+                // handle block destruction victory logic
+            }
+        }
+
         activeWars.remove(war);
     }
 

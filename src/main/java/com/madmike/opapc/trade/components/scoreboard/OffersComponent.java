@@ -1,4 +1,4 @@
-package com.madmike.opapc.components.scoreboard.trades;
+package com.madmike.opapc.trade.components.scoreboard;
 
 import com.glisco.numismaticoverhaul.ModComponents;
 import com.glisco.numismaticoverhaul.currency.CurrencyComponent;

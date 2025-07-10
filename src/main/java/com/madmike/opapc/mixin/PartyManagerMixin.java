@@ -1,6 +1,6 @@
 package com.madmike.opapc.mixin;
 
-import com.madmike.opapc.components.scoreboard.trades.OffersComponent;
+import com.madmike.opapc.trade.components.scoreboard.OffersComponent;
 import com.madmike.opapc.components.OPAPCComponents;
 import com.madmike.opapc.data.parties.PartyName;
 import net.minecraft.server.MinecraftServer;
@@ -30,7 +30,9 @@ import static com.madmike.opapc.command.commands.claims.AbandonCommandHandler.ha
 public abstract class PartyManagerMixin {
 
     @SuppressWarnings("target")
-    @Shadow @Final private MinecraftServer server;
+    @Shadow
+    @Final
+    private MinecraftServer server;
 
     @Inject(method = "onMemberAdded", at = @At("TAIL"), remap = false)
     private void onMemberAdded(ServerParty party, PartyMember member, CallbackInfo ci) {

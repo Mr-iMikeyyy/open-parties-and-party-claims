@@ -1,4 +1,4 @@
-package com.madmike.opapc.components.player.trades;
+package com.madmike.opapc.trade.components.player;
 
 import com.madmike.opapc.components.OPAPCComponents;
 import dev.onyxstudios.cca.api.v3.component.Component;

@@ -1,4 +1,4 @@
-package com.madmike.opapc.components.scoreboard.trades;
+package com.madmike.opapc.trade.components.scoreboard;
 
 import com.madmike.opapc.components.OPAPCComponents;
 import com.madmike.opapc.data.trades.OfflineSale;

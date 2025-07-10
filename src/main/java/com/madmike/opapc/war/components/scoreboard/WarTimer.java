@@ -1,6 +1,5 @@
-package com.madmike.opapc.components.scoreboard.war;
+package com.madmike.opapc.war.components.scoreboard;
 
-import com.madmike.opapc.components.OPAPCComponents;
 import dev.onyxstudios.cca.api.v3.component.Component;
 import dev.onyxstudios.cca.api.v3.component.sync.AutoSyncedComponent;
 import net.minecraft.server.level.ServerPlayer;

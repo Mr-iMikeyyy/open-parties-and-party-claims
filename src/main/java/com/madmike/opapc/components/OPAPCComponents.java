@@ -1,15 +1,15 @@
 package com.madmike.opapc.components;
 
 import com.madmike.opapc.OPAPC;
-import com.madmike.opapc.components.player.timers.CombatTimerComponent;
-import com.madmike.opapc.components.player.timers.TeleportCooldownComponent;
-import com.madmike.opapc.components.player.trades.UnlockedStoreSlotsComponent;
-import com.madmike.opapc.components.scoreboard.parties.PartyNamesComponent;
-import com.madmike.opapc.components.scoreboard.parties.PartyClaimsComponent;
-import com.madmike.opapc.components.scoreboard.trades.OffersComponent;
-import com.madmike.opapc.components.scoreboard.trades.OfflineSalesComponent;
-import com.madmike.opapc.components.scoreboard.trades.SellersComponent;
-import com.madmike.opapc.components.scoreboard.war.WarStatsComponent;
+import com.madmike.opapc.party.components.player.CombatTimerComponent;
+import com.madmike.opapc.party.components.player.TeleportCooldownComponent;
+import com.madmike.opapc.trade.components.player.UnlockedStoreSlotsComponent;
+import com.madmike.opapc.party.components.scoreboard.PartyNamesComponent;
+import com.madmike.opapc.party.components.scoreboard.PartyClaimsComponent;
+import com.madmike.opapc.trade.components.scoreboard.OffersComponent;
+import com.madmike.opapc.trade.components.scoreboard.OfflineSalesComponent;
+import com.madmike.opapc.trade.components.scoreboard.SellersComponent;
+import com.madmike.opapc.war.components.scoreboard.WarStatsComponent;
 import dev.onyxstudios.cca.api.v3.component.ComponentKey;
 import dev.onyxstudios.cca.api.v3.component.ComponentRegistryV3;
 import dev.onyxstudios.cca.api.v3.entity.EntityComponentFactoryRegistry;

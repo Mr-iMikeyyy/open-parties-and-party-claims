@@ -1,4 +1,4 @@
-package com.madmike.opapc.components.scoreboard.trades;
+package com.madmike.opapc.trade.components.scoreboard;
 
 import com.madmike.opapc.data.trades.SellerInfo;
 import dev.onyxstudios.cca.api.v3.component.Component;

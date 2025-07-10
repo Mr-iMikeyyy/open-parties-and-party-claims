@@ -1,4 +1,4 @@
-package com.madmike.opapc.components.scoreboard.parties;
+package com.madmike.opapc.party.components.scoreboard;
 
 import com.madmike.opapc.components.OPAPCComponents;
 import com.madmike.opapc.data.parties.PartyName;
@@ -11,7 +11,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.scores.Scoreboard;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;

@@ -1,6 +1,7 @@
 package com.madmike.opapc.data.war;
 
 import com.madmike.opapc.config.OPAPCConfig;
+import com.madmike.opapc.war.WarManager;
 import net.minecraft.server.level.ServerPlayer;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 
@@ -13,6 +14,8 @@ public class WarData {
     private final long startTime;
     private int attackerLivesRemaining;
     private int unclaimBlocksLeft;
+
+
 
     public WarData(IServerPartyAPI attackingParty, IServerPartyAPI defendingParty) {
         this.attackingParty = attackingParty;
@@ -35,7 +38,7 @@ public class WarData {
     }
 
     public Stream<ServerPlayer> getDefendingPlayers() {
-        return attackingParty.getOnlineMemberStream();
+        return defendingParty.getOnlineMemberStream();
     }
 
     public long getStartTime() {
@@ -48,5 +51,19 @@ public class WarData {
 
     public void setAttackerLivesRemaining(int attackerLivesRemaining) {
         this.attackerLivesRemaining = attackerLivesRemaining;
+        if (this.attackerLivesRemaining <= 0) {
+            WarManager.INSTANCE.endWar(this, WarManager.EndOfWarType.DEATHS);
+        }
+    }
+
+    public int getUnclaimBlocksLeft() {
+        return unclaimBlocksLeft;
+    }
+
+    public void setUnclaimBlocksLeft(int unclaimBlocksLeft) {
+        this.unclaimBlocksLeft = unclaimBlocksLeft;
+        if (this.unclaimBlocksLeft <= 0) {
+            WarManager.INSTANCE.endWar(this, WarManager.EndOfWarType.ALL_BLOCKS_BROKEN);
+        }
     }
 }

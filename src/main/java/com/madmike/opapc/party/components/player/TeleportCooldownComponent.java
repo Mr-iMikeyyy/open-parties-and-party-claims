@@ -1,4 +1,4 @@
-package com.madmike.opapc.components.player.timers;
+package com.madmike.opapc.party.components.player;
 
 import com.madmike.opapc.config.OPAPCConfig;
 import dev.onyxstudios.cca.api.v3.component.Component;

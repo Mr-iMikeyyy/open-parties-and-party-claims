@@ -1,4 +1,4 @@
-package com.madmike.opapc.components.scoreboard.war;
+package com.madmike.opapc.war.components.scoreboard;
 
 import com.madmike.opapc.data.war.WarStat;
 import dev.onyxstudios.cca.api.v3.component.ComponentV3;

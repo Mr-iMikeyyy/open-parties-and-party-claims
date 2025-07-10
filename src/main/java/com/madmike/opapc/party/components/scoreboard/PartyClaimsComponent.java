@@ -1,4 +1,4 @@
-package com.madmike.opapc.components.scoreboard.parties;
+package com.madmike.opapc.party.components.scoreboard;
 
 import com.madmike.opapc.data.parties.claims.PartyClaim;
 import net.minecraft.nbt.CompoundTag;

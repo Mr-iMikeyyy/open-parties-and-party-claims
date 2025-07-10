@@ -9,6 +9,8 @@ import com.madmike.opapc.war.WarManager;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
+import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.network.chat.Component;
@@ -55,6 +57,28 @@ public class EventManager {
                 OPAPCComponents.COMBAT_TIMER.get(serverPlayer).onDamaged();
             }
             return InteractionResult.PASS;
+        });
+
+        UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
+            if (!(player instanceof ServerPlayer serverPlayer)) return InteractionResult.PASS;
+
+            if (YourRaidManager.isPlayerRaiding(serverPlayer)) {
+                serverPlayer.sendSystemMessage(Component.literal("You cannot place blocks while raiding a claim."));
+                return InteractionResult.FAIL;
+            }
+
+            return InteractionResult.PASS;
+        });
+
+        PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, blockEntity) -> {
+            if (!(player instanceof ServerPlayer serverPlayer)) return true; // allow if not server player
+
+            if (YourRaidManager.isPlayerRaiding(serverPlayer)) {
+                serverPlayer.sendSystemMessage(Component.literal("You cannot break blocks while raiding a claim."));
+                return false; // cancel the break
+            }
+
+            return true; // allow the break
         });
 
         ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.BUILDING_BLOCKS).register(entries -> {
