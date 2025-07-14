@@ -1,4 +1,4 @@
-package com.madmike.opapc.data.parties.claims;
+package com.madmike.opapc.party.data;
 
 
 import net.minecraft.nbt.CompoundTag;

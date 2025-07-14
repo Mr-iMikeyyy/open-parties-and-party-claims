@@ -3,13 +3,12 @@ package com.madmike.opapc.command;
 import com.glisco.numismaticoverhaul.ModComponents;
 import com.glisco.numismaticoverhaul.currency.CurrencyComponent;
 import com.madmike.opapc.components.OPAPCComponents;
-import com.madmike.opapc.net.packets.TradeScreenRefreshS2CSender;
 import com.madmike.opapc.party.components.scoreboard.PartyClaimsComponent;
 import com.madmike.opapc.config.OPAPCConfig;
-import com.madmike.opapc.data.parties.PartyName;
-import com.madmike.opapc.data.parties.claims.Donor;
-import com.madmike.opapc.data.parties.claims.PartyClaim;
-import com.madmike.opapc.data.war.WarData;
+import com.madmike.opapc.party.data.PartyName;
+import com.madmike.opapc.party.data.Donor;
+import com.madmike.opapc.party.data.PartyClaim;
+import com.madmike.opapc.war.data.WarData;
 import com.madmike.opapc.util.CurrencyUtil;
 import com.madmike.opapc.util.ClaimAdjacencyChecker;
 import com.madmike.opapc.war.WarManager;
@@ -42,8 +41,8 @@ import java.util.*;
 import static com.madmike.opapc.command.commands.claims.AbandonCommandHandler.handleAbandonCommand;
 import static com.madmike.opapc.command.commands.claims.PartyClaimCommandHandler.handlePartyClaimCommand;
 import static com.madmike.opapc.command.commands.claims.PartyUnclaimCommandHandler.handlePartyUnclaimCommand;
-import static com.madmike.opapc.command.commands.tele.GuildCommandHandler.handleGuildCommand;
-import static com.madmike.opapc.command.commands.tele.HomeCommandHandler.handleHomeCommand;
+import static com.madmike.opapc.command.commands.warp.GuildCommandHandler.handleGuildCommand;
+import static com.madmike.opapc.command.commands.warp.HomeCommandHandler.handleHomeCommand;
 import static com.madmike.opapc.command.commands.trades.SellCommandHandler.handleSellCommand;
 import static com.madmike.opapc.command.commands.trades.TopCommandHandler.handleTopCommand;
 import static com.madmike.opapc.command.commands.trades.TotalsCommandHandler.handleTotalsCommand;
@@ -801,7 +800,6 @@ public class CommandsManager {
             //region Bounty Command
 
             //endregion
-
 
         });
     }

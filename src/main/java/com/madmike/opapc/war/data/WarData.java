@@ -1,4 +1,4 @@
-package com.madmike.opapc.data.war;
+package com.madmike.opapc.war.data;
 
 import com.madmike.opapc.config.OPAPCConfig;
 import com.madmike.opapc.war.WarManager;

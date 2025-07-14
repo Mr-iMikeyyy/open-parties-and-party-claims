@@ -4,7 +4,7 @@ import com.glisco.numismaticoverhaul.ModComponents;
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.components.OPAPCComponents;
 import com.madmike.opapc.party.components.scoreboard.PartyNamesComponent;
-import com.madmike.opapc.data.trades.Offer;
+import com.madmike.opapc.trade.data.Offer;
 import com.madmike.opapc.net.packets.BuyOfferC2SPacket;
 import com.madmike.opapc.net.packets.RemoveOfferC2SPacket;
 import io.wispforest.owo.ui.base.BaseOwoScreen;

@@ -1,12 +1,11 @@
-package com.madmike.opapc.command.commands.tele;
+package com.madmike.opapc.command.commands.warp;
 
 import com.madmike.opapc.components.OPAPCComponents;
-import com.madmike.opapc.data.parties.claims.PartyClaim;
+import com.madmike.opapc.party.data.PartyClaim;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 
 public class GuildCommandHandler {

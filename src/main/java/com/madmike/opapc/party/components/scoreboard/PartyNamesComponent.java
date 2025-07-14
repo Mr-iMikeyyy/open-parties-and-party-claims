@@ -1,7 +1,7 @@
 package com.madmike.opapc.party.components.scoreboard;
 
 import com.madmike.opapc.components.OPAPCComponents;
-import com.madmike.opapc.data.parties.PartyName;
+import com.madmike.opapc.party.data.PartyName;
 import com.madmike.opapc.net.packets.TradeScreenRefreshS2CSender;
 import dev.onyxstudios.cca.api.v3.component.sync.AutoSyncedComponent;
 import net.minecraft.nbt.CompoundTag;

@@ -3,7 +3,7 @@ package com.madmike.opapc.command.commands.trades;
 import com.madmike.opapc.components.OPAPCComponents;
 import com.madmike.opapc.trade.components.player.UnlockedStoreSlotsComponent;
 import com.madmike.opapc.trade.components.scoreboard.OffersComponent;
-import com.madmike.opapc.data.trades.Offer;
+import com.madmike.opapc.trade.data.Offer;
 import com.madmike.opapc.util.CurrencyUtil;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;

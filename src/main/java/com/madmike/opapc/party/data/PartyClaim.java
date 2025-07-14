@@ -1,4 +1,4 @@
-package com.madmike.opapc.data.parties.claims;
+package com.madmike.opapc.party.data;
 
 import com.madmike.opapc.config.OPAPCConfig;
 import net.minecraft.core.BlockPos;

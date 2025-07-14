@@ -1,4 +1,4 @@
-package com.madmike.opapc.data.trades;
+package com.madmike.opapc.trade.data;
 
 import net.minecraft.nbt.CompoundTag;
 

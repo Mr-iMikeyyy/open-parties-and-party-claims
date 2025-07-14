@@ -1,7 +1,7 @@
 package com.madmike.opapc.command.commands.trades;
 
 import com.madmike.opapc.components.OPAPCComponents;
-import com.madmike.opapc.data.trades.SellerInfo;
+import com.madmike.opapc.trade.data.SellerInfo;
 import com.madmike.opapc.util.CurrencyUtil;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;

@@ -3,7 +3,7 @@ package com.madmike.opapc.event;
 import com.glisco.numismaticoverhaul.ModComponents;
 import com.glisco.numismaticoverhaul.currency.CurrencyComponent;
 import com.madmike.opapc.components.OPAPCComponents;
-import com.madmike.opapc.data.trades.OfflineSale;
+import com.madmike.opapc.trade.data.OfflineSale;
 import com.madmike.opapc.util.CurrencyUtil;
 import com.madmike.opapc.war.WarManager;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;

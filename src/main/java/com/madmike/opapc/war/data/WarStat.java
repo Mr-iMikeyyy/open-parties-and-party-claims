@@ -1,4 +1,4 @@
-package com.madmike.opapc.data.war;
+package com.madmike.opapc.war.data;
 
 import net.minecraft.nbt.CompoundTag;
 

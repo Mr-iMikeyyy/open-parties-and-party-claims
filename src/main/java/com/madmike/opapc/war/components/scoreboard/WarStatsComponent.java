@@ -1,6 +1,6 @@
 package com.madmike.opapc.war.components.scoreboard;
 
-import com.madmike.opapc.data.war.WarStat;
+import com.madmike.opapc.war.data.WarStat;
 import dev.onyxstudios.cca.api.v3.component.ComponentV3;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;

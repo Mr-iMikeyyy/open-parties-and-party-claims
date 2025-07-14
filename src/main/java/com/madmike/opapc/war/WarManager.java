@@ -1,12 +1,16 @@
 package com.madmike.opapc.war;
 
 import com.madmike.opapc.config.OPAPCConfig;
-import com.madmike.opapc.data.war.WarData;
+import com.madmike.opapc.war.data.WarData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
+import xaero.pac.common.server.api.OpenPACServerAPI;
+import xaero.pac.common.server.config.ServerConfig;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
+import xaero.pac.common.server.player.config.api.PlayerConfigOptions;
 
 import java.util.*;
 
@@ -39,15 +43,17 @@ public class WarManager {
         return true;
     }
 
-    public void declareWar(IServerPartyAPI attackerParty, IServerPartyAPI defenderParty) {
+    public void declareWar(IServerPartyAPI attackerParty, IServerPartyAPI defenderParty, MinecraftServer server) {
         activeWars.add(new WarData(attackerParty, defenderParty));
         // Drop protections via OPAPC permission API here
+        OpenPACServerAPI api = OpenPACServerAPI.get(server);
+        api.getPlayerConfigs().getLoadedConfig(defenderParty.getOwner().getUUID()).getUsedSubConfig().tryToSet(PlayerConfigOptions.PROTECT_CLAIMED_CHUNKS, false);
     }
 
     public void tick() {
         long currentTime = System.currentTimeMillis();
         activeWars.removeIf(war -> {
-            if (currentTime - war.getStartTime() >= OPAPCConfig.warDuration || war.getAttackerLivesRemaining() <= 0) {
+            if (currentTime - war.getStartTime() >= OPAPCConfig.warDuration) {
                 endWar(war, EndOfWarType.TIMEOUT);
                 return true;
             }
