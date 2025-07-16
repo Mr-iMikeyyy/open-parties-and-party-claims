@@ -2,12 +2,14 @@ package com.madmike.opapc.command;
 
 import com.glisco.numismaticoverhaul.ModComponents;
 import com.glisco.numismaticoverhaul.currency.CurrencyComponent;
+import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.components.OPAPCComponents;
 import com.madmike.opapc.party.components.scoreboard.PartyClaimsComponent;
 import com.madmike.opapc.config.OPAPCConfig;
 import com.madmike.opapc.party.data.PartyName;
 import com.madmike.opapc.party.data.Donor;
 import com.madmike.opapc.party.data.PartyClaim;
+import com.madmike.opapc.util.ServerRestartChecker;
 import com.madmike.opapc.war.data.WarData;
 import com.madmike.opapc.util.CurrencyUtil;
 import com.madmike.opapc.util.ClaimAdjacencyChecker;
@@ -396,6 +398,8 @@ public class CommandsManager {
             });
 
             partyCommand.then(literal("claim").executes(ctx -> {
+
+
                 ServerPlayer player = ctx.getSource().getPlayer();
                 //Check if player
                 if (player == null) {
@@ -409,10 +413,7 @@ public class CommandsManager {
                     return 0;
                 }
 
-                MinecraftServer server = ctx.getSource().getServer();
-                OpenPACServerAPI api = OpenPACServerAPI.get(server);
-                IServerClaimsManagerAPI cm = api.getServerClaimsManager();
-                var party = api.getPartyManager().getPartyByMember(player.getUUID());
+                var party = OPAPC.getPartyManager().getPartyByMember(player.getUUID());
 
                 //Check if in party
                 if (party == null) {
@@ -426,22 +427,31 @@ public class CommandsManager {
                     return 0;
                 }
 
+                // Check if in war
+                List<WarData> wars = WarManager.INSTANCE.getActiveWars();
+                for (WarData war : wars) {
+                    if (war.getDefendingParty().equals(party) || war.getAttackingParty().equals(party)) {
+                        ctx.getSource().sendFailure(Component.literal("Cannot claim chunks while in a war!"));
+                        return 0;
+                    }
+                }
+
                 ChunkPos target = player.chunkPosition();
-                PartyClaimsComponent comp = OPAPCComponents.PARTY_CLAIMS.get(server.getScoreboard());
+                PartyClaimsComponent comp = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard());
                 PartyClaim partyClaim = comp.getClaim(party.getId());
 
                 //Check if no party claim exists yet for party, if no claims then allow
                 if (partyClaim == null) {
-                    ClaimResult<IPlayerChunkClaimAPI> result = cm.tryToClaim(Level.OVERWORLD.location(), player.getUUID(), 0, player.chunkPosition().x, player.chunkPosition().z, player.chunkPosition().x, player.chunkPosition().z, false);
+                    ClaimResult<IPlayerChunkClaimAPI> result = OPAPC.getClaimsManager().tryToClaim(Level.OVERWORLD.location(), player.getUUID(), 0, player.chunkPosition().x, player.chunkPosition().z, player.chunkPosition().x, player.chunkPosition().z, false);
                     player.sendSystemMessage(result.getResultType().message);
                     if (result.getResultType().success) {
                         comp.createClaim(party.getId());
-                        mirrorOverworldClaimsToNether(cm, player);
+                        mirrorOverworldClaimsToNether(player);
                         return 1;
                     }
                 }
 
-                IServerPlayerClaimInfoAPI info = cm.getPlayerInfo(player.getUUID());
+                IServerPlayerClaimInfoAPI info = OPAPC.getClaimsManager().getPlayerInfo(player.getUUID());
                 int totalOverworldClaims = info.getDimension(Level.OVERWORLD.location())
                         .getStream()
                         .mapToInt(IPlayerClaimPosListAPI::getCount)
@@ -454,12 +464,12 @@ public class CommandsManager {
                 }
 
                 //Check if new chunk is adjacent to an old chunk
-                if (!ClaimAdjacencyChecker.isAdjacentToExistingClaim(player, target, api)) {
+                if (!ClaimAdjacencyChecker.isAdjacentToExistingClaim(player, target)) {
                     ctx.getSource().sendFailure(Component.literal("Claim must be adjacent to an existing party claim."));
                     return 0;
                 }
 
-                handlePartyClaimCommand(cm, player);
+                handlePartyClaimCommand(player);
 
                 return 1;
             }));
@@ -533,11 +543,9 @@ public class CommandsManager {
                     })
                     .then(literal("confirm").executes(ctx -> {
                         ServerPlayer player = ctx.getSource().getPlayer();
-                        MinecraftServer server = ctx.getSource().getServer();
                         if (player == null) return 0;
 
-                        var api = OpenPACServerAPI.get(server);
-                        IPartyAPI party = api.getPartyManager().getPartyByMember(player.getUUID());
+                        IPartyAPI party = OPAPC.getPartyManager().getPartyByMember(player.getUUID());
 
                         if (party == null) {
                             player.sendSystemMessage(Component.literal("You are not in a party."));
@@ -550,7 +558,7 @@ public class CommandsManager {
                             return 0;
                         }
 
-                        handleAbandonCommand(owner, party.getId(), api, server);
+                        handleAbandonCommand(owner, party.getId());
                         player.sendSystemMessage(Component.literal("Party claim abandoned successfully."));
                         return 1;
                     }))
@@ -569,18 +577,13 @@ public class CommandsManager {
                             return 0;
                         }
 
-                        MinecraftServer server = ctx.getSource().getServer();
-                        OpenPACServerAPI api = OpenPACServerAPI.get(server);
-
-
-
-                        var donatersParty = api.getPartyManager().getPartyByMember(player.getUUID());
+                        var donatersParty = OPAPC.getPartyManager().getPartyByMember(player.getUUID());
                         if (donatersParty == null) {
                             ctx.getSource().sendFailure(Component.literal("Must be in a party to donate."));
                             return 0;
                         }
 
-                        IServerClaimsManagerAPI cm = api.getServerClaimsManager();
+                        IServerClaimsManagerAPI cm = OPAPC.getClaimsManager();
 
                         ChunkPos target = player.chunkPosition();
                         IPlayerChunkClaimAPI chunkClaim = cm.get(Level.OVERWORLD.location(), target.x, target.z);
@@ -591,8 +594,8 @@ public class CommandsManager {
                         }
 
                         UUID owner = chunkClaim.getPlayerId();
-                        IServerPartyAPI ownersParty = api.getPartyManager().getPartyByOwner(owner);
-                        PartyClaim partyClaim = OPAPCComponents.PARTY_CLAIMS.get(server.getScoreboard()).getClaim(ownersParty.getId());
+                        IServerPartyAPI ownersParty = OPAPC.getPartyManager().getPartyByOwner(owner);
+                        PartyClaim partyClaim = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard()).getClaim(ownersParty.getId());
 
                         boolean isAlly = ownersParty.isAlly(donatersParty.getId());
                         boolean isMember = ownersParty.getMemberInfo(player.getUUID()) != null;
@@ -686,40 +689,120 @@ public class CommandsManager {
             //endregion
 
             //region War Command
+
+            LiteralArgumentBuilder<CommandSourceStack> warCommand = literal("war").executes(ctx -> {
+                ServerPlayer player = ctx.getSource().getPlayer();
+                // Display active wars for the player’s party
+                WarManager.INSTANCE.displayWarInfo(player);
+                return 1;
+            });
+
+            warCommand.then(literal("declare")
+                    .then(argument("party", StringArgumentType.string()).suggests((context, builder) -> {
+
+                        //Check if player
+                        ServerPlayer player = context.getSource().getPlayer();
+                        if (player == null) {
+                            return builder.buildFuture();
+                        }
+
+                        //Check if owner of party
+                        IServerPartyAPI party = OPAPC.getPartyManager().getPartyByOwner(context.getSource().getPlayer().getUUID());
+                        if (party == null) {
+                            return builder.buildFuture();
+                        }
+
+                        PartyClaimsComponent comp = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard());
+                        PartyClaim attackingClaim = comp.getClaim(party.getId());
+                        Map<UUID, PartyClaim> allClaims = comp.getAllClaims();
+                        List<UUID> idsToLookUp = new ArrayList<>();
+
+                        for (Map.Entry<UUID, PartyClaim> entry : allClaims.entrySet()) {
+                            if (!entry.getValue().isInsured() && entry.getValue().getBoughtClaims() >= attackingClaim.getBoughtClaims() && !entry.getValue().getPartyId().equals(attackingClaim.getPartyId())) {
+                                idsToLookUp.add(entry.getKey());
+                            }
+                        }
+
+                        for (UUID id : idsToLookUp) {
+                            builder.suggest(comp.getPartyName(id));
+                        }
+
+                        return builder.buildFuture();
+                    }))
+                    .executes(ctx -> {
+                        ServerPlayer player = ctx.getSource().getPlayer();
+                        if (player == null) {
+                            ctx.getSource().sendFailure(Component.literal("Must be a player to use this command."));
+                            return 0;
+                        }
+                        OpenPACServerAPI api = OpenPACServerAPI.get(ctx.getSource().getServer());
+                        IPartyManagerAPI pm = api.getPartyManager();
+                        IServerPartyAPI attackingParty = pm.getPartyByOwner(player.getUUID());
+
+                        if (attackingParty == null) {
+                            ctx.getSource().sendFailure(Component.literal("Must own a party to declare a war"));
+                            return 0;
+                        }
+
+                        List<WarData> activeWars = WarManager.INSTANCE.getActiveWars();
+                        String defendingPartyName = ctx.getArgument("party", String.class);
+
+                        for (WarData war : activeWars) {
+                            if (war.getAttackingParty().getId().equals(attackingParty.getId())) {
+                                player.sendSystemMessage(Component.literal("You are already in a war!"));
+                                return false;
+                            }
+                            if (war.getDefendingParty().getId().equals()) {
+                                player.sendSystemMessage(Component.literal("This party is already under attack."));
+                                return false;
+                            }
+                        }
+
+                        if (attackerClaims >= defenderClaims && OPAPCConfig.canOnlyAttackLargerClaims) {
+                            player.sendSystemMessage(Component.literal("You can only declare war on parties with more claims than you."));
+                            return false;
+                        }
+
+                        UUID attackerPartyId =
+                                UUID defenderPartyId = PartyArgumentType.getParty(ctx, "party").getId();
+                        int attackerClaims = PartyAPI.getClaimsBought(attackerPartyId);
+                        int defenderClaims = PartyAPI.getClaimsBought(defenderPartyId);
+                        if (WarManager.INSTANCE.canDeclareWar(attackerPartyId, defenderPartyId, attackerClaims, defenderClaims, config, player)) {
+                            WarManager.INSTANCE.declareWar(attackerPartyId, defenderPartyId, player.getWorld(), config);
+                            player.sendMessage(Text.literal("War declared on party: " + defenderPartyId));
+                        }
+                        return 1;
+                    }))
+
             dispatcher.register(literal("war")
                     .then(literal("declare")
                             .then(argument("party", StringArgumentType.string()).suggests((context, builder) -> {
 
                                 //Check if player
-                                MinecraftServer server = context.getSource().getServer();
                                 ServerPlayer player = context.getSource().getPlayer();
                                 if (player == null) {
                                     return builder.buildFuture();
                                 }
 
                                 //Check if owner of party
-                                OpenPACServerAPI api = OpenPACServerAPI.get(server);
-                                IServerPartyAPI party = api.getPartyManager().getPartyByOwner(context.getSource().getPlayer().getUUID());
+                                IServerPartyAPI party = OPAPC.getPartyManager().getPartyByOwner(context.getSource().getPlayer().getUUID());
                                 if (party == null) {
                                     return builder.buildFuture();
                                 }
 
-                                PartyClaimsComponent comp = OPAPCComponents.PARTY_CLAIMS.get(server.getScoreboard());
+                                PartyClaimsComponent comp = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard());
                                 PartyClaim attackingClaim = comp.getClaim(party.getId());
                                 Map<UUID, PartyClaim> allClaims = comp.getAllClaims();
                                 List<UUID> idsToLookUp = new ArrayList<>();
 
                                 for (Map.Entry<UUID, PartyClaim> entry : allClaims.entrySet()) {
-                                    if (!entry.getValue().isInsured() && entry.getValue().getBoughtClaims() <= attackingClaim.getBoughtClaims() && !entry.getValue().getPartyId().equals(attackingClaim.getPartyId())) {
+                                    if (!entry.getValue().isInsured() && entry.getValue().getBoughtClaims() >= attackingClaim.getBoughtClaims() && !entry.getValue().getPartyId().equals(attackingClaim.getPartyId())) {
                                         idsToLookUp.add(entry.getKey());
                                     }
                                 }
 
-                                // Assuming you have a way to get all party names
-                                Map<UUID, PartyName> partyNameMap = OPAPCComponents.PARTY_NAMES.get(server.getScoreboard()).getPartyNameHashMap();
-
                                 for (UUID id : idsToLookUp) {
-                                    builder.suggest(api.getPartyManager().getPartyById(id).getDefaultName());
+                                    builder.suggest(comp.getPartyName(id));
                                 }
 
                                 return builder.buildFuture();
@@ -774,7 +857,7 @@ public class CommandsManager {
                                 WarManager.INSTANCE.displayWarInfo(player);
                                 return 1;
                             }))
-                    .then(literal("end")
+                    .then(literal("forfeit")
                             .executes(ctx -> {
                                 ServerPlayer player = ctx.getSource().getPlayer();
                                 UUID defenderPartyId = PartyArgumentType.getParty(ctx, "party").getId();

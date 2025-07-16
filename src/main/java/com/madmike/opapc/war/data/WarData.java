@@ -2,9 +2,14 @@ package com.madmike.opapc.war.data;
 
 import com.madmike.opapc.config.OPAPCConfig;
 import com.madmike.opapc.war.WarManager;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Stream;
 
 public class WarData {
@@ -13,16 +18,22 @@ public class WarData {
     private final IServerPartyAPI defendingParty;
     private final long startTime;
     private int attackerLivesRemaining;
-    private int unclaimBlocksLeft;
+    private int warBlocksLeft;
+    private List<BlockPos> spawnedWarBlockPositions = new ArrayList<>();
 
 
 
-    public WarData(IServerPartyAPI attackingParty, IServerPartyAPI defendingParty) {
+    public WarData(IServerPartyAPI attackingParty, IServerPartyAPI defendingParty, List<BlockPos> spawnedWarBlockPositions) {
         this.attackingParty = attackingParty;
         this.defendingParty = defendingParty;
         this.startTime = System.currentTimeMillis();
         this.attackerLivesRemaining = OPAPCConfig.maxAttackerLives;
-        this.unclaimBlocksLeft = OPAPCConfig.unclaimBlocksPerWar;
+        this.warBlocksLeft = OPAPCConfig.unclaimBlocksPerWar;
+        this.spawnedWarBlockPositions = spawnedWarBlockPositions;
+    }
+
+    public List<BlockPos> getSpawnedWarBlockPositions() {
+        return spawnedWarBlockPositions;
     }
 
     public IServerPartyAPI getAttackingParty() {
@@ -49,21 +60,27 @@ public class WarData {
         return attackerLivesRemaining;
     }
 
-    public void setAttackerLivesRemaining(int attackerLivesRemaining) {
-        this.attackerLivesRemaining = attackerLivesRemaining;
+    public void decrementAttackerLivesRemaining(ServerLevel level) {
         if (this.attackerLivesRemaining <= 0) {
             WarManager.INSTANCE.endWar(this, WarManager.EndOfWarType.DEATHS);
         }
+        else {
+
+        }
     }
 
-    public int getUnclaimBlocksLeft() {
-        return unclaimBlocksLeft;
+    public int getWarBlocksLeft() {
+        return warBlocksLeft;
     }
 
-    public void setUnclaimBlocksLeft(int unclaimBlocksLeft) {
-        this.unclaimBlocksLeft = unclaimBlocksLeft;
-        if (this.unclaimBlocksLeft <= 0) {
+    public void decrementWarBlocksLeft() {
+        --warBlocksLeft;
+        if (this.warBlocksLeft <= 0) {
             WarManager.INSTANCE.endWar(this, WarManager.EndOfWarType.ALL_BLOCKS_BROKEN);
+        }
+        else {
+            getAttackingPlayers().forEach(p -> p.sendSystemMessage(Component.literal("War Blocks left to find: " + getWarBlocksLeft())));
+            getDefendingPlayers().forEach(p -> p.sendSystemMessage(Component.literal("War Blocks left to defend: " + getWarBlocksLeft())));
         }
     }
 }

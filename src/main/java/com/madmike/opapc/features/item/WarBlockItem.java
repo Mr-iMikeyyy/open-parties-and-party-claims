@@ -4,9 +4,9 @@ package com.madmike.opapc.features.item;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.level.block.Block;
 
-public class PartyClaimBlockItem extends BlockItem {
+public class WarBlockItem extends BlockItem {
 
-    public PartyClaimBlockItem(Block block, Properties properties) {
+    public WarBlockItem(Block block, Properties properties) {
         super(block, properties);
     }
 

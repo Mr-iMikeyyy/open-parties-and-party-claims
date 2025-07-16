@@ -1,6 +1,6 @@
 {
   "parent": "block/cube_all",
   "textures": {
-    "all": "opapc:block/party_claim_block"
+    "all": "opapc:block/war_block"
   }
 }

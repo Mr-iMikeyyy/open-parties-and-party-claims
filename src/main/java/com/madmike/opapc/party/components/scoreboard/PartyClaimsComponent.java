@@ -1,5 +1,6 @@
 package com.madmike.opapc.party.components.scoreboard;
 
+import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.party.data.PartyClaim;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -7,6 +8,7 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.scores.Scoreboard;
 import org.jetbrains.annotations.NotNull;
+import xaero.pac.common.server.player.config.api.PlayerConfigOptions;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -74,5 +76,10 @@ public class PartyClaimsComponent implements dev.onyxstudios.cca.api.v3.componen
         if (claim != null) {
             partyClaims.remove(partyId);
         }
+    }
+
+    public String getPartyName(UUID partyId) {
+        UUID ownerId = OPAPC.getPartyManager().getPartyById(partyId).getOwner().getUUID();
+        return OPAPC.getPlayerConfigs().getLoadedConfig(ownerId).getFromEffectiveConfig(PlayerConfigOptions.PARTY_NAME);
     }
 }
