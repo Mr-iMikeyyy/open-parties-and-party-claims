@@ -1,5 +1,6 @@
 package com.madmike.opapc.util;
 
+import com.madmike.opapc.OPAPC;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -7,14 +8,12 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import xaero.pac.common.claims.player.api.IPlayerChunkClaimAPI;
 import xaero.pac.common.claims.result.api.ClaimResult;
-import xaero.pac.common.server.claims.api.IServerClaimsManagerAPI;
 
 import java.util.*;
 
 public class NetherClaimAdjuster {
 
     public static void mirrorOverworldClaimsToNether(
-            IServerClaimsManagerAPI cm,
             ServerPlayer player
     ) {
         player.sendSystemMessage(Component.literal("[Mirror] Starting mirrorOverworldClaimsToNether"));
@@ -23,7 +22,7 @@ public class NetherClaimAdjuster {
         player.sendSystemMessage(Component.literal("[Mirror] Obtained nether dimension ID"));
 
         List<ChunkPos> overworldClaims = new ArrayList<>();
-        cm.getPlayerInfo(player.getUUID())
+        OPAPC.getClaimsManager().getPlayerInfo(player.getUUID())
                 .getDimension(Level.OVERWORLD.location())
                 .getStream()
                 .forEach(e -> e.getStream().forEach(overworldClaims::add));
@@ -38,7 +37,7 @@ public class NetherClaimAdjuster {
             player.sendSystemMessage(Component.literal("[Mirror] Mapped Overworld chunk " + owChunk + " -> Nether chunk (" + netherX + ", " + netherZ + ")"));
         }
         List<ChunkPos> netherClaims = new ArrayList<>();
-        var dimensionClaims = cm.getPlayerInfo(player.getUUID()).getDimension(Level.NETHER.location());
+        var dimensionClaims = OPAPC.getClaimsManager().getPlayerInfo(player.getUUID()).getDimension(Level.NETHER.location());
         if (dimensionClaims != null) {
             dimensionClaims.getStream().forEach(e -> e.getStream().forEach(netherClaims::add));
             player.sendSystemMessage(Component.literal("[Mirror] Found " + netherClaims.size() + " current nether claims"));
@@ -58,7 +57,7 @@ public class NetherClaimAdjuster {
             } else {
                 for (ChunkPos pos : netherClaims) {
                     player.sendSystemMessage(Component.literal("[Mirror] Unclaiming nether chunk: " + pos));
-                    ClaimResult<IPlayerChunkClaimAPI> result = cm.tryToUnclaim(netherId, player.getUUID(), pos.x, pos.z, pos.x, pos.z, false);
+                    ClaimResult<IPlayerChunkClaimAPI> result = OPAPC.getClaimsManager().tryToUnclaim(netherId, player.getUUID(), pos.x, pos.z, pos.x, pos.z, false);
                     player.sendSystemMessage(Component.literal("[Mirror] Unclaim result: " + result.getResultType().message.getString()));
                 }
                 return;
@@ -70,7 +69,7 @@ public class NetherClaimAdjuster {
         for (ChunkPos chunk : netherChunksToClaim) {
             if (!currentNetherClaimsSet.contains(chunk)) {
                 player.sendSystemMessage(Component.literal("[Mirror] Attempting to claim nether chunk: " + chunk));
-                ClaimResult<IPlayerChunkClaimAPI> result = cm.tryToClaim(netherId, player.getUUID(), 0, chunk.x, chunk.z, chunk.x, chunk.z, false);
+                ClaimResult<IPlayerChunkClaimAPI> result = OPAPC.getClaimsManager().tryToClaim(netherId, player.getUUID(), 0, chunk.x, chunk.z, chunk.x, chunk.z, false);
                 player.sendSystemMessage(Component.literal("[Mirror] Claim result: " + result.getResultType().message.getString()));
             }
         }
@@ -80,7 +79,7 @@ public class NetherClaimAdjuster {
         for (ChunkPos chunk : currentNetherClaimsSet) {
             if (!netherChunksToClaim.contains(chunk)) {
                 player.sendSystemMessage(Component.literal("[Mirror] Attempting to unclaim stale nether chunk: " + chunk));
-                ClaimResult<IPlayerChunkClaimAPI> result = cm.tryToUnclaim(netherId, player.getUUID(), chunk.x, chunk.z, chunk.x, chunk.z, false);
+                ClaimResult<IPlayerChunkClaimAPI> result = OPAPC.getClaimsManager().tryToUnclaim(netherId, player.getUUID(), chunk.x, chunk.z, chunk.x, chunk.z, false);
                 player.sendSystemMessage(Component.literal("[Mirror] Unclaim result: " + result.getResultType().message.getString()));
             }
         }

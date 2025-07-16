@@ -6,6 +6,7 @@ import com.madmike.opapc.components.OPAPCComponents;
 import com.madmike.opapc.trade.data.OfflineSale;
 import com.madmike.opapc.util.CurrencyUtil;
 import com.madmike.opapc.war.WarManager;
+import com.madmike.opapc.war.data.WarData;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
@@ -20,7 +21,8 @@ import net.minecraft.world.item.CreativeModeTabs;
 
 import java.util.*;
 
-import static com.madmike.opapc.features.OPAPCFeatures.PARTY_CLAIM_BLOCK_ITEM;
+import static com.madmike.opapc.features.OPAPCFeatures.WAR_BLOCK_ITEM;
+
 
 public class EventManager {
     public static void register() {
@@ -62,7 +64,7 @@ public class EventManager {
         UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
             if (!(player instanceof ServerPlayer serverPlayer)) return InteractionResult.PASS;
 
-            if (YourRaidManager.isPlayerRaiding(serverPlayer)) {
+            if (RaidManager.getActiveRaids(serverPlayer)) {
                 serverPlayer.sendSystemMessage(Component.literal("You cannot place blocks while raiding a claim."));
                 return InteractionResult.FAIL;
             }
@@ -73,7 +75,7 @@ public class EventManager {
         PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, blockEntity) -> {
             if (!(player instanceof ServerPlayer serverPlayer)) return true; // allow if not server player
 
-            if (YourRaidManager.isPlayerRaiding(serverPlayer)) {
+            if (RaidManager.getActiveRaids(serverPlayer)) {
                 serverPlayer.sendSystemMessage(Component.literal("You cannot break blocks while raiding a claim."));
                 return false; // cancel the break
             }
@@ -82,30 +84,46 @@ public class EventManager {
         });
 
         ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.BUILDING_BLOCKS).register(entries -> {
-            entries.accept(PARTY_CLAIM_BLOCK_ITEM);
+            entries.accept(WAR_BLOCK_ITEM);
         });
 
         ServerLivingEntityEvents.ALLOW_DEATH.register((entity, damageSource, amount) -> {
 
-            //Checks if a duel is happening.
-            if (dm.isDuelOngoing()) {
+            //Checks if entity that died is a player
+            if (entity instanceof ServerPlayer player) {
 
-                //Checks if entity that died is a player
-                if (entity instanceof net.minecraft.entity.player.PlayerEntity) {
+                //Checks if a duel is happening.
+                if (dm.isDuelOngoing()) {
 
                     //Checks if the player is in a duel
-                    if (dm.getDuelLives().containsKey(entity.getUuid())) {
+                    if (dm.getDuelLives().containsKey(player.getUUID())) {
 
                         //Calculates score and teleports player
-                        dm.onPlayerDeath((ServerPlayerEntity) entity);
+                        dm.onPlayerDeath(player);
 
                         //Cheats Death
                         return false;
                     }
                 }
+
+
+                List<WarData> activeWars = WarManager.INSTANCE.getActiveWars();
+
+                if (!activeWars.isEmpty()) {
+                    for (WarData war : activeWars) {
+                        if (war.getDefendingPlayers().anyMatch(e -> e.getUUID().equals(player.getUUID()))) {
+                            WarManager.INSTANCE.onPlayerDeath(war, player, false);
+                            return false;
+                        }
+                        if (war.getAttackingPlayers().anyMatch(e -> e.getUUID().equals(player.getUUID()))) {
+                            WarManager.INSTANCE.onPlayerDeath(war, player, true);
+                            return false;
+                        }
+                    }
+                }
             }
             return true; // Allows death
-        }); //TODO if in war check if defending or attacking, if defending respawn near unclaim block, if attacking respawn outside claim nearest unclaim block.
+        });
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             WarManager.INSTANCE.tick();

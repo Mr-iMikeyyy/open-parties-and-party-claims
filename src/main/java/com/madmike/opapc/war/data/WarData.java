@@ -4,7 +4,6 @@ import com.madmike.opapc.config.OPAPCConfig;
 import com.madmike.opapc.war.WarManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 
@@ -60,13 +59,9 @@ public class WarData {
         return attackerLivesRemaining;
     }
 
-    public void decrementAttackerLivesRemaining(ServerLevel level) {
-        if (this.attackerLivesRemaining <= 0) {
-            WarManager.INSTANCE.endWar(this, WarManager.EndOfWarType.DEATHS);
-        }
-        else {
+    public void decrementAttackerLivesRemaining() {
+        attackerLivesRemaining--;
 
-        }
     }
 
     public int getWarBlocksLeft() {

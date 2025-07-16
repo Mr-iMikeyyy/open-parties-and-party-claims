@@ -1,5 +1,6 @@
 package com.madmike.opapc.war;
 
+import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.config.OPAPCConfig;
 import com.madmike.opapc.features.block.WarBlock;
 import com.madmike.opapc.util.NetherClaimAdjuster;
@@ -14,7 +15,6 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import xaero.pac.common.server.api.OpenPACServerAPI;
-import xaero.pac.common.server.claims.api.IServerClaimsManagerAPI;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 import xaero.pac.common.server.player.config.api.PlayerConfigOptions;
 
@@ -25,33 +25,11 @@ public class WarManager {
 
     private final List<WarData> activeWars = new ArrayList<>();
 
-
-
-
-
     private WarManager() {}
 
     public List<WarData> getActiveWars() {
         return activeWars;
     }
-
-//    public boolean canDeclareWar(UUID attackerPartyId, UUID defenderPartyId, int attackerClaims, int defenderClaims, ServerPlayer player) {
-//        if (attackerClaims >= defenderClaims && OPAPCConfig.canOnlyAttackLargerClaims) {
-//            player.sendSystemMessage(Component.literal("You can only declare war on parties with more claims than you."));
-//            return false;
-//        }
-//        for (WarData war : activeWars) {
-//            if (war.getAttackingParty().getId().equals(attackerPartyId)) {
-//                player.sendSystemMessage(Component.literal("You are already in a war!"));
-//                return false;
-//            }
-//            if (war.getDefendingParty().getId().equals(defenderPartyId)) {
-//                player.sendSystemMessage(Component.literal("This party is already under attack."));
-//                return false;
-//            }
-//        }
-//        return true;
-//    }
 
     public void declareWar(IServerPartyAPI attackerParty, IServerPartyAPI defenderParty, MinecraftServer server) {
         List<BlockPos> warBlocks = spawnWarBlocks(defenderParty, server);
@@ -61,7 +39,7 @@ public class WarManager {
         api.getPlayerConfigs().getLoadedConfig(defenderParty.getOwner().getUUID()).getUsedSubConfig().tryToSet(PlayerConfigOptions.PROTECT_CLAIMED_CHUNKS, false);
     }
 
-    public void tick(ServerLevel level) {
+    public void tick() {
         long currentTime = System.currentTimeMillis();
         activeWars.removeIf(war -> {
             if (currentTime - war.getStartTime() >= OPAPCConfig.warDuration) {
@@ -72,42 +50,41 @@ public class WarManager {
         });
     }
 
-    public void handleWarBlockBroken(ServerLevel level, BlockPos pos) {
+    public void handleWarBlockBroken(BlockPos pos) {
 
         for (WarData war : activeWars) {
             if (war.getSpawnedWarBlockPositions().contains(pos)) {
-                OpenPACServerAPI api = OpenPACServerAPI.get(level.getServer());
-                IServerClaimsManagerAPI cm = api.getServerClaimsManager();
                 ChunkPos chunkPos = new ChunkPos(pos);
-                cm.tryToUnclaim(ServerLevel.OVERWORLD.location(), war.getDefendingParty().getOwner().getUUID(), chunkPos.x, chunkPos.z, chunkPos.x, chunkPos.z, false);
+                OPAPC.getClaimsManager().tryToUnclaim(ServerLevel.OVERWORLD.location(), war.getDefendingParty().getOwner().getUUID(), chunkPos.x, chunkPos.z, chunkPos.x, chunkPos.z, false);
 
-                war.decrementWarBlocksLeft(level);
-
-                war.getAttackingPlayers().forEach(p -> p.sendSystemMessage(Component.literal("War Blocks left to find: " + war.ge)));
+                war.decrementWarBlocksLeft();
+                if (war.getWarBlocksLeft() <= 0) {
+                    endWar(war, EndOfWarType.ALL_BLOCKS_BROKEN);
+                }
+                else {
+                    war.getAttackingPlayers().forEach(p -> p.sendSystemMessage(Component.literal("War Blocks left to find: " + war.getWarBlocksLeft())));
+                    war.getDefendingPlayers().forEach(p -> p.sendSystemMessage(Component.literal("A war block has been destroyed! You have " + war.getWarBlocksLeft() + " left!")));
+                }
             }
-        }
-
-        ChunkPos chunkPos = level.getChunk(pos).getPos();
-
-        IClaimManagerAPI claimManager = OpenPACServerAPI.get(world.getServer()).getClaimManager();
-        if (claimManager.isChunkClaimed(chunkPos)) {
-            unclaimChunk(chunkPos);
-
-            level.ge.getPlayers().forEach(player ->
-                    player.s(Component.literal("§aChunk at " + chunkPos + " has been unclaimed!"), false));
         }
     }
 
-    public void onPlayerDeath(ServerPlayer player, UUID playerPartyId, boolean isAttacker) {
-        WarData war = activeWars.values().stream()
-                .filter(w -> w.attackerParty().equals(playerPartyId) || w.defenderParty().equals(playerPartyId))
-                .findFirst().orElse(null);
-
-        if (war == null) return;
+    public void onPlayerDeath(WarData war, ServerPlayer player, boolean isAttacker) {
 
         if (isAttacker) {
-            int livesLeft = war.attackerLivesRemaining() - 1;
-            activeWars.put(war.defenderParty(), new WarData(war.attackerParty(), war.defenderParty(), war.startTime(), livesLeft));
+            if (activeWars.remove(war)){
+                war.decrementAttackerLivesRemaining();
+                if (war.getAttackerLivesRemaining() <= 0) {
+                    endWar(war, EndOfWarType.DEATHS);
+                }
+                else {
+                    war.getAttackingPlayers().forEach(p -> p.sendSystemMessage(Component.literal("Your party has " + attackerLivesRemaining + " lives left!")));
+                    war.getDefendingPlayers().forEach(p -> p.sendSystemMessage(Component.literal("Attackers have " + attackerLivesRemaining + " lives left!")));
+                }
+            }
+
+            activeWars.add(new WarData(war.attackerParty(), war.defenderParty(), war.startTime(), livesLeft));
+            activeWars.re
             player.sendSystemMessage(Component.literal("You have " + livesLeft + " lives remaining in this war."));
 
             BlockPos safePos = findSafePosOutsideClaim(player);
@@ -129,7 +106,7 @@ public class WarManager {
         ALL_BLOCKS_BROKEN
     }
 
-    public void cleanupWarBlocks(WarData war, ServerLevel level) {
+    public void cleanupWarBlocks(WarData war) {
         for (BlockPos pos : war.getSpawnedWarBlockPositions()) {
             BlockState state = level.getBlockState(pos);
             if (state.getBlock() instanceof WarBlock) {
@@ -148,7 +125,7 @@ public class WarManager {
 
         // Teleport enemy players if in claim
 
-        NetherClaimAdjuster.mirrorOverworldClaimsToNether(api.getServerClaimsManager(), war.getDefendingParty().getOwner());
+        NetherClaimAdjuster.mirrorOverworldClaimsToNether(war.getDefendingParty().getOwner());
 
         // Optionally notify parties based on end type
         switch (endType) {
