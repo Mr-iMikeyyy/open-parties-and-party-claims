@@ -3,7 +3,6 @@ package com.madmike.opapc.gui;
 import com.glisco.numismaticoverhaul.ModComponents;
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.components.OPAPCComponents;
-import com.madmike.opapc.party.components.scoreboard.PartyNamesComponent;
 import com.madmike.opapc.trade.data.Offer;
 import com.madmike.opapc.net.packets.BuyOfferC2SPacket;
 import com.madmike.opapc.net.packets.RemoveOfferC2SPacket;
@@ -141,6 +140,9 @@ public class TradingScreen extends BaseOwoScreen<FlowLayout> {
         List<TradingScreenTab> tabs = new ArrayList<>();
 
         if (player != null) {
+
+
+
             tabs.add(new TradingScreenTab("My Offers", myOffersTabID));
             IClientPartyAPI shopperParty = OpenPACClientAPI.get().getClientPartyStorage().getParty();
             assert Minecraft.getInstance().level != null;

@@ -18,9 +18,8 @@ public class WarBlock extends Block {
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
         super.onRemove(state, level, pos, newState, isMoving);
 
-        if (!level.isClientSide && level instanceof ServerLevel serverLevel) {
-            WarManager.INSTANCE.handleWarBlockBroken(pos);
-
+        if (!level.isClientSide && level instanceof ServerLevel) {
+            WarManager.INSTANCE.onWarBlockBroken(pos);
         }
     }
 

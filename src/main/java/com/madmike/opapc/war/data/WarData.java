@@ -22,17 +22,20 @@ public class WarData {
 
 
 
-    public WarData(IServerPartyAPI attackingParty, IServerPartyAPI defendingParty, List<BlockPos> spawnedWarBlockPositions) {
+    public WarData(IServerPartyAPI attackingParty, IServerPartyAPI defendingParty) {
         this.attackingParty = attackingParty;
         this.defendingParty = defendingParty;
         this.startTime = System.currentTimeMillis();
         this.attackerLivesRemaining = OPAPCConfig.maxAttackerLives;
         this.warBlocksLeft = OPAPCConfig.unclaimBlocksPerWar;
-        this.spawnedWarBlockPositions = spawnedWarBlockPositions;
     }
 
     public List<BlockPos> getSpawnedWarBlockPositions() {
         return spawnedWarBlockPositions;
+    }
+
+    public void setSpawnedWarBlockPositions(List<BlockPos> spawnedWarBlockPositions) {
+        this.spawnedWarBlockPositions = spawnedWarBlockPositions;
     }
 
     public IServerPartyAPI getAttackingParty() {

@@ -9,7 +9,6 @@ import com.madmike.opapc.config.OPAPCConfig;
 import com.madmike.opapc.party.data.PartyName;
 import com.madmike.opapc.party.data.Donor;
 import com.madmike.opapc.party.data.PartyClaim;
-import com.madmike.opapc.util.ServerRestartChecker;
 import com.madmike.opapc.war.data.WarData;
 import com.madmike.opapc.util.CurrencyUtil;
 import com.madmike.opapc.util.ClaimAdjacencyChecker;
@@ -337,18 +336,14 @@ public class CommandsManager {
             //region Party Command
 
             LiteralArgumentBuilder<CommandSourceStack> partyCommand = literal("party").executes(ctx -> {
-                MinecraftServer server = ctx.getSource().getServer();
                 ServerPlayer player = ctx.getSource().getPlayer();
                 if (player == null) {
                     ctx.getSource().sendFailure(Component.literal("This command must be run by a player."));
                     return 0;
                 }
-                UUID playerUUID = player.getUUID();
-
-                OpenPACServerAPI api = OpenPACServerAPI.get(server);
 
                 // Get the player's party ID
-                IServerPartyAPI party = api.getPartyManager().getPartyByMember(playerUUID);
+                IServerPartyAPI party = OPAPC.getPartyManager().getPartyByMember(player.getUUID());
                 if (party == null) {
                     ctx.getSource().sendFailure(Component.literal("§cYou are not in a party."));
                     return 0;
@@ -356,12 +351,9 @@ public class CommandsManager {
 
                 UUID partyId = party.getId();
 
-                // Get Party Name
-                PartyName partyNameObj = OPAPCComponents.PARTY_NAMES.get(server.getScoreboard()).getPartyNameHashMap()
-                        .getOrDefault(partyId, new PartyName(partyId, "Unknown"));
 
                 // Get Party Claims Info
-                PartyClaim claim = OPAPCComponents.PARTY_CLAIMS.get(server.getScoreboard()).getAllClaims()
+                PartyClaim claim = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard()).getAllClaims()
                         .get(partyId);
                 int usedClaims = claim != null ? claim.getBoughtClaims() : 0;
                 int maxClaims = OPAPCConfig.maxClaimsPerParty;
@@ -382,9 +374,9 @@ public class CommandsManager {
                     ctx.getSource().sendSystemMessage(Component.literal("§eTop Donators:"));
                     for (int i = 0; i < limit; i++) {
                         Map.Entry<UUID, Donor> entry = topDonators.get(i);
-                        String donatorName = server.getPlayerList().getPlayer(entry.getKey()) != null
-                                ? server.getPlayerList().getPlayer(entry.getKey()).getName().getString()
-                                : server.getProfileCache().get(entry.getKey()).map(GameProfile::getName).orElse("Unknown");
+                        String donatorName = OPAPC.getServer().getPlayerList().getPlayer(entry.getKey()) != null
+                                ? OPAPC.getServer().getPlayerList().getPlayer(entry.getKey()).getName().getString()
+                                : OPAPC.getServer().getProfileCache().get(entry.getKey()).map(GameProfile::getName).orElse("Unknown");
 
                         ctx.getSource().sendSystemMessage(Component.literal(
                                 String.format("§b%d. §a%s §7- §6%d Gold", i + 1, donatorName, CurrencyUtil.fromTotalBronze(entry.getValue().amount()).gold())
@@ -718,7 +710,7 @@ public class CommandsManager {
                         List<UUID> idsToLookUp = new ArrayList<>();
 
                         for (Map.Entry<UUID, PartyClaim> entry : allClaims.entrySet()) {
-                            if (!entry.getValue().isInsured() && entry.getValue().getBoughtClaims() >= attackingClaim.getBoughtClaims() && !entry.getValue().getPartyId().equals(attackingClaim.getPartyId())) {
+                            if (!entry.getValue().isWarInsured() && entry.getValue().getBoughtClaims() >= attackingClaim.getBoughtClaims() && !entry.getValue().getPartyId().equals(attackingClaim.getPartyId())) {
                                 idsToLookUp.add(entry.getKey());
                             }
                         }
@@ -796,7 +788,7 @@ public class CommandsManager {
                                 List<UUID> idsToLookUp = new ArrayList<>();
 
                                 for (Map.Entry<UUID, PartyClaim> entry : allClaims.entrySet()) {
-                                    if (!entry.getValue().isInsured() && entry.getValue().getBoughtClaims() >= attackingClaim.getBoughtClaims() && !entry.getValue().getPartyId().equals(attackingClaim.getPartyId())) {
+                                    if (!entry.getValue().isWarInsured() && entry.getValue().getBoughtClaims() >= attackingClaim.getBoughtClaims() && !entry.getValue().getPartyId().equals(attackingClaim.getPartyId())) {
                                         idsToLookUp.add(entry.getKey());
                                     }
                                 }
@@ -869,6 +861,8 @@ public class CommandsManager {
             //endregion
 
             //region Raid Command
+
+            //todo raid respawn command for if a raider gets stuck
 
             //endregion
 

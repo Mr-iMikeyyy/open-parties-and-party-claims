@@ -1,27 +1,23 @@
 package com.madmike.opapc.party.components.scoreboard;
 
-import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.party.data.PartyClaim;
+import dev.onyxstudios.cca.api.v3.component.ComponentV3;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.scores.Scoreboard;
 import org.jetbrains.annotations.NotNull;
-import xaero.pac.common.server.player.config.api.PlayerConfigOptions;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class PartyClaimsComponent implements dev.onyxstudios.cca.api.v3.component.Component {
+public class PartyClaimsComponent implements ComponentV3 {
     private final Scoreboard scoreboard;
-    private final MinecraftServer server;
     private final Map<UUID, PartyClaim> partyClaims = new HashMap<>();
 
-    public PartyClaimsComponent(Scoreboard scoreboard, MinecraftServer server) {
+    public PartyClaimsComponent(Scoreboard scoreboard) {
         this.scoreboard = scoreboard;
-        this.server = server;
     }
 
     @Override
@@ -63,23 +59,10 @@ public class PartyClaimsComponent implements dev.onyxstudios.cca.api.v3.componen
         return partyClaims;
     }
 
-    public Scoreboard getScoreboard() {
-        return scoreboard;
-    }
-
-    public MinecraftServer getServer() {
-        return server;
-    }
-
     public void removeClaim(UUID partyId) {
         PartyClaim claim = partyClaims.get(partyId);
         if (claim != null) {
             partyClaims.remove(partyId);
         }
-    }
-
-    public String getPartyName(UUID partyId) {
-        UUID ownerId = OPAPC.getPartyManager().getPartyById(partyId).getOwner().getUUID();
-        return OPAPC.getPlayerConfigs().getLoadedConfig(ownerId).getFromEffectiveConfig(PlayerConfigOptions.PARTY_NAME);
     }
 }

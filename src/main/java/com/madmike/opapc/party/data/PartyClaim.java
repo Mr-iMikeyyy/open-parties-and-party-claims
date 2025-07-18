@@ -19,21 +19,33 @@ public class PartyClaim {
     private UUID partyId;
     private int boughtClaims = 1;
     private BlockPos teleportPos = null;
-    private long lastInsuranceTime;
+    private long lastWarInsuranceTime;
+    private long lastRaidInsuranceTime;
 
     public PartyClaim(UUID partyId) {
         this.partyId = partyId;
-        this.lastInsuranceTime = System.currentTimeMillis();
+        this.lastWarInsuranceTime = System.currentTimeMillis();
+        this.lastRaidInsuranceTime = System.currentTimeMillis();
     }
 
-    public boolean isInsured() {
+    public boolean isWarInsured() {
         long currentTime = System.currentTimeMillis();
-        long insuranceDurationMillis = OPAPCConfig.insuranceDurationDays * 24L * 60 * 60 * 1000;
-        return currentTime - lastInsuranceTime <= insuranceDurationMillis;
+        long insuranceDurationMillis = OPAPCConfig.warInsuranceDurationDays * 24L * 60 * 60 * 1000;
+        return currentTime - lastWarInsuranceTime <= insuranceDurationMillis;
     }
 
-    public void renewInsurance() {
-        this.lastInsuranceTime = System.currentTimeMillis();
+    public boolean isRaidInsured() {
+        long currentTime = System.currentTimeMillis();
+        long insuranceDurationMillis = OPAPCConfig.warInsuranceDurationDays * 24L * 60 * 60 * 1000;
+        return currentTime - lastWarInsuranceTime <= insuranceDurationMillis;
+    }
+
+    public void renewWarInsurance() {
+        this.lastWarInsuranceTime = System.currentTimeMillis();
+    }
+
+    public void renewRaidInsurance() {
+        this.lastRaidInsuranceTime = System.currentTimeMillis();
     }
 
     public String getPartyName() {
@@ -83,7 +95,7 @@ public class PartyClaim {
         // basic fields
         nbt.putUUID("PartyId", partyId);
         nbt.putInt("BoughtClaims", boughtClaims);
-        nbt.putLong("LastInsuranceTime", lastInsuranceTime);
+        nbt.putLong("LastInsuranceTime", lastWarInsuranceTime);
 
         // teleport position (if set)
         if (teleportPos != null) {
@@ -104,7 +116,7 @@ public class PartyClaim {
         // overwrite fields
         this.partyId = nbt.getUUID("PartyId");
         this.boughtClaims = nbt.getInt("BoughtClaims");
-        this.lastInsuranceTime = nbt.getLong("LastInsuranceTime");
+        this.lastWarInsuranceTime = nbt.getLong("LastInsuranceTime");
 
         // teleport
         if (nbt.contains("TeleportPos", Tag.TAG_COMPOUND)) {

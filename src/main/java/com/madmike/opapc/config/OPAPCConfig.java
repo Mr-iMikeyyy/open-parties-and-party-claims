@@ -20,13 +20,15 @@ public class OPAPCConfig {
     public static int maxClaimsPerParty;
     public static int maxStoreSlotsPerPlayer;
     public static boolean enableTariffs;
-    public static double scallywagDiscount;
+    public static double discount;
+    public static double markup;
     public static int combatDurationSeconds;
     public static int teleportCooldownInSeconds;
     public static boolean canOnlyAttackLargerClaims;
     public static int maxAttackerLives;
     public static int warDuration;
-    public static int insuranceDurationDays;
+    public static int warInsuranceDurationDays;
+    public static int raidInsuranceDurationDays;
     public static int unclaimBlocksPerWar;
     public static List<String> restartTimesRaw;
     public static List<LocalTime> restartTimes = new ArrayList<>();
@@ -37,7 +39,7 @@ public class OPAPCConfig {
         config = CommentedFileConfig.builder(CONFIG_PATH).autosave().build();
         config.load();
 
-        config.setComment("maxStoreSlotsPerPlayer", "Maximum number of offers available by default to the player");
+        config.setComment("maxStoreSlotsPerPlayer", "Maximum number of item slots one can earn in the store");
         maxStoreSlotsPerPlayer = config.getOrElse("maxStoreSlotsPerPlayer", 30);
 
         config.setComment("maxClaimsPerParty", "Maximum number of claims allowed per party");
@@ -46,10 +48,13 @@ public class OPAPCConfig {
         config.setComment("enableTariffs", "Enable tariff system for trades");
         enableTariffs = config.getOrElse("enableTariffs", true);
 
-        config.setComment("scallywagDiscount", "Discount factor for trades with scallywags");
-        scallywagDiscount = config.getOrElse("scallywagDiscount", 0.5);
+        config.setComment("discount", "Discount to apply when a discount is warranted, i.e. between lone wolves or between allies");
+        discount = config.getOrElse("discount", 0.5);
 
-        config.setComment("combatDurationSeconds", "Duration (in seconds) that a player stays in combat after taking damage");
+        config.setComment("markup", "Markup to apply when a markup is warranted, i.e. when a lone wolf buys from a party or vice versa");
+        markup = config.getOrElse("discount", 2.0);
+
+        config.setComment("combatDurationSeconds", "Duration (in seconds) that a player cannot teleport after taking damage");
         combatDurationSeconds = config.getOrElse("combatDurationSeconds", 60);
 
         config.setComment("teleportCooldownInSeconds", "Duration (in seconds) that a player is not allowed to teleport after teleporting");
@@ -64,11 +69,14 @@ public class OPAPCConfig {
         config.setComment("warDuration", "Duration (in minutes) that wars last");
         warDuration = config.getOrElse("warDuration", 10);
 
-        config.setComment("insuranceDurationDays", "How long (in days) insurance lasts after claiming (default: 3 days)");
-        insuranceDurationDays = config.getOrElse("insuranceDurationDays", 3);
+        config.setComment("raidInsuranceDurationDays", "How long (in days) insurance lasts for raids");
+        raidInsuranceDurationDays = config.getOrElse("raidInsuranceDurationDays", 3);
+
+        config.setComment("warInsuranceDurationDays", "How long (in days) insurance lasts for wars, insurance for wars only given after losing a war");
+        warInsuranceDurationDays = config.getOrElse("warInsuranceDurationDays", 7);
 
         config.setComment("unclaimBlocksPerWar", "Max amount of unclaim blocks allowed to spawn per war.");
-        insuranceDurationDays = config.getOrElse("unclaimBlocksPerWar", 10);
+        unclaimBlocksPerWar = config.getOrElse("unclaimBlocksPerWar", 10);
 
         config.setComment("restartTimes", "List of daily server restart times in HH:mm format (e.g., \"04:00\", \"12:00\", \"20:00\"). The mod will block wars and duels 30 min before these times.");
         restartTimesRaw = config.getOrElse("restartTimes", List.of());

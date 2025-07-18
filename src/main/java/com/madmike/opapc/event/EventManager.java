@@ -3,6 +3,7 @@ package com.madmike.opapc.event;
 import com.glisco.numismaticoverhaul.ModComponents;
 import com.glisco.numismaticoverhaul.currency.CurrencyComponent;
 import com.madmike.opapc.components.OPAPCComponents;
+import com.madmike.opapc.raid.RaidManager;
 import com.madmike.opapc.trade.data.OfflineSale;
 import com.madmike.opapc.util.CurrencyUtil;
 import com.madmike.opapc.war.WarManager;
@@ -51,7 +52,7 @@ public class EventManager {
                 component.clearSales(playerId);
             }
 
-            OPAPCComponents.SELLERS.get(server.getScoreboard()).updateSellerNameIfChanged(playerId, player.getName().getString());
+            OPAPCComponents.SELLERS.get(server.getScoreboard()).updateSellerNameIfChanged(playerId, player.getGameProfile().getName());
         });
 
         AttackEntityCallback.EVENT.register((player, level, hand, entity, hitResult) -> {
@@ -106,17 +107,16 @@ public class EventManager {
                     }
                 }
 
+                if (WarManager.INSTANCE.playerIsInWar(player.getUUID())) {
+                    WarManager.INSTANCE.onPlayerDeath(player);
+                }
 
-                List<WarData> activeWars = WarManager.INSTANCE.getActiveWars();
+                List<UUID> playersInWar = WarManager.INSTANCE.getPlayersInWar();
 
-                if (!activeWars.isEmpty()) {
-                    for (WarData war : activeWars) {
-                        if (war.getDefendingPlayers().anyMatch(e -> e.getUUID().equals(player.getUUID()))) {
-                            WarManager.INSTANCE.onPlayerDeath(war, player, false);
-                            return false;
-                        }
-                        if (war.getAttackingPlayers().anyMatch(e -> e.getUUID().equals(player.getUUID()))) {
-                            WarManager.INSTANCE.onPlayerDeath(war, player, true);
+                if (!playersInWar.isEmpty()) {
+                    for (UUID id : playersInWar) {
+                        if (id.equals(player.getUUID())) {
+                            WarManager.INSTANCE.onPlayerDeath(player);
                             return false;
                         }
                     }
@@ -127,6 +127,7 @@ public class EventManager {
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             WarManager.INSTANCE.tick();
+            RaidManager.INSTANCE.tick();
         });
     }
 }
