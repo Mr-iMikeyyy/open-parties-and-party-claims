@@ -6,7 +6,6 @@ import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.components.OPAPCComponents;
 import com.madmike.opapc.party.components.scoreboard.PartyClaimsComponent;
 import com.madmike.opapc.config.OPAPCConfig;
-import com.madmike.opapc.party.data.PartyName;
 import com.madmike.opapc.party.data.Donor;
 import com.madmike.opapc.party.data.PartyClaim;
 import com.madmike.opapc.war.data.WarData;
@@ -681,6 +680,8 @@ public class CommandsManager {
             //endregion
 
             //region War Command
+
+
 
             LiteralArgumentBuilder<CommandSourceStack> warCommand = literal("war").executes(ctx -> {
                 ServerPlayer player = ctx.getSource().getPlayer();

@@ -1,8 +1,8 @@
 package com.madmike.opapc.mixin;
 
+import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.trade.components.scoreboard.OffersComponent;
 import com.madmike.opapc.components.OPAPCComponents;
-import com.madmike.opapc.party.data.PartyName;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
@@ -16,6 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import xaero.pac.common.claims.player.api.IPlayerClaimPosListAPI;
 import xaero.pac.common.parties.party.member.PartyMember;
+import xaero.pac.common.parties.party.member.api.IPartyMemberAPI;
 import xaero.pac.common.server.api.OpenPACServerAPI;
 import xaero.pac.common.server.claims.api.IServerClaimsManagerAPI;
 import xaero.pac.common.server.parties.party.PartyManager;
@@ -74,8 +75,7 @@ public abstract class PartyManagerMixin {
     private void createPartyForOwner(Player owner, CallbackInfoReturnable<ServerParty> cir) {
         ServerParty created = cir.getReturnValue();
         if (created != null) {
-            OPAPCComponents.PARTY_NAMES.get(server.getScoreboard())
-                    .addOrUpdatePartyName(new PartyName(created.getId(), created.getDefaultName()));
+            OPAPCComponents.OFFERS.get(OPAPC.getServer().getScoreboard()).updatePartyForPlayer(owner.getUUID(), created.getId());
         }
     }
 
@@ -87,7 +87,7 @@ public abstract class PartyManagerMixin {
 
             OffersComponent offers = OPAPCComponents.OFFERS.get(server.getScoreboard());
             List<UUID> memberIds = party.getMemberInfoStream()
-                    .map(member -> member.getUUID())
+                    .map(IPartyMemberAPI::getUUID)
                     .toList();
 
             for (UUID id : memberIds) {
