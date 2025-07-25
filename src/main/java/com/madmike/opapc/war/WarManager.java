@@ -1,27 +1,26 @@
 package com.madmike.opapc.war;
 
 import com.madmike.opapc.OPAPC;
+import com.madmike.opapc.OPAPCConfig;
 import com.madmike.opapc.components.OPAPCComponents;
-import com.madmike.opapc.config.OPAPCConfig;
 import com.madmike.opapc.features.block.WarBlock;
+import com.madmike.opapc.party.data.PartyClaim;
+import com.madmike.opapc.util.ClaimAdjacencyChecker;
 import com.madmike.opapc.util.NetherClaimAdjuster;
 import com.madmike.opapc.util.SafeTeleportHelper;
 import com.madmike.opapc.war.data.WarData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.RandomSequence;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
-import xaero.pac.common.server.api.OpenPACServerAPI;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 import xaero.pac.common.server.player.config.api.PlayerConfigOptions;
 
@@ -47,73 +46,78 @@ public class WarManager {
         return playersInWar;
     }
 
-    public void declareWar(IServerPartyAPI attackerParty, IServerPartyAPI defenderParty) {
-        List<BlockPos> warBlocks = spawnWarBlocks(defenderParty.getOwner().getUUID());
-        activeWars.add(new WarData(attackerParty, defenderParty));
+    public void declareWar(IServerPartyAPI attackerParty, IServerPartyAPI defenderParty, boolean shouldTeleport) {
+        BlockPos warBlock = spawnWarBlock(defenderParty.getOwner().getUUID());
+
+
+        activeWars.add(new WarData(attackerParty, defenderParty, warBlock));
 
         // Drop protections via OPAPC permission API here
         OPAPC.getPlayerConfigs().getLoadedConfig(defenderParty.getOwner().getUUID()).getUsedSubConfig().tryToSet(PlayerConfigOptions.PROTECT_CLAIMED_CHUNKS, false);
     }
 
-    private List<BlockPos> spawnWarBlocks(UUID ownerId) {
-
+    private BlockPos spawnWarBlock(UUID ownerId) {
         List<ChunkPos> ownedChunks = new ArrayList<>();
-        OPAPC.getClaimsManager().getPlayerInfo(ownerId).getDimension(Level.OVERWORLD.location()).getStream().forEach(e -> e.getStream().forEach(ownedChunks::add));
+        OPAPC.getClaimsManager().getPlayerInfo(ownerId)
+                .getDimension(Level.OVERWORLD.location())
+                .getStream().forEach(e -> e.getStream().forEach(ownedChunks::add));
 
         RandomSource rand = OPAPC.getServer().overworld().getRandom();
+        Level world = OPAPC.getServer().overworld();
 
-        List<BlockPos> results = new ArrayList<>();
-        Set<BlockPos> seen = new HashSet<>();
+        BlockPos result = null;
         int attempts = 0;
 
-        while (results.size() < OPAPCConfig.maxClaimBlocksPerWar && attempts < 2000) {
+        while (result == null && attempts < 2000) {
             attempts++;
-            // 1) choose a random chunk
-            ChunkPos chunk = ownedChunks.get(rand.nextInt(ownedChunks.size()));
-            int baseX = chunk.x << 4, baseZ = chunk.z << 4;
 
-            // 2) choose a random (x,z) inside it
+            // 1) Pick random owned chunk and random x/z in that chunk
+            ChunkPos chunk = ownedChunks.get(rand.nextInt(ownedChunks.size()));
+            if (ClaimAdjacencyChecker.wouldBreakAdjacency(chunk, ownedChunks)) {
+                continue;
+            }
+            int baseX = chunk.x << 4;
+            int baseZ = chunk.z << 4;
             int x = baseX + rand.nextInt(16);
             int z = baseZ + rand.nextInt(16);
 
-            BlockPos pos = new BlockPos(x, 0 , z);
+            // 2) Start Y-search from terrain gen height
+            BlockPos columnStart = new BlockPos(x, 0, z);
+            int startY = world.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, columnStart).getY();
 
-            // 3) find the surface
-            Level world = OPAPC.getServer().overworld();
-            BlockPos surface = world.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, pos);
-            BlockPos spawnPos = surface.above();
+            for (int y = startY; y < world.getMaxBuildHeight() - 2; y++) {
+                BlockPos groundPos = new BlockPos(x, y, z);
+                BlockState ground = world.getBlockState(groundPos);
 
-            // 4) check sky
-            if (!world.canSeeSky(spawnPos)) continue;
+                // Check ground solidity and fluid
+                if (!ground.isFaceSturdy(world, groundPos, Direction.UP) || !world.getFluidState(groundPos).isEmpty()) continue;
 
-            // 5) check ground solidity
-            BlockState ground = world.getBlockState(surface);
-            if (!ground.isFaceSturdy(world, surface, Direction.UP) || !world.getFluidState(surface).isEmpty()) continue;
-
-            // 6) check headspace
-            boolean clear = true;
-            for (int i = 0; i < OPAPCConfig.airRequiredAboveWarBlocks; i++) {
-                if (!world.isEmptyBlock(spawnPos.above(i))) {
-                    clear = false;
-                    break;
+                // Check required air blocks above
+                boolean spaceClear = true;
+                for (int i = 1; i <= 2; i++) {
+                    if (!world.isEmptyBlock(groundPos.above(i))) {
+                        spaceClear = false;
+                        break;
+                    }
                 }
-            }
-            if (!clear) continue;
+                if (!spaceClear) continue;
 
-            // 7) dedupe
-            if (seen.add(spawnPos)) {
-                results.add(spawnPos);
-            }
+                BlockPos spawnPos = groundPos.above(1);
 
+                // Check sky access
+                if (!world.canSeeSky(spawnPos)) continue;
+
+                result = spawnPos;
+                break; // found a good spot in this column
+            }
         }
 
-        return results;
+        return result;
     }
 
     public void tick() {
-        long currentTime = System.currentTimeMillis();
         activeWars.removeIf(war -> {
-            if (currentTime - war.getStartTime() >= OPAPCConfig.warDuration) {
+            if (war.isExpired()) {
                 endWar(war, EndOfWarType.TIMEOUT);
                 return true;
             }
@@ -124,11 +128,15 @@ public class WarManager {
     public void onWarBlockBroken(BlockPos pos) {
 
         for (WarData war : activeWars) {
-            if (war.getSpawnedWarBlockPositions().contains(pos)) {
+            if (war.getWarBlockPosition().equals(pos)) {
 
                 ChunkPos chunkPos = new ChunkPos(pos);
 
                 OPAPC.getClaimsManager().tryToUnclaim(ServerLevel.OVERWORLD.location(), war.getDefendingParty().getOwner().getUUID(), chunkPos.x, chunkPos.z, chunkPos.x, chunkPos.z, false);
+
+
+                war.getDefendingClaim().setBoughtClaims(war.getDefendingClaim().getBoughtClaims() - 1);
+                war.getAttackingClaim().setBoughtClaims(war.getAttackingClaim().getBoughtClaims() + 1);
 
                 war.decrementWarBlocksLeft();
 
@@ -137,33 +145,40 @@ public class WarManager {
                     return;
                 }
                 else {
+                    war.setWarBlockPosition(spawnWarBlock(war.getDefendingParty().getOwner().getUUID()));
                     war.getAttackingPlayers().forEach(p -> p.sendSystemMessage(Component.literal("War Blocks left to find: " + war.getWarBlocksLeft())));
                     war.getDefendingPlayers().forEach(p -> p.sendSystemMessage(Component.literal("A war block has been destroyed! You have " + war.getWarBlocksLeft() + " left!")));
                 }
+
+                break;
             }
         }
     }
 
-    public void onPlayerDeath(ServerPlayer player) {
+    public WarData playerIsInWar(UUID playerId) {
         for (WarData war : activeWars) {
-            if (war.getAttackingPlayers().anyMatch(e -> e.getUUID().equals(player.getUUID()))) {
-                war.decrementAttackerLivesRemaining();
-                if (war.getAttackerLivesRemaining() <= 0) {
-                    endWar(war, EndOfWarType.DEATHS);
-                }
-                else {
-                    war.getAttackingPlayers().forEach(p -> p.sendSystemMessage(Component.literal("Your party has " + war.getAttackerLivesRemaining() + " lives left!")));
-                    war.getDefendingPlayers().forEach(p -> p.sendSystemMessage(Component.literal("Attackers have " + war.getAttackerLivesRemaining() + " lives left!")));
-                }
+            if (war.getAttackingParty().getMemberInfo(playerId) != null || war.getDefendingParty().getMemberInfo(playerId) != null) {
+                return war;
             }
-            healPlayer(player);
-            SafeTeleportHelper.teleportPlayer(player);
         }
+        return null;
     }
 
-    private void healPlayer(ServerPlayer player) {
+    public void onPlayerDeath(ServerPlayer player, WarData war) {
+        if (war.getAttackingPlayers().anyMatch(e -> e.getUUID().equals(player.getUUID()))) {
+            war.decrementAttackerLivesRemaining();
+            if (war.getAttackerLivesRemaining() <= 0) {
+                endWar(war, EndOfWarType.DEATHS);
+            }
+            else {
+                war.getAttackingPlayers().forEach(p -> p.sendSystemMessage(Component.literal("Your party has " + war.getAttackerLivesRemaining() + " lives left!")));
+                war.getDefendingPlayers().forEach(p -> p.sendSystemMessage(Component.literal("Attackers have " + war.getAttackerLivesRemaining() + " lives left!")));
+            }
+        }
         player.setHealth(player.getMaxHealth());
+        SafeTeleportHelper.teleportPlayer(player);
     }
+
 
     public enum EndOfWarType {
         TIMEOUT,
@@ -173,10 +188,8 @@ public class WarManager {
     }
 
     public void cleanupWarBlocks(WarData war) {
-        for (BlockPos pos : war.getSpawnedWarBlockPositions()) {
-            if (OPAPC.getServer().overworld().getBlockState(pos).getBlock() instanceof WarBlock) {
-                OPAPC.getServer().overworld().setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
-            }
+        if (OPAPC.getServer().overworld().getBlockState(war.getWarBlockPosition()).getBlock() instanceof WarBlock) {
+            OPAPC.getServer().overworld().setBlock(war.getWarBlockPosition(), Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
         }
     }
 

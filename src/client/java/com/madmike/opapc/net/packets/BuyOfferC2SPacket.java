@@ -5,7 +5,7 @@ import net.minecraft.network.FriendlyByteBuf;
 
 import java.util.UUID;
 
-import static com.madmike.opapc.net.packets.PacketIds.BUY_OFFER;
+import static com.madmike.opapc.trade.packets.TradePacketIds.BUY_OFFER;
 
 public class BuyOfferC2SPacket {
     public static void send(UUID offerId) {

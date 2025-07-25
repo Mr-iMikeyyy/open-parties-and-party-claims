@@ -1,7 +1,7 @@
 package com.madmike.opapc.party.data;
 
 import com.madmike.opapc.OPAPC;
-import com.madmike.opapc.config.OPAPCConfig;
+import com.madmike.opapc.OPAPCConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;

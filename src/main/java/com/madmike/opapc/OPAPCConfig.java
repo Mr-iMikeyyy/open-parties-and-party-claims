@@ -1,7 +1,6 @@
-package com.madmike.opapc.config;
+package com.madmike.opapc;
 
 import com.electronwill.nightconfig.core.file.CommentedFileConfig;
-import com.madmike.opapc.OPAPC;
 import net.fabricmc.loader.api.FabricLoader;
 import java.nio.file.Path;
 import java.time.DateTimeException;
@@ -25,11 +24,8 @@ public class OPAPCConfig {
     public static int combatDurationSeconds;
     public static int teleportCooldownInSeconds;
     public static boolean canOnlyAttackLargerClaims;
-    public static int maxAttackerLives;
-    public static int warDuration;
     public static int warInsuranceDurationDays;
     public static int raidInsuranceDurationDays;
-    public static int unclaimBlocksPerWar;
     public static List<String> restartTimesRaw;
     public static List<LocalTime> restartTimes = new ArrayList<>();
     public static String restartTimezoneRaw;
@@ -43,12 +39,12 @@ public class OPAPCConfig {
         maxStoreSlotsPerPlayer = config.getOrElse("maxStoreSlotsPerPlayer", 30);
 
         config.setComment("maxClaimsPerParty", "Maximum number of claims allowed per party");
-        maxClaimsPerParty = config.getOrElse("maxClaimsPerParty", 5);
+        maxClaimsPerParty = config.getOrElse("maxClaimsPerParty", 300);
 
         config.setComment("enableTariffs", "Enable tariff system for trades");
         enableTariffs = config.getOrElse("enableTariffs", true);
 
-        config.setComment("discount", "Discount to apply when a discount is warranted, i.e. between lone wolves or between allies");
+        config.setComment("discount", "Discount to apply when a discount is warranted, i.e. between lone wolves or between parties and it's allies");
         discount = config.getOrElse("discount", 0.5);
 
         config.setComment("markup", "Markup to apply when a markup is warranted, i.e. when a lone wolf buys from a party or vice versa");
@@ -63,20 +59,11 @@ public class OPAPCConfig {
         config.setComment("canOnlyAttackLargerClaims", "Restrict declaring wars against claims smaller than the attacker's");
         canOnlyAttackLargerClaims = config.getOrElse("canOnlyAttackLargerClaims", true);
 
-        config.setComment("maxAttackerLives", "Number of lives the attackers have when invading a claim");
-        maxAttackerLives = config.getOrElse("maxAttackerLives", 10);
-
-        config.setComment("warDuration", "Duration (in minutes) that wars last");
-        warDuration = config.getOrElse("warDuration", 10);
-
         config.setComment("raidInsuranceDurationDays", "How long (in days) insurance lasts for raids");
         raidInsuranceDurationDays = config.getOrElse("raidInsuranceDurationDays", 3);
 
         config.setComment("warInsuranceDurationDays", "How long (in days) insurance lasts for wars, insurance for wars only given after losing a war");
         warInsuranceDurationDays = config.getOrElse("warInsuranceDurationDays", 7);
-
-        config.setComment("unclaimBlocksPerWar", "Max amount of unclaim blocks allowed to spawn per war.");
-        unclaimBlocksPerWar = config.getOrElse("unclaimBlocksPerWar", 10);
 
         config.setComment("restartTimes", "List of daily server restart times in HH:mm format (e.g., \"04:00\", \"12:00\", \"20:00\"). The mod will block wars and duels 30 min before these times.");
         restartTimesRaw = config.getOrElse("restartTimes", List.of());

@@ -1,6 +1,6 @@
 package com.madmike.opapc.util;
 
-import com.madmike.opapc.config.OPAPCConfig;
+import com.madmike.opapc.OPAPCConfig;
 
 import java.time.Duration;
 import java.time.LocalTime;

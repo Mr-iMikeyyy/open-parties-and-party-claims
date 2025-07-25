@@ -106,27 +106,11 @@ public class EventManager {
                         return false;
                     }
                 }
-
-                if (WarManager.INSTANCE.playerIsInWar(player.getUUID())) {
-                    WarManager.INSTANCE.onPlayerDeath(player);
-                }
-
-                List<UUID> playersInWar = WarManager.INSTANCE.getPlayersInWar();
-
-                if (!playersInWar.isEmpty()) {
-                    for (UUID id : playersInWar) {
-                        if (id.equals(player.getUUID())) {
-                            WarManager.INSTANCE.onPlayerDeath(player);
-                            return false;
-                        }
-                    }
-                }
             }
             return true; // Allows death
         });
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
-            WarManager.INSTANCE.tick();
             RaidManager.INSTANCE.tick();
         });
     }

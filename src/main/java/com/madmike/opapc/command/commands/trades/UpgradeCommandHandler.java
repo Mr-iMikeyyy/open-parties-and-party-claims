@@ -4,7 +4,7 @@ import com.glisco.numismaticoverhaul.ModComponents;
 import com.glisco.numismaticoverhaul.currency.CurrencyComponent;
 import com.madmike.opapc.components.OPAPCComponents;
 import com.madmike.opapc.trade.components.player.UnlockedStoreSlotsComponent;
-import com.madmike.opapc.config.OPAPCConfig;
+import com.madmike.opapc.OPAPCConfig;
 import com.madmike.opapc.util.CurrencyUtil;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;

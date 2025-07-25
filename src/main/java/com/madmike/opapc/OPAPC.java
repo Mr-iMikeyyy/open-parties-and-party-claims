@@ -1,10 +1,11 @@
 package com.madmike.opapc;
 
 import com.madmike.opapc.command.CommandsManager;
-import com.madmike.opapc.components.OPAPCComponents;
 import com.madmike.opapc.event.EventManager;
 import com.madmike.opapc.features.OPAPCFeatures;
-import com.madmike.opapc.net.ServerReceiver;
+import com.madmike.opapc.trade.packets.TradeServerReceiver;
+import com.madmike.opapc.war.WarCommand;
+import com.madmike.opapc.war.WarEvents;
 import net.fabricmc.api.ModInitializer;
 
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -64,12 +65,14 @@ public class OPAPC implements ModInitializer {
 
 		//Register Events
 		EventManager.register();
+		WarEvents.register();
 
 		// Register commands
 		CommandsManager.registerCommands();
+		WarCommand.registerWarCommand();
 
 		// Register Server Packet Receiver
-		ServerReceiver.register();
+		TradeServerReceiver.register();
 
 		OPAPCFeatures.register();
 

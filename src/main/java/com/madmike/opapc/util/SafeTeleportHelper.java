@@ -1,19 +1,16 @@
 package com.madmike.opapc.util;
 
 import com.madmike.opapc.OPAPC;
-import com.madmike.opapc.config.OPAPCConfig;
+import com.madmike.opapc.OPAPCConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.levelgen.Heightmap;
-
-import java.util.Random;
 
 public class SafeTeleportHelper {
     /**

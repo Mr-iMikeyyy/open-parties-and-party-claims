@@ -1,39 +1,27 @@
 package com.madmike.opapc.util;
 
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.Level;
-import xaero.pac.common.claims.player.api.IPlayerClaimPosListAPI;
-import xaero.pac.common.server.api.OpenPACServerAPI;
-import xaero.pac.common.server.claims.player.api.IServerPlayerClaimInfoAPI;
 
 import java.util.*;
 
 public class ClaimAdjacencyChecker {
 
     public static boolean wouldBreakAdjacency(
-            ServerPlayer player,
             ChunkPos toUnclaim,
-            OpenPACServerAPI api
+            List<ChunkPos> currentClaims
     ) {
-        IServerPlayerClaimInfoAPI leaderInfo = api.getServerClaimsManager().getPlayerInfo(player.getUUID());
-
-        List<IPlayerClaimPosListAPI> allLists = leaderInfo.getDimension(Level.OVERWORLD.location()).getStream().toList();
-        Set<ChunkPos> allClaims = new HashSet<>();
-
-        for (IPlayerClaimPosListAPI list : allLists) {
-            list.getStream().forEach(allClaims::add);
+        if (!currentClaims.contains(toUnclaim)) {
+            return true;
         }
+        currentClaims.remove(toUnclaim);
 
-        allClaims.remove(toUnclaim);
-
-        if (allClaims.isEmpty()) {
+        if (currentClaims.isEmpty()) {
             return false;
         }
 
         Set<ChunkPos> visited = new HashSet<>();
         Queue<ChunkPos> toVisit = new ArrayDeque<>();
-        ChunkPos start = allClaims.iterator().next();
+        ChunkPos start = currentClaims.iterator().next();
         toVisit.add(start);
 
         while (!toVisit.isEmpty()) {
@@ -41,35 +29,26 @@ public class ClaimAdjacencyChecker {
             if (!visited.add(current)) continue;
 
             for (ChunkPos neighbor : getNeighbors(current)) {
-                if (allClaims.contains(neighbor) && !visited.contains(neighbor)) {
+                if (currentClaims.contains(neighbor) && !visited.contains(neighbor)) {
                     toVisit.add(neighbor);
                 }
             }
         }
 
-        return visited.size() != allClaims.size(); // True if disconnected after removal
+        return visited.size() != currentClaims.size(); // True if disconnected after removal
     }
 
     public static boolean isAdjacentToExistingClaim(
-            ServerPlayer player,
             ChunkPos targetChunk,
-            OpenPACServerAPI api
+            List<ChunkPos> currentClaims
     ) {
-        IServerPlayerClaimInfoAPI leaderInfo = api.getServerClaimsManager().getPlayerInfo(player.getUUID());
 
-        List<IPlayerClaimPosListAPI> allLists = leaderInfo.getDimension(Level.OVERWORLD.location()).getStream().toList();
-        Set<ChunkPos> allClaims = new HashSet<>();
-
-        for (IPlayerClaimPosListAPI list : allLists) {
-            list.getStream().forEach(allClaims::add);
-        }
-
-        if (allClaims.isEmpty()) {
+        if (currentClaims.isEmpty()) {
             return true; // First claim always allowed
         }
 
         for (ChunkPos neighbor : getNeighbors(targetChunk)) {
-            if (allClaims.contains(neighbor)) {
+            if (currentClaims.contains(neighbor)) {
                 return true;
             }
         }
