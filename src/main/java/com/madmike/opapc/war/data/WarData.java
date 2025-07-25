@@ -2,7 +2,7 @@ package com.madmike.opapc.war.data;
 
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.components.OPAPCComponents;
-import com.madmike.opapc.party.data.PartyClaim;
+import com.madmike.opapc.partyclaim.data.PartyClaim;
 import com.madmike.opapc.war.WarManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;

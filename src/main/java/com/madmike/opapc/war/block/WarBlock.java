@@ -1,4 +1,4 @@
-package com.madmike.opapc.features.block;
+package com.madmike.opapc.war.block;
 
 import com.madmike.opapc.war.WarManager;
 import net.minecraft.core.BlockPos;
@@ -22,5 +22,4 @@ public class WarBlock extends Block {
             WarManager.INSTANCE.onWarBlockBroken(pos);
         }
     }
-
 }

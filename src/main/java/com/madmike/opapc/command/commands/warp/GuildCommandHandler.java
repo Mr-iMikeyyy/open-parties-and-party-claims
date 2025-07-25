@@ -1,7 +1,7 @@
 package com.madmike.opapc.command.commands.warp;
 
 import com.madmike.opapc.components.OPAPCComponents;
-import com.madmike.opapc.party.data.PartyClaim;
+import com.madmike.opapc.partyclaim.data.PartyClaim;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;

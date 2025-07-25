@@ -1,4 +1,4 @@
-package com.madmike.opapc.party.components.player;
+package com.madmike.opapc.partyclaim.components.player;
 
 import com.madmike.opapc.OPAPCConfig;
 import dev.onyxstudios.cca.api.v3.component.Component;

@@ -2,7 +2,7 @@ package com.madmike.opapc;
 
 import com.madmike.opapc.command.CommandsManager;
 import com.madmike.opapc.event.EventManager;
-import com.madmike.opapc.features.OPAPCFeatures;
+import com.madmike.opapc.war.WarFeatures;
 import com.madmike.opapc.trade.packets.TradeServerReceiver;
 import com.madmike.opapc.war.WarCommand;
 import com.madmike.opapc.war.WarEvents;
@@ -74,7 +74,7 @@ public class OPAPC implements ModInitializer {
 		// Register Server Packet Receiver
 		TradeServerReceiver.register();
 
-		OPAPCFeatures.register();
+		WarFeatures.register();
 
 		LOGGER.info("OPAPC Initialized. Good luck out there!");
 	}

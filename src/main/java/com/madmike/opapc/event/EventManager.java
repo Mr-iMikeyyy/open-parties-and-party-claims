@@ -6,8 +6,6 @@ import com.madmike.opapc.components.OPAPCComponents;
 import com.madmike.opapc.raid.RaidManager;
 import com.madmike.opapc.trade.data.OfflineSale;
 import com.madmike.opapc.util.CurrencyUtil;
-import com.madmike.opapc.war.WarManager;
-import com.madmike.opapc.war.data.WarData;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
@@ -22,7 +20,7 @@ import net.minecraft.world.item.CreativeModeTabs;
 
 import java.util.*;
 
-import static com.madmike.opapc.features.OPAPCFeatures.WAR_BLOCK_ITEM;
+import static com.madmike.opapc.war.WarFeatures.WAR_BLOCK_ITEM;
 
 
 public class EventManager {

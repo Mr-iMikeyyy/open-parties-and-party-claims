@@ -1,8 +1,8 @@
-package com.madmike.opapc.features;
+package com.madmike.opapc.war;
 
 import com.madmike.opapc.OPAPC;
-import com.madmike.opapc.features.block.WarBlock;
-import com.madmike.opapc.features.item.WarBlockItem;
+import com.madmike.opapc.war.block.WarBlock;
+import com.madmike.opapc.war.item.WarBlockItem;
 import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -11,7 +11,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 
 
-public class OPAPCFeatures {
+public class WarFeatures {
 
     public static final Block WAR_BLOCK = new WarBlock(FabricBlockSettings.of().strength(50.0f, 1200.0f).dropsNothing().noLootTable());
     public static final Item WAR_BLOCK_ITEM = new WarBlockItem(WAR_BLOCK, new Item.Properties());

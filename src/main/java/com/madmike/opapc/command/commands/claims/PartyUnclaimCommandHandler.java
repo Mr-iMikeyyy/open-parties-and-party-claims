@@ -1,7 +1,7 @@
 package com.madmike.opapc.command.commands.claims;
 
 import com.madmike.opapc.components.OPAPCComponents;
-import com.madmike.opapc.party.data.PartyClaim;
+import com.madmike.opapc.partyclaim.data.PartyClaim;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import xaero.pac.common.claims.player.api.IPlayerChunkClaimAPI;

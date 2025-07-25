@@ -1,4 +1,4 @@
-package com.madmike.opapc.party.data;
+package com.madmike.opapc.partyclaim.data;
 
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCConfig;

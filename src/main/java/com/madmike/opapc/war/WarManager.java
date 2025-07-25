@@ -1,10 +1,7 @@
 package com.madmike.opapc.war;
 
 import com.madmike.opapc.OPAPC;
-import com.madmike.opapc.OPAPCConfig;
-import com.madmike.opapc.components.OPAPCComponents;
-import com.madmike.opapc.features.block.WarBlock;
-import com.madmike.opapc.party.data.PartyClaim;
+import com.madmike.opapc.war.block.WarBlock;
 import com.madmike.opapc.util.ClaimAdjacencyChecker;
 import com.madmike.opapc.util.NetherClaimAdjuster;
 import com.madmike.opapc.util.SafeTeleportHelper;
@@ -50,7 +47,7 @@ public class WarManager {
         BlockPos warBlock = spawnWarBlock(defenderParty.getOwner().getUUID());
 
 
-        activeWars.add(new WarData(attackerParty, defenderParty, warBlock));
+        activeWars.add(new WarData(attackerParty, defenderParty, warBlock, shouldTeleport));
 
         // Drop protections via OPAPC permission API here
         OPAPC.getPlayerConfigs().getLoadedConfig(defenderParty.getOwner().getUUID()).getUsedSubConfig().tryToSet(PlayerConfigOptions.PROTECT_CLAIMED_CHUNKS, false);

@@ -1,11 +1,11 @@
 package com.madmike.opapc.components;
 
 import com.madmike.opapc.OPAPC;
-import com.madmike.opapc.party.components.player.CombatTimerComponent;
-import com.madmike.opapc.party.components.player.TeleportCooldownComponent;
+import com.madmike.opapc.partyclaim.components.player.CombatTimerComponent;
+import com.madmike.opapc.partyclaim.components.player.TeleportCooldownComponent;
 import com.madmike.opapc.trade.components.player.UnlockedStoreSlotsComponent;
-import com.madmike.opapc.party.components.scoreboard.PartyNamesComponent;
-import com.madmike.opapc.party.components.scoreboard.PartyClaimsComponent;
+import com.madmike.opapc.partyclaim.components.scoreboard.PartyNamesComponent;
+import com.madmike.opapc.partyclaim.components.scoreboard.PartyClaimsComponent;
 import com.madmike.opapc.trade.components.scoreboard.OffersComponent;
 import com.madmike.opapc.trade.components.scoreboard.OfflineSalesComponent;
 import com.madmike.opapc.trade.components.scoreboard.SellersComponent;
