@@ -1,6 +1,8 @@
 package com.madmike.opapc.util;
 
+import com.madmike.opapc.OPAPC;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 
 import java.util.*;
 
@@ -38,22 +40,21 @@ public class ClaimAdjacencyChecker {
         return visited.size() != currentClaims.size(); // True if disconnected after removal
     }
 
-    public static boolean isAdjacentToExistingClaim(
-            ChunkPos targetChunk,
-            List<ChunkPos> currentClaims
+    public static boolean isNotAdjacentToExistingClaim(
+            UUID playerId,
+            ChunkPos targetChunk
     ) {
+        List<ChunkPos> claimList = new ArrayList<>();
 
-        if (currentClaims.isEmpty()) {
-            return true; // First claim always allowed
-        }
+        OPAPC.getClaimsManager().getPlayerInfo(playerId).getDimension(Level.OVERWORLD.location()).getStream().forEach(e -> e.getStream().forEach(claimList::add));
 
         for (ChunkPos neighbor : getNeighbors(targetChunk)) {
-            if (currentClaims.contains(neighbor)) {
-                return true;
+            if (claimList.contains(neighbor)) {
+                return false;
             }
         }
 
-        return false;
+        return true;
     }
 
     private static List<ChunkPos> getNeighbors(ChunkPos pos) {

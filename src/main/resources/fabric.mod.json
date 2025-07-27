@@ -22,10 +22,10 @@
 			"com.madmike.opapc.OPAPCClient"
 		],
 		"cardinal-components-scoreboard": [
-			"com.madmike.opapc.components.OPAPCComponents"
+			"com.madmike.opapc.OPAPCComponents"
 		],
 		"cardinal-components-entity": [
-			"com.madmike.opapc.components.OPAPCComponents"
+			"com.madmike.opapc.OPAPCComponents"
 		]
 	},
 	"mixins": [

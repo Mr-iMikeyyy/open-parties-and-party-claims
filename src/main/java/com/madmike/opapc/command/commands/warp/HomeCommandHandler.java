@@ -1,7 +1,7 @@
 package com.madmike.opapc.command.commands.warp;
 
 
-import com.madmike.opapc.components.OPAPCComponents;
+import com.madmike.opapc.OPAPCComponents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
@@ -37,6 +37,6 @@ public class HomeCommandHandler {
                     player.getXRot()
             );
         }
-        OPAPCComponents.TELE_TIMER.get(player).onTele();
+        OPAPCComponents.WARP_TIMER.get(player).onWarp();
     }
 }

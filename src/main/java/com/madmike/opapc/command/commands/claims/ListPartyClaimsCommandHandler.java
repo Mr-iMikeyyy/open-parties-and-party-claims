@@ -1,6 +1,6 @@
 package com.madmike.opapc.command.commands.claims;
 
-import com.madmike.opapc.components.OPAPCComponents;
+import com.madmike.opapc.OPAPCComponents;
 import com.madmike.opapc.partyclaim.components.scoreboard.PartyClaimsComponent;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.commands.CommandSourceStack;

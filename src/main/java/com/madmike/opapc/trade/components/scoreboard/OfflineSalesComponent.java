@@ -1,6 +1,6 @@
 package com.madmike.opapc.trade.components.scoreboard;
 
-import com.madmike.opapc.components.OPAPCComponents;
+import com.madmike.opapc.OPAPCComponents;
 import com.madmike.opapc.trade.data.OfflineSale;
 import dev.onyxstudios.cca.api.v3.component.Component;
 import net.minecraft.nbt.CompoundTag;

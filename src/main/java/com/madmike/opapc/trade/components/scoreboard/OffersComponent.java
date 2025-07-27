@@ -2,7 +2,7 @@ package com.madmike.opapc.trade.components.scoreboard;
 
 import com.glisco.numismaticoverhaul.ModComponents;
 import com.glisco.numismaticoverhaul.currency.CurrencyComponent;
-import com.madmike.opapc.components.OPAPCComponents;
+import com.madmike.opapc.OPAPCComponents;
 import com.madmike.opapc.trade.data.Offer;
 import com.madmike.opapc.trade.packets.TradeScreenRefreshS2CSender;
 import dev.onyxstudios.cca.api.v3.component.sync.AutoSyncedComponent;

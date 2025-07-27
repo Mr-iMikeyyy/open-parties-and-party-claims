@@ -3,7 +3,7 @@ package com.madmike.opapc.command;
 import com.glisco.numismaticoverhaul.ModComponents;
 import com.glisco.numismaticoverhaul.currency.CurrencyComponent;
 import com.madmike.opapc.OPAPC;
-import com.madmike.opapc.components.OPAPCComponents;
+import com.madmike.opapc.OPAPCComponents;
 import com.madmike.opapc.partyclaim.components.scoreboard.PartyClaimsComponent;
 import com.madmike.opapc.OPAPCConfig;
 import com.madmike.opapc.partyclaim.data.Donor;
@@ -13,7 +13,6 @@ import com.madmike.opapc.util.CurrencyUtil;
 import com.madmike.opapc.util.ClaimAdjacencyChecker;
 import com.madmike.opapc.war.WarManager;
 import com.mojang.authlib.GameProfile;
-import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -43,10 +42,6 @@ import static com.madmike.opapc.command.commands.claims.PartyClaimCommandHandler
 import static com.madmike.opapc.command.commands.claims.PartyUnclaimCommandHandler.handlePartyUnclaimCommand;
 import static com.madmike.opapc.command.commands.warp.GuildCommandHandler.handleGuildCommand;
 import static com.madmike.opapc.command.commands.warp.HomeCommandHandler.handleHomeCommand;
-import static com.madmike.opapc.command.commands.trades.SellCommandHandler.handleSellCommand;
-import static com.madmike.opapc.command.commands.trades.TopCommandHandler.handleTopCommand;
-import static com.madmike.opapc.command.commands.trades.TotalsCommandHandler.handleTotalsCommand;
-import static com.madmike.opapc.command.commands.trades.UpgradeCommandHandler.handleUpgradeCommand;
 import static com.madmike.opapc.command.commands.claims.ListPartyClaimsCommandHandler.handleListPartyClaimsCommand;
 import static com.madmike.opapc.util.NetherClaimAdjuster.mirrorOverworldClaimsToNether;
 import static net.minecraft.commands.Commands.argument;
@@ -56,74 +51,6 @@ public class CommandsManager {
 
     public static void registerCommands() {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
-            //region Seller Command
-
-            LiteralArgumentBuilder<CommandSourceStack> sellerCommand = literal("seller").executes(ctx -> {
-                ServerPlayer player = ctx.getSource().getPlayer();
-                if (player == null) {
-                    ctx.getSource().sendFailure(Component.literal("Only players can use /totals."));
-                    return 0;
-                }
-                handleTotalsCommand(player, ctx.getSource().getServer());
-                return 1;
-            });
-
-            sellerCommand.then(literal("upgrade")
-                    .executes(ctx -> {
-                        ServerPlayer player = ctx.getSource().getPlayer();
-                        if (player == null) {
-                            ctx.getSource().sendFailure(Component.literal("Only players can use /upgrade."));
-                            return 0;
-                        }
-                        handleUpgradeCommand(player, ctx.getSource().getServer());
-                        return 1;
-                    })
-            );
-
-            sellerCommand.then(literal("top")
-                    .executes(ctx -> {
-                        ServerPlayer player = ctx.getSource().getPlayer();
-                        if (player == null) {
-                            ctx.getSource().sendFailure(Component.literal("Only players can use /top3."));
-                            return 0;
-                        }
-                        handleTopCommand(player, ctx.getSource().getServer());
-                        return 1;
-                    })
-            );
-
-            dispatcher.register(sellerCommand);
-
-            //endregion
-
-            //region Sell Command
-            dispatcher.register(literal("sell")
-                    .then(argument("gold", IntegerArgumentType.integer(0))
-                            .executes(ctx -> {
-                                ServerPlayer player = ctx.getSource().getPlayer();
-                                int gold = IntegerArgumentType.getInteger(ctx, "gold");
-                                long price = CurrencyUtil.toTotalBronze(gold, 0, 0);
-                                return handleSellCommand(player, price, ctx.getSource().getServer());
-                            })
-                            .then(argument("silver", IntegerArgumentType.integer(0))
-                                    .executes(ctx -> {
-                                        ServerPlayer player = ctx.getSource().getPlayer();
-                                        int gold = IntegerArgumentType.getInteger(ctx, "gold");
-                                        int silver = IntegerArgumentType.getInteger(ctx, "silver");
-                                        long price = CurrencyUtil.toTotalBronze(gold, silver, 0);
-                                        return handleSellCommand(player, price, ctx.getSource().getServer());
-                                    })
-                                    .then(argument("bronze", IntegerArgumentType.integer(0))
-                                            .executes(ctx -> {
-                                                ServerPlayer player = ctx.getSource().getPlayer();
-                                                int gold = IntegerArgumentType.getInteger(ctx, "gold");
-                                                int silver = IntegerArgumentType.getInteger(ctx, "silver");
-                                                int bronze = IntegerArgumentType.getInteger(ctx, "bronze");
-                                                long price = CurrencyUtil.toTotalBronze(gold, silver, bronze);
-                                                return handleSellCommand(player, price, ctx.getSource().getServer());
-                                            }))))
-            );
-            //endregion
 
             //region Warp Command
             dispatcher.register(literal("warp")
@@ -152,8 +79,8 @@ public class CommandsManager {
                                 }
 
                                 //Ensure not on cooldown
-                                if (OPAPCComponents.TELE_TIMER.get(player).hasCooldown()) {
-                                    player.sendSystemMessage(Component.literal("You are on cooldown from teleporting. Please wait " + OPAPCComponents.TELE_TIMER.get(player).getFormattedRemainingTime() + "."));
+                                if (OPAPCComponents.WARP_TIMER.get(player).hasCooldown()) {
+                                    player.sendSystemMessage(Component.literal("You are on cooldown from teleporting. Please wait " + OPAPCComponents.WARP_TIMER.get(player).getFormattedRemainingTime() + "."));
                                     return 0;
                                 }
 
@@ -190,8 +117,8 @@ public class CommandsManager {
                                     return 0;
                                 }
 
-                                if (OPAPCComponents.TELE_TIMER.get(player).hasCooldown()) {
-                                    player.sendSystemMessage(Component.literal("You are on cooldown from teleporting. Please wait " + OPAPCComponents.TELE_TIMER.get(player).getFormattedRemainingTime() + "."));
+                                if (OPAPCComponents.WARP_TIMER.get(player).hasCooldown()) {
+                                    player.sendSystemMessage(Component.literal("You are on cooldown from teleporting. Please wait " + OPAPCComponents.WARP_TIMER.get(player).getFormattedRemainingTime() + "."));
                                     return 0;
                                 }
 
@@ -319,8 +246,8 @@ public class CommandsManager {
                                     return 0;
                                 }
 
-                                if (OPAPCComponents.TELE_TIMER.get(player).hasCooldown()) {
-                                    player.sendSystemMessage(Component.literal("You are on cooldown from teleporting. Please wait " + OPAPCComponents.TELE_TIMER.get(player).getFormattedRemainingTime() + "."));
+                                if (OPAPCComponents.WARP_TIMER.get(player).hasCooldown()) {
+                                    player.sendSystemMessage(Component.literal("You are on cooldown from teleporting. Please wait " + OPAPCComponents.WARP_TIMER.get(player).getFormattedRemainingTime() + "."));
                                     return 0;
                                 }
 
@@ -437,7 +364,7 @@ public class CommandsManager {
                     player.sendSystemMessage(result.getResultType().message);
                     if (result.getResultType().success) {
                         comp.createClaim(party.getId());
-                        mirrorOverworldClaimsToNether(player);
+                        mirrorOverworldClaimsToNether(player.getUUID());
                         return 1;
                     }
                 }
@@ -455,7 +382,7 @@ public class CommandsManager {
                 }
 
                 //Check if new chunk is adjacent to an old chunk
-                if (!ClaimAdjacencyChecker.isAdjacentToExistingClaim(player, target)) {
+                if (ClaimAdjacencyChecker.isNotAdjacentToExistingClaim(player, target)) {
                     ctx.getSource().sendFailure(Component.literal("Claim must be adjacent to an existing party claim."));
                     return 0;
                 }

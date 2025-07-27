@@ -1,6 +1,6 @@
 package com.madmike.opapc.trade.components.player;
 
-import com.madmike.opapc.components.OPAPCComponents;
+import com.madmike.opapc.OPAPCComponents;
 import dev.onyxstudios.cca.api.v3.component.Component;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.player.Player;

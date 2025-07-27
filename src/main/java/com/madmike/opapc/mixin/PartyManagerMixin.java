@@ -2,7 +2,7 @@ package com.madmike.opapc.mixin;
 
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.trade.components.scoreboard.OffersComponent;
-import com.madmike.opapc.components.OPAPCComponents;
+import com.madmike.opapc.OPAPCComponents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;

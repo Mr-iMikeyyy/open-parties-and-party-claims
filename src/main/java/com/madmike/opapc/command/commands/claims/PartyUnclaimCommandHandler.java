@@ -1,6 +1,6 @@
 package com.madmike.opapc.command.commands.claims;
 
-import com.madmike.opapc.components.OPAPCComponents;
+import com.madmike.opapc.OPAPCComponents;
 import com.madmike.opapc.partyclaim.data.PartyClaim;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;

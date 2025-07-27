@@ -1,11 +1,15 @@
 package com.madmike.opapc;
 
+import com.madmike.opapc.bounty.events.BountyEvents;
 import com.madmike.opapc.command.CommandsManager;
-import com.madmike.opapc.event.EventManager;
-import com.madmike.opapc.war.WarFeatures;
+import com.madmike.opapc.duel.events.DuelEvents;
+import com.madmike.opapc.raid.events.RaidEvents;
+import com.madmike.opapc.trade.events.TradeEvents;
+import com.madmike.opapc.war.features.WarFeatures;
 import com.madmike.opapc.trade.packets.TradeServerReceiver;
-import com.madmike.opapc.war.WarCommand;
-import com.madmike.opapc.war.WarEvents;
+import com.madmike.opapc.war.command.WarCommand;
+import com.madmike.opapc.war.events.WarEvents;
+import com.madmike.opapc.warp.events.WarpEvents;
 import net.fabricmc.api.ModInitializer;
 
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -20,9 +24,6 @@ import xaero.pac.common.server.player.config.api.IPlayerConfigManagerAPI;
 public class OPAPC implements ModInitializer {
 	public static final String MOD_ID = "opapc";
 
-	// This logger is used to write text to the console and the log file.
-	// It is considered best practice to use your mod id as the logger's name.
-	// That way, it's clear which mod wrote info, warnings, and errors.
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
 	private static MinecraftServer server;
@@ -64,16 +65,22 @@ public class OPAPC implements ModInitializer {
 		});
 
 		//Register Events
-		EventManager.register();
+		BountyEvents.register();
+		DeathMatchEvents.register();
+		DuelEvents.register();
+		RaidEvents.register();
+		TradeEvents.register();
 		WarEvents.register();
+		WarpEvents.register();
 
 		// Register commands
 		CommandsManager.registerCommands();
-		WarCommand.registerWarCommand();
+		WarCommand.register();
 
 		// Register Server Packet Receiver
 		TradeServerReceiver.register();
 
+		//Register Items and Blocks
 		WarFeatures.register();
 
 		LOGGER.info("OPAPC Initialized. Good luck out there!");

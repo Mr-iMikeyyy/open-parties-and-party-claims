@@ -1,10 +1,10 @@
 package com.madmike.opapc.war;
 
 import com.madmike.opapc.OPAPC;
-import com.madmike.opapc.war.block.WarBlock;
+import com.madmike.opapc.war.features.block.WarBlock;
 import com.madmike.opapc.util.ClaimAdjacencyChecker;
 import com.madmike.opapc.util.NetherClaimAdjuster;
-import com.madmike.opapc.util.SafeTeleportHelper;
+import com.madmike.opapc.util.SafeWarpHelper;
 import com.madmike.opapc.war.data.WarData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -18,6 +18,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
+import xaero.pac.common.parties.party.member.api.IPartyMemberAPI;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 import xaero.pac.common.server.player.config.api.PlayerConfigOptions;
 
@@ -43,11 +44,11 @@ public class WarManager {
         return playersInWar;
     }
 
-    public void declareWar(IServerPartyAPI attackerParty, IServerPartyAPI defenderParty, boolean shouldTeleport) {
+    public void declareWar(IServerPartyAPI attackerParty, IServerPartyAPI defenderParty, boolean shouldWarp) {
         BlockPos warBlock = spawnWarBlock(defenderParty.getOwner().getUUID());
 
 
-        activeWars.add(new WarData(attackerParty, defenderParty, warBlock, shouldTeleport));
+        activeWars.add(new WarData(attackerParty, defenderParty, warBlock, shouldWarp));
 
         // Drop protections via OPAPC permission API here
         OPAPC.getPlayerConfigs().getLoadedConfig(defenderParty.getOwner().getUUID()).getUsedSubConfig().tryToSet(PlayerConfigOptions.PROTECT_CLAIMED_CHUNKS, false);
@@ -173,7 +174,7 @@ public class WarManager {
             }
         }
         player.setHealth(player.getMaxHealth());
-        SafeTeleportHelper.teleportPlayer(player);
+        SafeWarpHelper.teleportPlayer(player);
     }
 
 
@@ -182,12 +183,6 @@ public class WarManager {
         DEATHS,
         FORFEIT,
         ALL_BLOCKS_BROKEN
-    }
-
-    public void cleanupWarBlocks(WarData war) {
-        if (OPAPC.getServer().overworld().getBlockState(war.getWarBlockPosition()).getBlock() instanceof WarBlock) {
-            OPAPC.getServer().overworld().setBlock(war.getWarBlockPosition(), Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
-        }
     }
 
     public void endWar(WarData war, EndOfWarType endType) {
@@ -206,15 +201,15 @@ public class WarManager {
         switch (endType) {
             case TIMEOUT -> {
                 // handle timeout-specific logic
-                cleanupWarBlocks(war);
+                cleanupWarBlock(war);
             }
             case DEATHS -> {
                 // handle all attacker lives lost logic
-                cleanupWarBlocks(war);
+                cleanupWarBlock(war);
             }
             case FORFEIT -> {
                 // handle forfeiting logic
-                cleanupWarBlocks(war);
+                cleanupWarBlock(war);
             }
             case ALL_BLOCKS_BROKEN -> {
                 // handle block destruction victory logic
@@ -222,5 +217,46 @@ public class WarManager {
         }
 
         activeWars.remove(war);
+    }
+
+    public void cleanupWarBlock(WarData war) {
+        if (OPAPC.getServer().overworld().getBlockState(war.getWarBlockPosition()).getBlock() instanceof WarBlock) {
+            OPAPC.getServer().overworld().setBlock(war.getWarBlockPosition(), Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+        }
+    }
+
+    public void displayWarInfo(ServerPlayer player) {
+        UUID playerId = player.getUUID();
+
+        for (WarData war : activeWars) {
+            IPartyMemberAPI isAttacker = war.getAttackingParty().getMemberInfo(playerId);
+            IPartyMemberAPI isDefender = war.getDefendingParty().getMemberInfo(playerId);
+
+            if (isAttacker != null || isDefender != null) {
+                Component header = Component.literal("§6--- War Info ---");
+                Component role = Component.literal("§eRole: " + (isAttacker != null ? "Attacker" : "Defender"));
+                Component attackingParty = Component.literal("§cAttacking Party: " + war.getAttackingPartyName());
+                Component defendingParty = Component.literal("§aDefending Party: " + war.getDefendingPartyName());
+
+                long timeLeftMillis = (war.getStartTime() + (war.getDurationSeconds() * 1000L)) - System.currentTimeMillis();
+                long minutes = Math.max(0, timeLeftMillis / 60000);
+                long seconds = Math.max(0, (timeLeftMillis % 60000) / 1000);
+                Component timeLeft = Component.literal("§bTime Remaining: " + minutes + "m " + seconds + "s");
+
+                Component warBlocks = Component.literal("§dWar Blocks Left: " + war.getWarBlocksLeft());
+                Component attackerLives = Component.literal("§4Attacker Lives Left: " + war.getAttackerLivesRemaining());
+
+                player.sendSystemMessage(header);
+                player.sendSystemMessage(role);
+                player.sendSystemMessage(attackingParty);
+                player.sendSystemMessage(defendingParty);
+                player.sendSystemMessage(timeLeft);
+                player.sendSystemMessage(warBlocks);
+                player.sendSystemMessage(attackerLives);
+                return;
+            }
+        }
+
+        player.sendSystemMessage(Component.literal("§7You are not currently in an active war."));
     }
 }

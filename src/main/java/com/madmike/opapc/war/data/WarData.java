@@ -1,7 +1,7 @@
 package com.madmike.opapc.war.data;
 
 import com.madmike.opapc.OPAPC;
-import com.madmike.opapc.components.OPAPCComponents;
+import com.madmike.opapc.OPAPCComponents;
 import com.madmike.opapc.partyclaim.data.PartyClaim;
 import com.madmike.opapc.war.WarManager;
 import net.minecraft.core.BlockPos;
@@ -10,6 +10,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
+import xaero.pac.common.server.player.config.api.PlayerConfigOptions;
 
 import java.util.stream.Stream;
 
@@ -22,14 +23,14 @@ public class WarData {
     private int attackerLivesRemaining;
     private int warBlocksLeft;
     private BlockPos warBlockPosition;
-    private boolean shouldTeleport;
+    private boolean shouldWarp;
 
-    public WarData(IServerPartyAPI attackingParty, IServerPartyAPI defendingParty, BlockPos warBlockPosition, boolean shouldTeleport) {
+    public WarData(IServerPartyAPI attackingParty, IServerPartyAPI defendingParty, BlockPos warBlockPosition, boolean shouldWarp) {
         this.attackingParty = attackingParty;
         this.defendingParty = defendingParty;
         this.startTime = System.currentTimeMillis();
         this.warBlockPosition = warBlockPosition;
-        this.shouldTeleport = shouldTeleport;
+        this.shouldWarp = shouldWarp;
 
         int defenderCount = (int) defendingParty.getOnlineMemberStream().count();
         int attackerCount = (int) attackingParty.getOnlineMemberStream().count();
@@ -53,8 +54,16 @@ public class WarData {
         return attackingParty;
     }
 
+    public String getAttackingPartyName() {
+        return OPAPC.getPlayerConfigs().getLoadedConfig(attackingParty.getOwner().getUUID()).getFromEffectiveConfig(PlayerConfigOptions.PARTY_NAME);
+    }
+
     public IServerPartyAPI getDefendingParty() {
         return defendingParty;
+    }
+
+    public String getDefendingPartyName() {
+        return OPAPC.getPlayerConfigs().getLoadedConfig(defendingParty.getOwner().getUUID()).getFromEffectiveConfig(PlayerConfigOptions.PARTY_NAME);
     }
 
     public Stream<ServerPlayer> getAttackingPlayers() {
@@ -120,5 +129,13 @@ public class WarData {
                 e.addEffect(new MobEffectInstance(MobEffects.REGENERATION, durationSeconds, amp, true, true));
             });
         }
+    }
+
+    public int getDurationSeconds() {
+        return durationSeconds;
+    }
+
+    public boolean isShouldWarp() {
+        return shouldWarp;
     }
 }

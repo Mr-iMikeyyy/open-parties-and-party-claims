@@ -5,6 +5,7 @@ import dev.onyxstudios.cca.api.v3.component.ComponentV3;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.scores.Scoreboard;
 import org.jetbrains.annotations.NotNull;
 
@@ -13,11 +14,13 @@ import java.util.Map;
 import java.util.UUID;
 
 public class PartyClaimsComponent implements ComponentV3 {
-    private final Scoreboard scoreboard;
+    private final Scoreboard provider;
     private final Map<UUID, PartyClaim> partyClaims = new HashMap<>();
+    private final MinecraftServer server;
 
-    public PartyClaimsComponent(Scoreboard scoreboard) {
-        this.scoreboard = scoreboard;
+    public PartyClaimsComponent(Scoreboard scoreboard, MinecraftServer server) {
+        this.server = server;
+        this.provider = scoreboard;
     }
 
     @Override

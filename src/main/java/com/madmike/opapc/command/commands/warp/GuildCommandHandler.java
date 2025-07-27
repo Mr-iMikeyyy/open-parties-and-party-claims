@@ -1,6 +1,6 @@
 package com.madmike.opapc.command.commands.warp;
 
-import com.madmike.opapc.components.OPAPCComponents;
+import com.madmike.opapc.OPAPCComponents;
 import com.madmike.opapc.partyclaim.data.PartyClaim;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
@@ -24,7 +24,7 @@ public class GuildCommandHandler {
                     player.getYRot(), // yaw
                     player.getXRot()  // pitch
             );
-            OPAPCComponents.TELE_TIMER.get(player).onTele();
+            OPAPCComponents.WARP_TIMER.get(player).onWarp();
         }
     }
 }
