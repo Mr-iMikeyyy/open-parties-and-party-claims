@@ -11,7 +11,7 @@ import net.minecraft.world.level.Level;
 public class GuildCommandHandler {
 
     public static void handleGuildCommand(ServerPlayer player, PartyClaim claim, MinecraftServer server) {
-        BlockPos pos = claim.getTeleportPos();
+        BlockPos pos = claim.getWarpPos();
 
         ServerLevel overworld = server.getLevel(Level.OVERWORLD);
 

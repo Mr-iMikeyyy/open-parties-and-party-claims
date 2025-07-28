@@ -9,18 +9,14 @@ import java.util.*;
 public class ClaimAdjacencyChecker {
 
     public static boolean wouldBreakAdjacency(
-            ChunkPos toUnclaim,
-            List<ChunkPos> currentClaims
+            UUID playerId,
+            ChunkPos toUnclaim
     ) {
-        if (!currentClaims.contains(toUnclaim)) {
-            return true;
-        }
+        List<ChunkPos> currentClaims = new ArrayList<>();
+
+        OPAPC.getClaimsManager().getPlayerInfo(playerId).getDimension(Level.OVERWORLD.location()).getStream().forEach(e -> e.getStream().forEach(currentClaims::add));
+
         currentClaims.remove(toUnclaim);
-
-        if (currentClaims.isEmpty()) {
-            return false;
-        }
-
         Set<ChunkPos> visited = new HashSet<>();
         Queue<ChunkPos> toVisit = new ArrayDeque<>();
         ChunkPos start = currentClaims.iterator().next();

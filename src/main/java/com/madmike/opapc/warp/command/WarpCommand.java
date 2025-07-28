@@ -30,7 +30,7 @@ import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
 
 public class WarpCommand {
-    public static void registerWarpCommand() {
+    public static void register() {
         CommandRegistrationCallback.EVENT.register(((commandDispatcher, commandBuildContext, commandSelection) -> {
 
             LiteralArgumentBuilder<CommandSourceStack> warpCommand = literal("warp").executes(ctx -> {
@@ -41,12 +41,15 @@ public class WarpCommand {
                             
                             §6--- Only available to Lone Wolves ---
                             §e/warp home §7- Warp to your respawn point
-                            §e/warp ambush <party> §7- Warp somewhere random near a party claim
+                            §e/warp ambush <party> §7- Warp somewhere random outside a party claim
                             
                             §6--- Only available to Party Members ---
                             §e/warp <player> §7- Warp to party members
-                            §e/warp guild §7- Warp to your party claim's guild point
-                            §e/warp guild set §7- Party leaders can use this to set the guild point
+                            §e/warp party §7- Warp to your party claim's guild point
+                            §e/warp <ally> §7- Warp to an ally's claim's guild point
+                            
+                            §6--- Only available to Party Leaders ---
+                            §e/warp guild set §7- Set the guild point where you are standing
                             """)
                     );
                     return 1;
@@ -55,7 +58,13 @@ public class WarpCommand {
             });
 
             warpCommand.then(literal("home")
-                    .requires(source -> OPAPC.getPartyManager().getPartyByMember(source.getPlayer().getUUID()) == null)
+                    .requires(ctx -> {
+                        ServerPlayer player = ctx.getPlayer();
+                        if (player != null) {
+                            return OPAPC.getPartyManager().getPartyByMember(player.getUUID()) == null;
+                        }
+                        return false;
+                    })
                     .executes(ctx -> {
 
 
@@ -85,7 +94,7 @@ public class WarpCommand {
                             return 0;
                         }
 
-                        //TODO check if in a claim or raid and deny if so
+                        //TODO check if in a raid and deny if so
                         if (RaidManager.INSTANCE.isPlayerInRaid(player.getUUID())) {
                             player.sendSystemMessage(Component.literal("You cannot use /home while in a raid!"));
                             return 0;
@@ -122,7 +131,13 @@ public class WarpCommand {
 
 
             warpCommand.then(literal("ambush")
-                    .requires(source -> OPAPC.getPartyManager().getPartyByMember(source.getPlayer().getUUID()) == null)
+                    .requires(ctx -> {
+                        ServerPlayer player = ctx.getPlayer();
+                        if (player != null) {
+                            return OPAPC.getPartyManager().getPartyByMember(player.getUUID()) == null;
+                        }
+                        return false;
+                    })
                     .then(argument("party", StringArgumentType.string())
                             .suggests((ctx, builder) -> {
                                 for (PartyClaim claim : OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard()).getAllClaims().values()) {

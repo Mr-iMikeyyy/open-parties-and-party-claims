@@ -107,7 +107,7 @@ public class CommandsManager {
                                     return 0;
                                 }
 
-                                if (claim.getTeleportPos() == null) {
+                                if (claim.getWarpPos() == null) {
                                     player.sendSystemMessage(Component.literal("Party leader has not set a teleport spot yet."));
                                     return 0;
                                 }
@@ -162,7 +162,7 @@ public class CommandsManager {
                                             return 0;
                                         }
 
-                                        claim.setTeleportPos(player.getOnPos());
+                                        claim.setWarpPos(player.getOnPos());
                                         player.sendSystemMessage(Component.literal("Guild Teleport Set!"));
                                         return 1;
                                     })

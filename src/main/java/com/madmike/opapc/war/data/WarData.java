@@ -20,10 +20,11 @@ public class WarData {
     private final IServerPartyAPI defendingParty;
     private final long startTime;
     private final int durationSeconds;
+    private final boolean shouldWarp;
+
     private int attackerLivesRemaining;
     private int warBlocksLeft;
     private BlockPos warBlockPosition;
-    private boolean shouldWarp;
 
     public WarData(IServerPartyAPI attackingParty, IServerPartyAPI defendingParty, BlockPos warBlockPosition, boolean shouldWarp) {
         this.attackingParty = attackingParty;

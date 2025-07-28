@@ -47,21 +47,22 @@ public class WarCommand {
                     
                         §6--- Rules & Mechanics ---
                         §7• Only party leaders can declare wars
-                        §7• You can only attack claims larger than your own (unless overridden)
                         §7• Declaring war disables the target’s protections and barriers
+                        §7• Destroy war blocks that spawn in the defenders territory
+                        §7• Logins from offline players on either team are blocked
                     
                         §6--- Objectives ---
-                        §7• A §eWar Block §7spawns in the defender's claim
+                        §7• At start, a §eWar Block §7spawns in the defender's claim
                         §7• Attackers must destroy it to steal a claim
                         §7• The block will respawn in a new chunk up to a max 3 per defender
                         §7• When all blocks are destroyed, attackers win
                         §7• When time runs out, or all attacker lives are lost, defenders win
                         §7• After a war ends, defenders are given war insurance
-                        §7• Insurance lasts for 3 days
+                        §7• Insurance lasts for 3 days and protects from war
                     
                         §6--- Dynamic War Scaling ---
                         §7• Duration: §e3 minutes §7per online defender
-                        §7• Attacker Lives: §e3 lives §7per online defender
+                        §7• Attacker Lives: §e3 attacker lives §7per online defender
                         §7• War Block Spawns: §e3 per defender
                     
                         §6--- Buff System ---
@@ -86,20 +87,10 @@ public class WarCommand {
                                 PartyClaim attackingClaim = comp.getClaim(party.getId());
                                 if (attackingClaim == null) return builder.buildFuture();
 
-                                List<UUID> idsToLookUp = new ArrayList<>();
-
-                                for (Map.Entry<UUID, PartyClaim> entry : comp.getAllClaims().entrySet()) {
-                                    if (!entry.getValue().isWarInsured()
-                                            && entry.getValue().getBoughtClaims() >= attackingClaim.getBoughtClaims()
-                                            && !entry.getValue().getPartyId().equals(attackingClaim.getPartyId())) {
-                                        idsToLookUp.add(entry.getKey());
+                                for (PartyClaim claim : comp.getAllClaims().values()) {
+                                    if (!claim.isWarInsured() && !claim.getPartyId().equals(attackingClaim.getPartyId())) {
+                                        builder.suggest(claim.getPartyName());
                                     }
-                                }
-
-                                for (UUID id : idsToLookUp) {
-                                    builder.suggest(OPAPC.getPlayerConfigs().getLoadedConfig(
-                                            OPAPC.getPartyManager().getPartyById(id).getOwner().getUUID()
-                                    ).getEffective(PlayerConfigOptions.PARTY_NAME));
                                 }
 
                                 return builder.buildFuture();
@@ -173,13 +164,7 @@ public class WarCommand {
                                             }
                                         }
 
-                                        if (attackingClaim.getBoughtClaims() >= defendingClaim.getBoughtClaims()
-                                                && OPAPCConfig.canOnlyAttackLargerClaims) {
-                                            player.sendSystemMessage(Component.literal("You can only declare war on parties with more claims than you."));
-                                            return 0;
-                                        }
-
-                                        if (defendingParty.getOnlineMemberStream().findAny().isEmpty()) {
+                                        if (defendingParty.getOnlineMemberStream().toList().isEmpty()) {
                                             player.sendSystemMessage(Component.literal("There's no one online to defend that claim."));
                                             return 0;
                                         }

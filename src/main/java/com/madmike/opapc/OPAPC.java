@@ -3,12 +3,15 @@ package com.madmike.opapc;
 import com.madmike.opapc.bounty.events.BountyEvents;
 import com.madmike.opapc.command.CommandsManager;
 import com.madmike.opapc.duel.events.DuelEvents;
+import com.madmike.opapc.partyclaim.command.PartyClaimCommand;
+import com.madmike.opapc.raid.command.RaidCommand;
 import com.madmike.opapc.raid.events.RaidEvents;
 import com.madmike.opapc.trade.events.TradeEvents;
 import com.madmike.opapc.war.features.WarFeatures;
 import com.madmike.opapc.trade.packets.TradeServerReceiver;
 import com.madmike.opapc.war.command.WarCommand;
 import com.madmike.opapc.war.events.WarEvents;
+import com.madmike.opapc.warp.command.WarpCommand;
 import com.madmike.opapc.warp.events.WarpEvents;
 import net.fabricmc.api.ModInitializer;
 
@@ -74,10 +77,13 @@ public class OPAPC implements ModInitializer {
 		WarpEvents.register();
 
 		// Register commands
+		PartyClaimCommand.register();
 		CommandsManager.registerCommands();
 		WarCommand.register();
+		WarpCommand.register();
+		RaidCommand.register();
 
-		// Register Server Packet Receiver
+		// Register Packet Receivers
 		TradeServerReceiver.register();
 
 		//Register Items and Blocks

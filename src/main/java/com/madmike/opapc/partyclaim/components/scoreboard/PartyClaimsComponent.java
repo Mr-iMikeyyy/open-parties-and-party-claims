@@ -50,8 +50,8 @@ public class PartyClaimsComponent implements ComponentV3 {
         nbt.put("PartyClaims", claimsList);
     }
 
-    public PartyClaim createClaim(UUID partyId) {
-        return partyClaims.computeIfAbsent(partyId, PartyClaim::new);
+    public void createClaim(UUID partyId) {
+        partyClaims.computeIfAbsent(partyId, PartyClaim::new);
     }
 
     public PartyClaim getClaim(UUID partyId) {
