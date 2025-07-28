@@ -794,18 +794,6 @@ public class CommandsManager {
 
             //endregion
 
-            //region Duel Command
-
-            //endregion
-
-            //region Deathmatch Command
-
-            //endregion
-
-            //region Bounty Command
-
-            //endregion
-
         });
     }
 }

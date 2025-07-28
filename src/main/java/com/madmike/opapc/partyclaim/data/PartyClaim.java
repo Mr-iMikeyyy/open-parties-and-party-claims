@@ -8,11 +8,10 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 import xaero.pac.common.server.player.config.api.PlayerConfigOptions;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public class PartyClaim {
 
@@ -69,6 +68,15 @@ public class PartyClaim {
                         .getOwner()
                         .getUUID())
                 .getFromEffectiveConfig(PlayerConfigOptions.PARTY_NAME);
+    }
+    public List<ChunkPos> getClaimedChunksList() {
+        List<ChunkPos> chunkClaims = new ArrayList<>();
+        OPAPC.getClaimsManager().getPlayerInfo(OPAPC.getPartyManager()
+                        .getPartyById(partyId).getOwner().getUUID())
+                        .getDimension(Level.OVERWORLD.location())
+                        .getStream().forEach(e -> e.getStream()
+                        .forEach(chunkClaims::add));
+        return chunkClaims;
     }
 
     public void setBoughtClaims(int boughtClaims) {

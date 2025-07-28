@@ -22,9 +22,7 @@ import xaero.pac.common.parties.party.api.IPartyAPI;
 import xaero.pac.common.server.api.OpenPACServerAPI;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
@@ -41,15 +39,15 @@ public class WarpCommand {
                             
                             §6--- Only available to Lone Wolves ---
                             §e/warp home §7- Warp to your respawn point
-                            §e/warp ambush <party> §7- Warp somewhere random outside a party claim
+                            §e/warp ambush <party> §7- Warp outside a party claim
                             
                             §6--- Only available to Party Members ---
-                            §e/warp <player> §7- Warp to party members
-                            §e/warp party §7- Warp to your party claim's guild point
-                            §e/warp <ally> §7- Warp to an ally's claim's guild point
+                            §e/warp <player> §7- Warp to a party member
+                            §e/warp party §7- Warp to your party's claim
+                            §e/warp <ally> §7- Warp to an ally's claim
                             
                             §6--- Only available to Party Leaders ---
-                            §e/warp guild set §7- Set the guild point where you are standing
+                            §e/warp party set §7- Set your party's warp point
                             """)
                     );
                     return 1;
@@ -59,6 +57,7 @@ public class WarpCommand {
 
             warpCommand.then(literal("home")
                     .requires(ctx -> {
+                        //Ensure no party
                         ServerPlayer player = ctx.getPlayer();
                         if (player != null) {
                             return OPAPC.getPartyManager().getPartyByMember(player.getUUID()) == null;
@@ -152,12 +151,11 @@ public class WarpCommand {
                                 //Check if player
                                 if (player == null) return 0;
 
-                                IServerPartyAPI party = OpenPACServerAPI.get(ctx.getSource().getServer())
-                                        .getPartyManager().getPartyByMember(player.getUUID());
+                                IServerPartyAPI party = OPAPC.getPartyManager().getPartyByMember(player.getUUID());
 
                                 //Ensure not in party
                                 if (party != null) {
-                                    player.sendSystemMessage(Component.literal("Only players not in a party have access to the /home command."));
+                                    player.sendSystemMessage(Component.literal("Only players without a party have access to the /home command."));
                                     return 0;
                                 }
 
@@ -173,26 +171,33 @@ public class WarpCommand {
                                     return 0;
                                 }
 
-                                //TODO check if in a claim or raid and deny if so
+                                //Check if in raid
+                                if (RaidManager.INSTANCE.playerIsInRaid(player.getUUID())) {
+                                    player.sendSystemMessage(Component.literal("You can't warp while in a raid."));
+                                    return 0;
+                                }
 
+                                //All Checks passed, warp player outside party claim
                                 String chosenPartyName = ctx.getArgument("party", String.class);
-
                                 for (Map.Entry<UUID, PartyClaim> claim : OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard()).getAllClaims().entrySet()) {
                                     if (claim.getValue().getPartyName().equalsIgnoreCase(chosenPartyName)) {
-                                        IPartyAPI party = OPAPC.getPartyManager().getPartyById(claim.getKey());
 
-                                        UUID ownerId = party.getOwner().getUUID();
-                                        IPlayerClaimInfoAPI playerInfo = OPAPC.getClaimsManager().getPlayerInfo(ownerId);
+                                        List<ChunkPos> claimedChunks = claim.getValue().getClaimedChunksList();
 
-                                        Optional<IPlayerClaimPosListAPI> firstRegion = playerInfo.getDimension(Level.OVERWORLD.location()).getStream();
-                                        if (firstRegion.isEmpty()) return 0;
+                                        Random rand = new Random();
+                                        ChunkPos randomChunk = claimedChunks.get(rand.nextInt(claimedChunks.size()));
 
-                                        Optional<ChunkPos> firstChunk = firstRegion.get().getStream().findFirst();
-                                        if (firstChunk.isEmpty()) return 0;
-
-                                        ChunkPos startingPos = firstChunk.get();
+                                        int direction = rand.nextInt(4);
+                                        boolean goodChunkNotFound = true;
 
 
+                                        switch (direction) {
+                                            case 0:
+                                                while (goodChunkNotFound) {
+                                                    
+                                                }
+                                        }
+                                        break;
                                     }
                                 }
 
