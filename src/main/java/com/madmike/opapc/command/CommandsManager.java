@@ -317,7 +317,6 @@ public class CommandsManager {
 
             partyCommand.then(literal("claim").executes(ctx -> {
 
-
                 ServerPlayer player = ctx.getSource().getPlayer();
                 //Check if player
                 if (player == null) {

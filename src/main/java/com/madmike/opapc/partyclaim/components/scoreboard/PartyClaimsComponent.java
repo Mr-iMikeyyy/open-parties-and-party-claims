@@ -9,13 +9,11 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.scores.Scoreboard;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public class PartyClaimsComponent implements ComponentV3 {
     private final Scoreboard provider;
-    private final Map<UUID, PartyClaim> partyClaims = new HashMap<>();
+    private final List<PartyClaim> partyClaims = new ArrayList<>();
     private final MinecraftServer server;
 
     public PartyClaimsComponent(Scoreboard scoreboard, MinecraftServer server) {
@@ -35,14 +33,14 @@ public class PartyClaimsComponent implements ComponentV3 {
             PartyClaim claim = new PartyClaim(partyId);
             claim.readFromNbt(claimTag);
 
-            this.partyClaims.put(partyId, claim);
+            this.partyClaims.add(claim);
         }
     }
 
     @Override
     public void writeToNbt(@NotNull CompoundTag nbt) {
         ListTag claimsList = new ListTag();
-        for (PartyClaim claim : partyClaims.values()) {
+        for (PartyClaim claim : partyClaims) {
             CompoundTag claimTag = claim.writeToNbt();
             claimTag.putUUID("PartyId", claim.getPartyId());
             claimsList.add(claimTag);
@@ -51,21 +49,23 @@ public class PartyClaimsComponent implements ComponentV3 {
     }
 
     public void createClaim(UUID partyId) {
-        partyClaims.computeIfAbsent(partyId, PartyClaim::new);
+        partyClaims.add(new PartyClaim(partyId));
     }
 
     public PartyClaim getClaim(UUID partyId) {
-        return partyClaims.get(partyId);
+        for (PartyClaim claim : partyClaims) {
+            if (claim.getPartyId().equals(partyId)) {
+                return claim;
+            }
+        }
+        return null;
     }
 
-    public Map<UUID, PartyClaim> getAllClaims() {
+    public List<PartyClaim> getAllClaims() {
         return partyClaims;
     }
 
     public void removeClaim(UUID partyId) {
-        PartyClaim claim = partyClaims.get(partyId);
-        if (claim != null) {
-            partyClaims.remove(partyId);
-        }
+        partyClaims.removeIf(claim -> claim.getPartyId().equals(partyId));
     }
 }

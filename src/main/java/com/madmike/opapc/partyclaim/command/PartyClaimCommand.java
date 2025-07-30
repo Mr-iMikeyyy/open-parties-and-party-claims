@@ -306,6 +306,42 @@ public class PartyClaimCommand {
             );
             //endregion
 
+            //region Info
+
+            //endregion
+
+            //region Top
+            partyClaimCommand.then(literal("top")
+                    .executes(ctx -> {
+
+                        Map<UUID, PartyClaim> allClaims = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard()).getAllClaims();
+
+                        // Create a sorted list (descending by getBoughtClaims)
+                        List<Map.Entry<UUID, PartyClaim>> sortedClaims = new ArrayList<>(allClaims.entrySet());
+                        sortedClaims.sort((a, b) -> Integer.compare(b.getValue().getBoughtClaims(), a.getValue().getBoughtClaims()));
+
+                        // Limit to top 10
+                        int limit = Math.min(sortedClaims.size(), 10);
+
+                        ctx.getSource().sendSystemMessage(Component.literal("§aTop Parties by Bought Claims:"));
+                        for (int i = 0; i < limit; i++) {
+                            Map.Entry<UUID, PartyClaim> entry = sortedClaims.get(i);
+                            UUID partyId = entry.getKey();
+                            PartyClaim claim = entry.getValue();
+
+                            String partyName = claim.getPartyName();
+                            int claims = claim.getBoughtClaims();
+
+                            ctx.getSource().sendSystemMessage(Component.literal(
+                                    String.format("§e%d. §b%s §7- §a%d claims", i + 1, partyName, claims)
+                            ));
+                        }
+
+                        return 1;
+                    })
+            );
+            //endregion
+
             //region Donate
             partyClaimCommand.then(literal("donate")
                     .executes(ctx -> {
@@ -364,38 +400,6 @@ public class PartyClaimCommand {
                     })
             );
 
-            //endregion
-
-            //region Top
-            partyClaimCommand.then(literal("top")
-                    .executes(ctx -> {
-
-                        Map<UUID, PartyClaim> allClaims = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard()).getAllClaims();
-
-                        // Create a sorted list (descending by getBoughtClaims)
-                        List<Map.Entry<UUID, PartyClaim>> sortedClaims = new ArrayList<>(allClaims.entrySet());
-                        sortedClaims.sort((a, b) -> Integer.compare(b.getValue().getBoughtClaims(), a.getValue().getBoughtClaims()));
-
-                        // Limit to top 10
-                        int limit = Math.min(sortedClaims.size(), 10);
-
-                        ctx.getSource().sendSystemMessage(Component.literal("§aTop Parties by Bought Claims:"));
-                        for (int i = 0; i < limit; i++) {
-                            Map.Entry<UUID, PartyClaim> entry = sortedClaims.get(i);
-                            UUID partyId = entry.getKey();
-                            PartyClaim claim = entry.getValue();
-
-                            String partyName = claim.getPartyName();
-                            int claims = claim.getBoughtClaims();
-
-                            ctx.getSource().sendSystemMessage(Component.literal(
-                                    String.format("§e%d. §b%s §7- §a%d claims", i + 1, partyName, claims)
-                            ));
-                        }
-
-                        return 1;
-                    })
-            );
             //endregion
 
             commandDispatcher.register(partyClaimCommand);
