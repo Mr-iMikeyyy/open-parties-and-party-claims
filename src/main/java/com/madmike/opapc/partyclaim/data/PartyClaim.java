@@ -7,6 +7,8 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import xaero.pac.common.server.player.config.api.PlayerConfigOptions;
@@ -255,5 +257,55 @@ public class PartyClaim {
             Donor donor = Donor.fromNbt((CompoundTag) element);
             this.donations.put(donor.playerId(), donor);
         }
+    }
+
+    public Component getInfo() {
+        MutableComponent info = Component.literal("§6--- Party Claim Info ---\n");
+
+        // Party name & ID
+        info.append(Component.literal("§eParty: §f" + getPartyName() + "\n"));
+        info.append(Component.literal("§eParty ID: §7" + partyId.toString() + "\n"));
+
+        // Claims
+        info.append(Component.literal("§eClaims Bought: §f" + boughtClaims + "\n"));
+        info.append(Component.literal("§eChunks Claimed: §f" + getClaimedChunksList().size() + "\n"));
+
+        // Warp
+        if (warpPos != null) {
+            info.append(Component.literal("§eWarp Position: §f" + warpPos.getX() + ", " + warpPos.getY() + ", " + warpPos.getZ() + "\n"));
+        } else {
+            info.append(Component.literal("§eWarp Position: §7Not Set\n"));
+        }
+
+        // Insurance
+        info.append(Component.literal("§eWar Insurance: " + (isWarInsured() ? "§aActive" : "§cExpired") + "\n"));
+        info.append(Component.literal("§eRaid Insurance: " + (isRaidInsured() ? "§aActive" : "§cExpired") + "\n"));
+
+        // War Stats
+        info.append(Component.literal("\n§6--- War Stats ---\n"));
+        info.append(Component.literal("§eDefences Won: §f" + warDefencesWon + "\n"));
+        info.append(Component.literal("§eDefences Lost: §f" + warDefencesLost + "\n"));
+        info.append(Component.literal("§eAttacks Won: §f" + warAttacksWon + "\n"));
+        info.append(Component.literal("§eAttacks Lost: §f" + warAttacksLost + "\n"));
+        info.append(Component.literal("§eClaims Gained: §f" + claimsGainedFromWar + "\n"));
+        info.append(Component.literal("§eClaims Lost: §f" + claimsLostToWar + "\n"));
+
+        // Raid Stats
+        info.append(Component.literal("\n§6--- Raid Stats ---\n"));
+        info.append(Component.literal("§eRaids Won: §f" + raidsWon + "\n"));
+        info.append(Component.literal("§eRaids Lost: §f" + raidsLost + "\n"));
+
+        // Donor Info
+        if (!donations.isEmpty()) {
+            info.append(Component.literal("\n§6--- Donations ---\n"));
+            for (Donor donor : donations.values()) {
+                String name = OPAPC.getServer().getPlayerList().getPlayer(donor.playerId()) != null
+                        ? OPAPC.getServer().get
+                        : donor.playerId().toString();
+                info.append(Component.literal("§e" + name + ": §f" + donor.amount() + "\n"));
+            }
+        }
+
+        return info;
     }
 }
