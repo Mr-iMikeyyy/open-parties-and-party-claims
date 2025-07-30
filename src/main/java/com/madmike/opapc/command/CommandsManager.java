@@ -73,14 +73,14 @@ public class CommandsManager {
                                 }
 
                                 //Ensure not in combat
-                                if (OPAPCComponents.COMBAT_TIMER.get(player).isInCombat()) {
-                                    player.sendSystemMessage(Component.literal("Your still in combat! Please wait " + OPAPCComponents.COMBAT_TIMER.get(player).getRemainingTimeSeconds() + " seconds!"));
+                                if (OPAPCComponents.COMBAT_COOLDOWN.get(player).isInCombat()) {
+                                    player.sendSystemMessage(Component.literal("Your still in combat! Please wait " + OPAPCComponents.COMBAT_COOLDOWN.get(player).getRemainingTimeSeconds() + " seconds!"));
                                     return 0;
                                 }
 
                                 //Ensure not on cooldown
-                                if (OPAPCComponents.WARP_TIMER.get(player).hasCooldown()) {
-                                    player.sendSystemMessage(Component.literal("You are on cooldown from teleporting. Please wait " + OPAPCComponents.WARP_TIMER.get(player).getFormattedRemainingTime() + "."));
+                                if (OPAPCComponents.WARP_COOLDOWN.get(player).hasCooldown()) {
+                                    player.sendSystemMessage(Component.literal("You are on cooldown from teleporting. Please wait " + OPAPCComponents.WARP_COOLDOWN.get(player).getFormattedRemainingTime() + "."));
                                     return 0;
                                 }
 
@@ -112,13 +112,13 @@ public class CommandsManager {
                                     return 0;
                                 }
 
-                                if (OPAPCComponents.COMBAT_TIMER.get(player).isInCombat()) {
-                                    player.sendSystemMessage(Component.literal("Your still in combat! Please wait " + OPAPCComponents.COMBAT_TIMER.get(player).getRemainingTimeSeconds() + " seconds!"));
+                                if (OPAPCComponents.COMBAT_COOLDOWN.get(player).isInCombat()) {
+                                    player.sendSystemMessage(Component.literal("Your still in combat! Please wait " + OPAPCComponents.COMBAT_COOLDOWN.get(player).getRemainingTimeSeconds() + " seconds!"));
                                     return 0;
                                 }
 
-                                if (OPAPCComponents.WARP_TIMER.get(player).hasCooldown()) {
-                                    player.sendSystemMessage(Component.literal("You are on cooldown from teleporting. Please wait " + OPAPCComponents.WARP_TIMER.get(player).getFormattedRemainingTime() + "."));
+                                if (OPAPCComponents.WARP_COOLDOWN.get(player).hasCooldown()) {
+                                    player.sendSystemMessage(Component.literal("You are on cooldown from teleporting. Please wait " + OPAPCComponents.WARP_COOLDOWN.get(player).getFormattedRemainingTime() + "."));
                                     return 0;
                                 }
 
@@ -241,13 +241,13 @@ public class CommandsManager {
                                     return 0;
                                 }
 
-                                if (OPAPCComponents.COMBAT_TIMER.get(player).isInCombat()) {
-                                    player.sendSystemMessage(Component.literal("Your still in combat! Please wait " + OPAPCComponents.COMBAT_TIMER.get(player).getRemainingTimeSeconds() + " seconds!"));
+                                if (OPAPCComponents.COMBAT_COOLDOWN.get(player).isInCombat()) {
+                                    player.sendSystemMessage(Component.literal("Your still in combat! Please wait " + OPAPCComponents.COMBAT_COOLDOWN.get(player).getRemainingTimeSeconds() + " seconds!"));
                                     return 0;
                                 }
 
-                                if (OPAPCComponents.WARP_TIMER.get(player).hasCooldown()) {
-                                    player.sendSystemMessage(Component.literal("You are on cooldown from teleporting. Please wait " + OPAPCComponents.WARP_TIMER.get(player).getFormattedRemainingTime() + "."));
+                                if (OPAPCComponents.WARP_COOLDOWN.get(player).hasCooldown()) {
+                                    player.sendSystemMessage(Component.literal("You are on cooldown from teleporting. Please wait " + OPAPCComponents.WARP_COOLDOWN.get(player).getFormattedRemainingTime() + "."));
                                     return 0;
                                 }
 
@@ -533,7 +533,7 @@ public class CommandsManager {
 
                         wallet.modify(-costOfNewClaim);
                         partyClaim.setBoughtClaims(partyClaim.getBoughtClaims() + 1);
-                        partyClaim.addDonation(player.getUUID(), player.getName().getString(), costOfNewClaim);
+                        partyClaim.addDonation(player.getUUID(), costOfNewClaim);
                         ctx.getSource().sendSystemMessage(Component.literal("Donated to the party Successfully! Party now owns " + partyClaim.getBoughtClaims() + " claims."));
                         return 1;
                     })

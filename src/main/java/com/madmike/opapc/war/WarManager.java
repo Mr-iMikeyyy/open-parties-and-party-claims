@@ -1,14 +1,17 @@
 package com.madmike.opapc.war;
 
 import com.madmike.opapc.OPAPC;
+import com.madmike.opapc.OPAPCComponents;
+import com.madmike.opapc.partyclaim.data.PartyClaim;
 import com.madmike.opapc.war.features.block.WarBlock;
 import com.madmike.opapc.util.ClaimAdjacencyChecker;
 import com.madmike.opapc.util.NetherClaimAdjuster;
-import com.madmike.opapc.util.SafeWarpHelper;
 import com.madmike.opapc.war.data.WarData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
@@ -18,7 +21,6 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
-import xaero.pac.common.parties.party.member.api.IPartyMemberAPI;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 import xaero.pac.common.server.player.config.api.PlayerConfigOptions;
 
@@ -35,30 +37,61 @@ public class WarManager {
         return activeWars;
     }
 
-    public List<UUID> getPlayersInWar() {
-        List<UUID> playersInWar = new ArrayList<>();
-        for (WarData war : activeWars) {
-            playersInWar.addAll(war.getAttackingPlayers().map(ServerPlayer::getUUID).toList());
-            playersInWar.addAll(war.getDefendingPlayers().map(ServerPlayer::getUUID).toList());
-        }
-        return playersInWar;
-    }
-
     public void declareWar(IServerPartyAPI attackerParty, IServerPartyAPI defenderParty, boolean shouldWarp) {
-        BlockPos warBlock = spawnWarBlock(defenderParty.getOwner().getUUID());
+        WarData war = new WarData(attackerParty, defenderParty);
+        war.setWarBlockPosition(spawnWarBlock(war));
+        if (shouldWarp) {
+            for (ServerPlayer player : war.getAttackingPlayers()) {
+                BlockPos warpPos = findOutsideRespawn(war.getDefendingClaim());
+                if (warpPos != null) {
+                    player.teleportTo(OPAPC.getServer().overworld(), warpPos.getX() + 0.5, warpPos.getY(), warpPos.getZ() + 0.5, player.getYRot(), player.getXRot());
+                }
+                else {
+                    endWar(war, EndOfWarType.BUG);
+                    break;
+                }
+            }
+            war.setWarp(true);
+        }
+        else {
+            war.setWarp(false);
+        }
+        activeWars.add(war);
 
+        for (ServerPlayer player : war.getDefendingPlayers()) {
+            player.sendSystemMessage(Component.literal("Your claim is under attack!"));
 
-        activeWars.add(new WarData(attackerParty, defenderParty, warBlock, shouldWarp));
+            Component clickableMessage = Component.literal("§6[Click here to warp to your party claim]")
+                    .withStyle(style -> style
+                            .withClickEvent(new ClickEvent(
+                                    ClickEvent.Action.RUN_COMMAND,
+                                    "/warp party" // <-- your warp command
+                            ))
+                            .withHoverEvent(new HoverEvent(
+                                    HoverEvent.Action.SHOW_TEXT,
+                                    Component.literal("Warp back to your party's warp point")
+                            ))
+                    );
+            player.sendSystemMessage(clickableMessage);
+            displayWarInfo(player);
+        }
+
+        for (ServerPlayer player : war.getAttackingPlayers()) {
+            displayWarInfo(player);
+        }
 
         // Drop protections via OPAPC permission API here
         OPAPC.getPlayerConfigs().getLoadedConfig(defenderParty.getOwner().getUUID()).getUsedSubConfig().tryToSet(PlayerConfigOptions.PROTECT_CLAIMED_CHUNKS, false);
     }
 
-    private BlockPos spawnWarBlock(UUID ownerId) {
-        List<ChunkPos> ownedChunks = new ArrayList<>();
-        OPAPC.getClaimsManager().getPlayerInfo(ownerId)
-                .getDimension(Level.OVERWORLD.location())
-                .getStream().forEach(e -> e.getStream().forEach(ownedChunks::add));
+    private BlockPos spawnWarBlock(WarData war) {
+        PartyClaim claim = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard()).getClaim(war.getDefendingParty().getId());
+        List<ChunkPos> ownedChunks = claim.getClaimedChunksList();
+
+
+        if (ownedChunks.size() > 1) {
+            ownedChunks.remove(new ChunkPos(claim.getWarpPos()));
+        }
 
         RandomSource rand = OPAPC.getServer().overworld().getRandom();
         Level world = OPAPC.getServer().overworld();
@@ -71,7 +104,7 @@ public class WarManager {
 
             // 1) Pick random owned chunk and random x/z in that chunk
             ChunkPos chunk = ownedChunks.get(rand.nextInt(ownedChunks.size()));
-            if (ClaimAdjacencyChecker.wouldBreakAdjacency(chunk, ownedChunks)) {
+            if (ClaimAdjacencyChecker.wouldBreakAdjacency(war.getDefendingParty().getOwner().getUUID(), chunk)) {
                 continue;
             }
             int baseX = chunk.x << 4;
@@ -130,8 +163,7 @@ public class WarManager {
 
                 ChunkPos chunkPos = new ChunkPos(pos);
 
-                OPAPC.getClaimsManager().tryToUnclaim(ServerLevel.OVERWORLD.location(), war.getDefendingParty().getOwner().getUUID(), chunkPos.x, chunkPos.z, chunkPos.x, chunkPos.z, false);
-
+                OPAPC.getClaimsManager().unclaim(ServerLevel.OVERWORLD.location(), chunkPos.x, chunkPos.z);
 
                 war.getDefendingClaim().setBoughtClaims(war.getDefendingClaim().getBoughtClaims() - 1);
                 war.getAttackingClaim().setBoughtClaims(war.getAttackingClaim().getBoughtClaims() + 1);
@@ -143,7 +175,7 @@ public class WarManager {
                     return;
                 }
                 else {
-                    war.setWarBlockPosition(spawnWarBlock(war.getDefendingParty().getOwner().getUUID()));
+                    war.setWarBlockPosition(spawnWarBlock(war));
                     war.getAttackingPlayers().forEach(p -> p.sendSystemMessage(Component.literal("War Blocks left to find: " + war.getWarBlocksLeft())));
                     war.getDefendingPlayers().forEach(p -> p.sendSystemMessage(Component.literal("A war block has been destroyed! You have " + war.getWarBlocksLeft() + " left!")));
                 }
@@ -153,41 +185,169 @@ public class WarManager {
         }
     }
 
-    public WarData playerIsInWar(UUID playerId) {
-        for (WarData war : activeWars) {
-            if (war.getAttackingParty().getMemberInfo(playerId) != null || war.getDefendingParty().getMemberInfo(playerId) != null) {
-                return war;
+    public void onDefenderDeath(ServerPlayer player, WarData war) {
+        player.setHealth(player.getMaxHealth());
+        PartyClaim claim = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard())
+                .getClaim(war.getDefendingParty().getId());
+        Random rand = new Random();
+        ServerLevel level = OPAPC.getServer().overworld();
+
+        // Warp to warp point if it's the last claim
+        if (claim.getClaimedChunksList().size() == 1) {
+            BlockPos warpPos = claim.getWarpPos();
+            player.teleportTo(level, warpPos.getX() + 0.5, warpPos.getY(), warpPos.getZ() + 0.5, player.getYRot(), player.getXRot());
+            return;
+        }
+
+        // Pick a random claimed chunk
+        List<ChunkPos> claimedChunks = new ArrayList<>(claim.getClaimedChunksList());
+        ChunkPos chosenChunk = claimedChunks.get(rand.nextInt(claimedChunks.size()));
+
+        // Convert chunk to world coordinates
+        int baseX = chosenChunk.x << 4;
+        int baseZ = chosenChunk.z << 4;
+
+        BlockPos safePos = null;
+
+        // Try up to 50 times to find a safe spot
+        for (int attempt = 0; attempt < 50 && safePos == null; attempt++) {
+            int x = baseX + rand.nextInt(16);
+            int z = baseZ + rand.nextInt(16);
+
+            // Start at terrain surface height
+            int startY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+            safePos = findSafeY(x, startY, z);
+        }
+
+        // Fallback to chunk center if none found
+        if (safePos == null) {
+            int centerX = baseX + 8;
+            int centerZ = baseZ + 8;
+            int surfaceY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, centerX, centerZ);
+            safePos = new BlockPos(centerX, surfaceY, centerZ);
+        }
+        else {
+            endWar(war, EndOfWarType.BUG);
+        }
+
+        // Teleport player
+        player.teleportTo(level, safePos.getX() + 0.5, safePos.getY(), safePos.getZ() + 0.5, player.getYRot(), player.getXRot());
+    }
+
+    public void onAttackerDeath(ServerPlayer player, WarData war) {
+        war.decrementAttackerLivesRemaining();
+        if (war.getWarBlocksLeft() <= 0) {
+            endWar(war, EndOfWarType.ALL_BLOCKS_BROKEN);
+        }
+        player.setHealth(player.getMaxHealth());
+
+        PartyClaim claim = OPAPCComponents.PARTY_CLAIMS
+                .get(OPAPC.getServer().getScoreboard())
+                .getClaim(war.getDefendingParty().getId());
+        ServerLevel level = OPAPC.getServer().overworld();
+
+        if (war.getAttackerLivesRemaining() <= 0) {
+            endWar(war, EndOfWarType.DEATHS);
+            return;
+        }
+
+        // Try to find a respawn point outside of claim
+        BlockPos respawnPos = findOutsideRespawn(claim);
+
+        if (respawnPos != null) {
+            player.teleportTo(level, respawnPos.getX() + 0.5, respawnPos.getY(), respawnPos.getZ() + 0.5, player.getYRot(), player.getXRot());
+        } else {
+            // Fallback: spawn at world spawn if no safe spot found
+            endWar(war, EndOfWarType.BUG);
+        }
+
+        // Notify players
+        war.getAttackingPlayers().forEach(p ->
+                p.sendSystemMessage(Component.literal("Your party has " + war.getAttackerLivesRemaining() + " lives left!")));
+        war.getDefendingPlayers().forEach(p ->
+                p.sendSystemMessage(Component.literal("Attackers have " + war.getAttackerLivesRemaining() + " lives left!")));
+    }
+
+    private BlockPos findOutsideRespawn(PartyClaim claim) {
+        Set<ChunkPos> claimed = new HashSet<>(claim.getClaimedChunksList());
+        Random rand = new Random();
+
+        // Pick a random claimed chunk as starting point
+        List<ChunkPos> claimedList = new ArrayList<>(claimed);
+        if (claimedList.isEmpty()) return null;
+        ChunkPos startChunk = claimedList.get(rand.nextInt(claimedList.size()));
+
+        // Directions to search outward
+        ChunkPos[] directions = {
+                new ChunkPos(1, 0),   // east
+                new ChunkPos(-1, 0),  // west
+                new ChunkPos(0, 1),   // south
+                new ChunkPos(0, -1)   // north
+        };
+
+        // Shuffle search directions
+        List<ChunkPos> dirList = Arrays.asList(directions);
+        Collections.shuffle(dirList);
+
+        for (ChunkPos dir : dirList) {
+            ChunkPos check = startChunk;
+            for (int distance = 2; distance <= 8; distance++) { // search up to 8 chunks away
+                check = new ChunkPos(check.x + dir.x, check.z + dir.z);
+
+                if (!claimed.contains(check)) {
+                    // Found an unclaimed chunk
+                    int baseX = check.x << 4;
+                    int baseZ = check.z << 4;
+
+                    // Try 20 random positions inside the chunk
+                    for (int i = 0; i < 20; i++) {
+                        int x = baseX + rand.nextInt(16);
+                        int z = baseZ + rand.nextInt(16);
+                        int startY = OPAPC.getServer().overworld().getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+
+                        BlockPos pos = findSafeY( x, startY, z);
+                        if (pos != null) {
+                            return pos;
+                        }
+                    }
+                }
+            }
+        }
+        return null; // nothing found
+    }
+
+    private BlockPos findSafeY(int x, int startY, int z) {
+        // Check downward from startY
+        ServerLevel level = OPAPC.getServer().overworld();
+        for (int y = startY; y > level.getMaxBuildHeight(); y--) {
+            BlockPos pos = new BlockPos(x, y, z);
+            BlockState below = level.getBlockState(pos.below());
+            BlockState block = level.getBlockState(pos);
+            BlockState above = level.getBlockState(pos.above());
+
+            if (below.isSolid() && block.isAir() && above.isAir() && level.canSeeSky(pos)) {
+                return pos;
             }
         }
         return null;
     }
 
-    public void onPlayerDeath(ServerPlayer player, WarData war) {
-        if (war.getAttackingPlayers().anyMatch(e -> e.getUUID().equals(player.getUUID()))) {
-            war.decrementAttackerLivesRemaining();
-            if (war.getAttackerLivesRemaining() <= 0) {
-                endWar(war, EndOfWarType.DEATHS);
-            }
-            else {
-                war.getAttackingPlayers().forEach(p -> p.sendSystemMessage(Component.literal("Your party has " + war.getAttackerLivesRemaining() + " lives left!")));
-                war.getDefendingPlayers().forEach(p -> p.sendSystemMessage(Component.literal("Attackers have " + war.getAttackerLivesRemaining() + " lives left!")));
-            }
-        }
-        player.setHealth(player.getMaxHealth());
-        SafeWarpHelper.teleportPlayer(player);
-    }
+
+
+
 
 
     public enum EndOfWarType {
         TIMEOUT,
         DEATHS,
-        FORFEIT,
+        BUG,
         ALL_BLOCKS_BROKEN
     }
 
     public void endWar(WarData war, EndOfWarType endType) {
 
         // Restore protections via OPAPC permission API
+        OPAPC.getPlayerConfigs().getLoadedConfig(war.getDefendingParty().getOwner().getUUID()).getUsedSubConfig().tryToSet(PlayerConfigOptions.PROTECT_CLAIMED_CHUNKS, true);
 
         // Award claims stolen or rewards if attackers won
 
@@ -207,7 +367,7 @@ public class WarManager {
                 // handle all attacker lives lost logic
                 cleanupWarBlock(war);
             }
-            case FORFEIT -> {
+            case BUG -> {
                 // handle forfeiting logic
                 cleanupWarBlock(war);
             }
@@ -226,15 +386,14 @@ public class WarManager {
     }
 
     public void displayWarInfo(ServerPlayer player) {
-        UUID playerId = player.getUUID();
 
         for (WarData war : activeWars) {
-            IPartyMemberAPI isAttacker = war.getAttackingParty().getMemberInfo(playerId);
-            IPartyMemberAPI isDefender = war.getDefendingParty().getMemberInfo(playerId);
+            boolean isAttacker = war.getAttackingPlayers().contains(player);
+            boolean isDefender = war.getDefendingPlayers().contains(player);
 
-            if (isAttacker != null || isDefender != null) {
+            if (isAttacker || isDefender ) {
                 Component header = Component.literal("§6--- War Info ---");
-                Component role = Component.literal("§eRole: " + (isAttacker != null ? "Attacker" : "Defender"));
+                Component role = Component.literal("§eRole: " + (isAttacker ? "Attacker" : "Defender"));
                 Component attackingParty = Component.literal("§cAttacking Party: " + war.getAttackingPartyName());
                 Component defendingParty = Component.literal("§aDefending Party: " + war.getDefendingPartyName());
 
@@ -243,7 +402,7 @@ public class WarManager {
                 long seconds = Math.max(0, (timeLeftMillis % 60000) / 1000);
                 Component timeLeft = Component.literal("§bTime Remaining: " + minutes + "m " + seconds + "s");
 
-                Component warBlocks = Component.literal("§dWar Blocks Left: " + war.getWarBlocksLeft());
+                Component warBlocks = Component.literal("§dWar Blocks: " + war.getWarBlocksLeft());
                 Component attackerLives = Component.literal("§4Attacker Lives Left: " + war.getAttackerLivesRemaining());
 
                 player.sendSystemMessage(header);

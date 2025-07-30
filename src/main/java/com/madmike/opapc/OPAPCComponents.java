@@ -1,14 +1,14 @@
 package com.madmike.opapc;
 
 import com.madmike.opapc.bounty.components.player.BountyComponent;
-import com.madmike.opapc.warp.components.player.CombatTimerComponent;
+import com.madmike.opapc.partyclaim.components.player.PartyRejoinCooldownComponent;
+import com.madmike.opapc.warp.components.player.WarpCombatCooldownComponent;
 import com.madmike.opapc.warp.components.player.WarpCooldownComponent;
 import com.madmike.opapc.trade.components.player.UnlockedStoreSlotsComponent;
 import com.madmike.opapc.partyclaim.components.scoreboard.PartyClaimsComponent;
 import com.madmike.opapc.trade.components.scoreboard.OffersComponent;
 import com.madmike.opapc.trade.components.scoreboard.OfflineSalesComponent;
 import com.madmike.opapc.trade.components.scoreboard.SellersComponent;
-import com.madmike.opapc.war.components.scoreboard.WarStatsComponent;
 import dev.onyxstudios.cca.api.v3.component.ComponentKey;
 import dev.onyxstudios.cca.api.v3.component.ComponentRegistryV3;
 import dev.onyxstudios.cca.api.v3.entity.EntityComponentFactoryRegistry;
@@ -25,11 +25,14 @@ public class OPAPCComponents implements ScoreboardComponentInitializer, EntityCo
     public static final ComponentKey<UnlockedStoreSlotsComponent> UNLOCKED_STORE_SLOTS =
             ComponentRegistryV3.INSTANCE.getOrCreate(new ResourceLocation(OPAPC.MOD_ID, "unlocked_store_slots"), UnlockedStoreSlotsComponent.class);
 
-    public static final ComponentKey<CombatTimerComponent> COMBAT_TIMER =
-            ComponentRegistryV3.INSTANCE.getOrCreate(new ResourceLocation(OPAPC.MOD_ID, "combat_timer"), CombatTimerComponent.class);
+    public static final ComponentKey<WarpCombatCooldownComponent> COMBAT_COOLDOWN =
+            ComponentRegistryV3.INSTANCE.getOrCreate(new ResourceLocation(OPAPC.MOD_ID, "combat_cooldown"), WarpCombatCooldownComponent.class);
 
-    public static final ComponentKey<WarpCooldownComponent> WARP_TIMER =
-            ComponentRegistryV3.INSTANCE.getOrCreate(new ResourceLocation(OPAPC.MOD_ID, "warp_timer"), WarpCooldownComponent.class);
+    public static final ComponentKey<WarpCooldownComponent> WARP_COOLDOWN =
+            ComponentRegistryV3.INSTANCE.getOrCreate(new ResourceLocation(OPAPC.MOD_ID, "warp_cooldown"), WarpCooldownComponent.class);
+
+    public static final ComponentKey<PartyRejoinCooldownComponent> PARTY_REJOIN_COOLDOWN =
+            ComponentRegistryV3.INSTANCE.getOrCreate(new ResourceLocation(OPAPC.MOD_ID, "party_rejoin_cooldown"), PartyRejoinCooldownComponent.class);
 
     public static final ComponentKey<BountyComponent> BOUNTY =
             ComponentRegistryV3.INSTANCE.getOrCreate(new ResourceLocation(OPAPC.MOD_ID, "bounty"), BountyComponent.class);
@@ -49,14 +52,14 @@ public class OPAPCComponents implements ScoreboardComponentInitializer, EntityCo
     public static final ComponentKey<SellersComponent> SELLERS =
             ComponentRegistryV3.INSTANCE.getOrCreate(new ResourceLocation(OPAPC.MOD_ID, "sellers"), SellersComponent.class);
 
-    public static final ComponentKey<WarStatsComponent> WAR_STATS =
-            ComponentRegistryV3.INSTANCE.getOrCreate(new ResourceLocation(OPAPC.MOD_ID, "war_stats"), WarStatsComponent.class);
+
 
     @Override
     public void registerEntityComponentFactories(EntityComponentFactoryRegistry registry) {
         registry.registerForPlayers(UNLOCKED_STORE_SLOTS, UnlockedStoreSlotsComponent::new, RespawnCopyStrategy.ALWAYS_COPY);
-        registry.registerForPlayers(COMBAT_TIMER, CombatTimerComponent::new, RespawnCopyStrategy.ALWAYS_COPY);
-        registry.registerForPlayers(WARP_TIMER, WarpCooldownComponent::new, RespawnCopyStrategy.ALWAYS_COPY);
+        registry.registerForPlayers(COMBAT_COOLDOWN, WarpCombatCooldownComponent::new, RespawnCopyStrategy.ALWAYS_COPY);
+        registry.registerForPlayers(WARP_COOLDOWN, WarpCooldownComponent::new, RespawnCopyStrategy.ALWAYS_COPY);
+        registry.registerForPlayers(PARTY_REJOIN_COOLDOWN, PartyRejoinCooldownComponent::new, RespawnCopyStrategy.ALWAYS_COPY);
         registry.registerForPlayers(BOUNTY, BountyComponent::new, RespawnCopyStrategy.ALWAYS_COPY);
     }
 
@@ -66,6 +69,5 @@ public class OPAPCComponents implements ScoreboardComponentInitializer, EntityCo
         registry.registerScoreboardComponent(PARTY_CLAIMS, PartyClaimsComponent::new);
         registry.registerScoreboardComponent(OFFLINE_SALES, OfflineSalesComponent::new);
         registry.registerScoreboardComponent(SELLERS, SellersComponent::new);
-        registry.registerScoreboardComponent(WAR_STATS, WarStatsComponent::new);
     }
 }

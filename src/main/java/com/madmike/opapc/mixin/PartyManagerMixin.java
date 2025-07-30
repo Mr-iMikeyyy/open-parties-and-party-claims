@@ -1,8 +1,10 @@
 package com.madmike.opapc.mixin;
 
 import com.madmike.opapc.OPAPC;
+import com.madmike.opapc.partyclaim.components.scoreboard.PartyClaimsComponent;
 import com.madmike.opapc.trade.components.scoreboard.OffersComponent;
 import com.madmike.opapc.OPAPCComponents;
+import com.madmike.opapc.util.NetherClaimAdjuster;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
@@ -25,8 +27,6 @@ import xaero.pac.common.server.parties.party.ServerParty;
 import java.util.List;
 import java.util.UUID;
 
-import static com.madmike.opapc.command.commands.claims.AbandonCommandHandler.handleAbandonCommand;
-
 @Mixin(PartyManager.class)
 public abstract class PartyManagerMixin {
 
@@ -46,16 +46,15 @@ public abstract class PartyManagerMixin {
     @Inject(method = "onMemberRemoved", at = @At("TAIL"), remap = false)
     private void onMemberRemoved(ServerParty party, PartyMember member, CallbackInfo ci) {
         if (party != null && member != null) {
-            OPAPCComponents.OFFERS.get(server.getScoreboard())
-                    .updatePartyForPlayer(member.getUUID(), null);
+            OPAPCComponents.OFFERS.get(server.getScoreboard()).updatePartyForPlayer(member.getUUID(), null);
+            OPAPCComponents.PARTY_REJOIN_COOLDOWN.get(OPAPC.getServer().getScoreboard()).onPartyLeave(party.getId());
         }
     }
 
     @Inject(method = "onOwnerChange", at = @At("TAIL"), remap = false)
     private void onOwnerChange(PartyMember oldOwner, PartyMember newOwner, CallbackInfo ci) {
         if (oldOwner != null && newOwner != null) {
-            OpenPACServerAPI api = OpenPACServerAPI.get(server);
-            IServerClaimsManagerAPI claimManager = api.getServerClaimsManager();
+            IServerClaimsManagerAPI claimManager = OPAPC.getClaimsManager();
 
             List<ChunkPos> chunksToTransfer = claimManager
                     .getPlayerInfo(oldOwner.getUUID())
@@ -82,8 +81,18 @@ public abstract class PartyManagerMixin {
     @Inject(method = "removeTypedParty", at = @At("TAIL"), remap = false)
     private void onRemoveTypedParty(ServerParty party, CallbackInfo ci) {
         if (party != null) {
-            OpenPACServerAPI api = OpenPACServerAPI.get(server);
-            handleAbandonCommand(party.getOwner(), party.getId(), api, server);
+
+            PartyClaimsComponent comp = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard());
+
+            List<ChunkPos> claimedChunks = comp.getClaim(party.getId()).getClaimedChunksList();
+
+            for (ChunkPos chunk : claimedChunks) {
+                OPAPC.getClaimsManager().unclaim(Level.OVERWORLD.location(), chunk.x, chunk.z);
+            }
+
+            NetherClaimAdjuster.mirrorOverworldClaimsToNether(party.getOwner().getUUID());
+
+            comp.removeClaim(party.getId());
 
             OffersComponent offers = OPAPCComponents.OFFERS.get(server.getScoreboard());
             List<UUID> memberIds = party.getMemberInfoStream()

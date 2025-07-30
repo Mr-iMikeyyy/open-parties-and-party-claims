@@ -22,13 +22,13 @@ public class WarpCooldownComponent implements ComponentV3 {
 
     /** Check if player still has a teleport cooldown */
     public boolean hasCooldown() {
-        long durationMs = OPAPCConfig.teleportCooldownInSeconds * 1000L;
+        long durationMs = OPAPCConfig.warpCooldownSeconds * 1000L;
         return System.currentTimeMillis() - lastTeleportTime < durationMs;
     }
 
     /** Get remaining cooldown as Duration for minutes/seconds display */
     public Duration getRemainingTime() {
-        long durationMs = OPAPCConfig.teleportCooldownInSeconds * 1000L;
+        long durationMs = OPAPCConfig.warpCooldownSeconds * 1000L;
         long remainingMs = durationMs - (System.currentTimeMillis() - lastTeleportTime);
         if (remainingMs < 0) remainingMs = 0;
         return Duration.ofMillis(remainingMs);

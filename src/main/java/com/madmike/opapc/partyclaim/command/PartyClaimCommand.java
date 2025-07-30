@@ -358,7 +358,7 @@ public class PartyClaimCommand {
 
                         wallet.modify(-costOfNewClaim);
                         partyClaim.setBoughtClaims(partyClaim.getBoughtClaims() + 1);
-                        partyClaim.addDonation(player.getUUID(), player.getName().getString(), costOfNewClaim);
+                        partyClaim.addDonation(player.getUUID(), costOfNewClaim);
                         ctx.getSource().sendSystemMessage(Component.literal("Donated to the party Successfully! Party now owns " + partyClaim.getBoughtClaims() + " claims."));
                         return 1;
                     })

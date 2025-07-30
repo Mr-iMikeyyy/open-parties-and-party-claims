@@ -2,8 +2,12 @@ package com.madmike.opapc.warp.command;
 
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCComponents;
+import com.madmike.opapc.OPAPCConfig;
 import com.madmike.opapc.partyclaim.data.PartyClaim;
 import com.madmike.opapc.raid.RaidManager;
+import com.madmike.opapc.raid.data.RaidData;
+import com.madmike.opapc.war.WarManager;
+import com.madmike.opapc.war.data.WarData;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -16,9 +20,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
-import xaero.pac.common.claims.player.api.IPlayerClaimInfoAPI;
-import xaero.pac.common.claims.player.api.IPlayerClaimPosListAPI;
-import xaero.pac.common.parties.party.api.IPartyAPI;
+import xaero.pac.common.parties.party.ally.api.IPartyAllyAPI;
 import xaero.pac.common.server.api.OpenPACServerAPI;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 
@@ -31,6 +33,7 @@ public class WarpCommand {
     public static void register() {
         CommandRegistrationCallback.EVENT.register(((commandDispatcher, commandBuildContext, commandSelection) -> {
 
+            //region Warp
             LiteralArgumentBuilder<CommandSourceStack> warpCommand = literal("warp").executes(ctx -> {
                 ServerPlayer player = ctx.getSource().getPlayer();
                 if (player != null) {
@@ -54,7 +57,9 @@ public class WarpCommand {
                 }
                 return 0;
             });
+            //endregion
 
+            //region Home
             warpCommand.then(literal("home")
                     .requires(ctx -> {
                         //Ensure no party
@@ -82,18 +87,18 @@ public class WarpCommand {
                         }
 
                         //Ensure not in combat
-                        if (OPAPCComponents.COMBAT_TIMER.get(player).isInCombat()) {
-                            player.sendSystemMessage(Component.literal("Your still in combat! Please wait " + OPAPCComponents.COMBAT_TIMER.get(player).getRemainingTimeSeconds() + " seconds!"));
+                        if (OPAPCComponents.COMBAT_COOLDOWN.get(player).isInCombat()) {
+                            player.sendSystemMessage(Component.literal("Your still in combat! Please wait " + OPAPCComponents.COMBAT_COOLDOWN.get(player).getRemainingTimeSeconds() + " seconds!"));
                             return 0;
                         }
 
                         //Ensure not on cooldown
-                        if (OPAPCComponents.WARP_TIMER.get(player).hasCooldown()) {
-                            player.sendSystemMessage(Component.literal("You are on cooldown from teleporting. Please wait " + OPAPCComponents.WARP_TIMER.get(player).getFormattedRemainingTime() + "."));
+                        if (OPAPCComponents.WARP_COOLDOWN.get(player).hasCooldown()) {
+                            player.sendSystemMessage(Component.literal("You are on cooldown from teleporting. Please wait " + OPAPCComponents.WARP_COOLDOWN.get(player).getFormattedRemainingTime() + "."));
                             return 0;
                         }
 
-                        //TODO check if in a raid and deny if so
+                        //Check if in raid
                         if (RaidManager.INSTANCE.isPlayerInRaid(player.getUUID())) {
                             player.sendSystemMessage(Component.literal("You cannot use /home while in a raid!"));
                             return 0;
@@ -123,12 +128,13 @@ public class WarpCommand {
                                     player.getXRot()
                             );
                         }
-                        OPAPCComponents.WARP_TIMER.get(player).onWarp();
+                        OPAPCComponents.WARP_COOLDOWN.get(player).onWarp();
                         return 1;
                     })
             );
+            //endregion
 
-
+            //region Ambush
             warpCommand.then(literal("ambush")
                     .requires(ctx -> {
                         ServerPlayer player = ctx.getPlayer();
@@ -160,14 +166,14 @@ public class WarpCommand {
                                 }
 
                                 //Ensure not in combat
-                                if (OPAPCComponents.COMBAT_TIMER.get(player).isInCombat()) {
-                                    player.sendSystemMessage(Component.literal("Your still in combat! Please wait " + OPAPCComponents.COMBAT_TIMER.get(player).getRemainingTimeSeconds() + " seconds!"));
+                                if (OPAPCComponents.COMBAT_COOLDOWN.get(player).isInCombat()) {
+                                    player.sendSystemMessage(Component.literal("Your still in combat! Please wait " + OPAPCComponents.COMBAT_COOLDOWN.get(player).getRemainingTimeSeconds() + " seconds!"));
                                     return 0;
                                 }
 
                                 //Ensure not on cooldown
-                                if (OPAPCComponents.WARP_TIMER.get(player).hasCooldown()) {
-                                    player.sendSystemMessage(Component.literal("You are on cooldown from teleporting. Please wait " + OPAPCComponents.WARP_TIMER.get(player).getFormattedRemainingTime() + "."));
+                                if (OPAPCComponents.WARP_COOLDOWN.get(player).hasCooldown()) {
+                                    player.sendSystemMessage(Component.literal("You are on cooldown from teleporting. Please wait " + OPAPCComponents.WARP_COOLDOWN.get(player).getFormattedRemainingTime() + "."));
                                     return 0;
                                 }
 
@@ -206,6 +212,303 @@ public class WarpCommand {
                             })
                     )
             );
+            //endregion
+
+            //region Player
+            warpCommand.then(argument("player", StringArgumentType.string())
+                    .requires(ctx -> {
+                        ServerPlayer player = ctx.getPlayer();
+                        if (player != null) {
+                            return OPAPC.getPartyManager().getPartyByMember(player.getUUID()) != null;
+                        }
+                        return false;
+                    })
+                    .suggests((ctx, builder) -> {
+
+                        ServerPlayer player = ctx.getSource().getPlayer();
+                        if (player == null) {
+                            return builder.buildFuture();
+                        }
+
+                        IServerPartyAPI party = OPAPC.getPartyManager().getPartyByMember(player.getUUID());
+                        if (party == null) return builder.buildFuture();
+
+                        List<ServerPlayer> onlinePlayers = party.getOnlineMemberStream().toList();
+                        for (ServerPlayer onlinePlayer : onlinePlayers) {
+                            builder.suggest(onlinePlayer.getGameProfile().getName());
+                        }
+
+                        return builder.buildFuture();
+                    })
+                    .executes(ctx -> {
+                        ServerPlayer player = ctx.getSource().getPlayer();
+                        if (player == null) {
+                            ctx.getSource().sendSystemMessage(Component.literal("Must be a player to use this command"));
+                            return 0;
+                        }
+
+                        //Ensure not in combat
+                        if (OPAPCComponents.COMBAT_COOLDOWN.get(player).isInCombat()) {
+                            player.sendSystemMessage(Component.literal("Your still in combat! Please wait " + OPAPCComponents.COMBAT_COOLDOWN.get(player).getRemainingTimeSeconds() + " seconds!"));
+                            return 0;
+                        }
+
+                        //Ensure not on cooldown
+                        if (OPAPCComponents.WARP_COOLDOWN.get(player).hasCooldown()) {
+                            player.sendSystemMessage(Component.literal("You are on cooldown from teleporting. Please wait " + OPAPCComponents.WARP_COOLDOWN.get(player).getFormattedRemainingTime() + "."));
+                            return 0;
+                        }
+
+                        IServerPartyAPI party = OPAPC.getPartyManager().getPartyByMember(player.getUUID());
+                        if (party == null) {
+                            player.sendSystemMessage(Component.literal("Only players that are in a party can use this command"));
+                            return 0;
+                        }
+
+                        for (WarData war : WarManager.INSTANCE.getActiveWars()) {
+                            if (war.getDefendingParty().equals(party) || war.getAttackingParty().equals(party)) {
+                                player.sendSystemMessage(Component.literal("Cannot teleport to party members during a war"));
+                                return 0;
+                            }
+                        }
+
+                        for (RaidData raid : RaidManager.INSTANCE.getActiveRaids()) {
+                            if (raid.getDefendingParty().equals(party)) {
+                                player.sendSystemMessage(Component.literal("Cannot teleport to party members while your base is being raided"));
+                                return 0;
+                            }
+                        }
+
+                        String targetName = ctx.getArgument("player", String.class);
+
+                        for (ServerPlayer onlinePlayer : party.getOnlineMemberStream().toList()) {
+                            if (onlinePlayer.getGameProfile().getName().equals(targetName)) {
+                                if (OPAPCComponents.COMBAT_COOLDOWN.get(onlinePlayer).isInCombat()) {
+                                    BlockPos blockPos = onlinePlayer.blockPosition();
+                                    player.teleportTo(onlinePlayer.serverLevel(), blockPos.getX(), blockPos.getY(), blockPos.getZ(), onlinePlayer.getYRot(), onlinePlayer.getXRot());
+                                }
+                                else {
+                                    player.sendSystemMessage(Component.literal("That player is in combat!"));
+                                    return 0;
+                                }
+                            }
+                        }
+
+                        player.sendSystemMessage(Component.literal("Could not find target player"));
+                        return 0;
+                    })
+            );
+            //endregion
+
+            //region Party
+            warpCommand.then(literal("party")
+                    .requires(ctx -> {
+                        ServerPlayer player = ctx.getPlayer();
+                        if (player != null) {
+                            return OPAPC.getPartyManager().getPartyByMember(player.getUUID()) != null;
+                        }
+                        return false;
+                    })
+                    .executes(ctx -> {
+                        ServerPlayer player = ctx.getSource().getPlayer();
+                        if (player == null) {
+                            ctx.getSource().sendSystemMessage(Component.literal("Must be a player to use this command"));
+                            return 0;
+                        }
+
+                        IServerPartyAPI party = OPAPC.getPartyManager().getPartyByMember(player.getUUID());
+                        if (party == null) {
+                            player.sendSystemMessage(Component.literal("Only players that are in a party can use this command"));
+                            return 0;
+                        }
+
+                        for (WarData war : WarManager.INSTANCE.getActiveWars()) {
+                            if (war.getDefendingPlayers().contains(player)) {
+                                BlockPos warpPos = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard()).getClaim(party.getId()).getWarpPos();
+                                player.teleportTo(OPAPC.getServer().overworld(), warpPos.getX(), warpPos.getY(), warpPos.getZ(), player.getYRot(), player.getXRot());
+                                return 1;
+                            }
+                        }
+
+                        for (RaidData raid : RaidManager.INSTANCE.getActiveRaids()) {
+                            if (raid.getDefendingParty().equals(party)) {
+                                BlockPos warpPos = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard()).getClaim(party.getId()).getWarpPos();
+                                player.teleportTo(OPAPC.getServer().overworld(), warpPos.getX(), warpPos.getY(), warpPos.getZ(), player.getYRot(), player.getXRot());
+                                return 1;
+                            }
+                        }
+
+                        //Ensure not in combat
+                        if (OPAPCComponents.COMBAT_COOLDOWN.get(player).isInCombat()) {
+                            player.sendSystemMessage(Component.literal("Your still in combat! Please wait " + OPAPCComponents.COMBAT_COOLDOWN.get(player).getRemainingTimeSeconds() + " seconds!"));
+                            return 0;
+                        }
+
+                        //Ensure not on cooldown
+                        if (OPAPCComponents.WARP_COOLDOWN.get(player).hasCooldown()) {
+                            player.sendSystemMessage(Component.literal("You are on cooldown from teleporting. Please wait " + OPAPCComponents.WARP_COOLDOWN.get(player).getFormattedRemainingTime() + "."));
+                            return 0;
+                        }
+
+                        BlockPos warpPos = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard()).getClaim(party.getId()).getWarpPos();
+                        player.teleportTo(OPAPC.getServer().overworld(), warpPos.getX() + 0.5, warpPos.getY(), warpPos.getZ() + 0.5, player.getYRot(), player.getXRot());
+                        return 1;
+                    })
+                    .then(literal("set")
+                            .requires(ctx -> {
+                                ServerPlayer player = ctx.getPlayer();
+                                if (player == null) {
+                                    return false;
+                                }
+
+                                IServerPartyAPI party = OPAPC.getPartyManager().getPartyByOwner(player.getUUID());
+                                if (party == null) {
+                                    return false;
+                                }
+
+                                return OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard()).getClaim(party.getId()) != null;
+                            })
+                            .executes(ctx -> {
+                                ServerPlayer player = ctx.getSource().getPlayer();
+                                if (player == null) {
+                                    ctx.getSource().sendSystemMessage(Component.literal("Must be a player to use this command"));
+                                    return 0;
+                                }
+
+                                IServerPartyAPI party = OPAPC.getPartyManager().getPartyByOwner(player.getUUID());
+                                if (party == null) {
+                                    player.sendSystemMessage(Component.literal("Only party leaders can use this command"));
+                                    return 0;
+                                }
+
+                                PartyClaim claim = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard()).getClaim(party.getId());
+                                if (claim == null) {
+                                    player.sendSystemMessage(Component.literal("Only parties with claims can make a warp point"));
+                                    return 0;
+                                }
+
+                                ChunkPos chunk = player.chunkPosition();
+                                if (!claim.getClaimedChunksList().contains(chunk)) {
+                                    player.sendSystemMessage(Component.literal("You cannot set the warp point outside of your claim"));
+                                    return 0;
+                                }
+
+                                for (WarData war : WarManager.INSTANCE.getActiveWars()) {
+                                    if (war.getDefendingClaim().equals(claim) || war.getAttackingClaim().equals(claim)) {
+                                        player.sendSystemMessage(Component.literal("You cannot set the warp point while in a war"));
+                                        return 0;
+                                    }
+                                }
+
+                                for (RaidData raid : RaidManager.INSTANCE.getActiveRaids()) {
+                                    if (raid.getDefendingClaim().equals(claim)) {
+                                        player.sendSystemMessage(Component.literal("You cannot set the warp point while your claim is being raided"));
+                                        return 0;
+                                    }
+                                }
+
+                                claim.setWarpPos(player.blockPosition());
+                                return 1;
+                            })
+                    )
+            );
+
+            //endregion
+
+            //region Ally
+            warpCommand.then(argument("ally", StringArgumentType.string())
+                    .requires(ctx -> {
+                        ServerPlayer player = ctx.getPlayer();
+                        if (player != null) {
+                            return OPAPC.getPartyManager().getPartyByMember(player.getUUID()) != null;
+                        }
+                        return false;
+                    })
+                    .suggests((ctx, builder) -> {
+
+                        ServerPlayer player = ctx.getSource().getPlayer();
+                        if (player == null) {
+                            return builder.buildFuture();
+                        }
+
+                        IServerPartyAPI party = OPAPC.getPartyManager().getPartyByMember(player.getUUID());
+                        if (party == null) return builder.buildFuture();
+
+                        List<IPartyAllyAPI> allyParties = party.getAllyPartiesStream().toList();
+                        for (IPartyAllyAPI allyParty : allyParties) {
+                            PartyClaim claim = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard()).getClaim(allyParty.getPartyId());
+                            if (claim != null) {
+                                builder.suggest(claim.getPartyName());
+                            }
+                        }
+
+                        return builder.buildFuture();
+                    })
+                    .executes(ctx -> {
+
+                        ServerPlayer player = ctx.getSource().getPlayer();
+                        if (player == null) {
+                            ctx.getSource().sendSystemMessage(Component.literal("Must be a player to use this command"));
+                            return 0;
+                        }
+
+                        IServerPartyAPI party = OPAPC.getPartyManager().getPartyByMember(player.getUUID());
+                        if (party == null) {
+                            player.sendSystemMessage(Component.literal("Only players that are in a party can use this command"));
+                            return 0;
+                        }
+
+                        String allyPartyName = ctx.getArgument("ally", String.class);
+
+                        PartyClaim targetClaim = null;
+
+                        for (PartyClaim claim : OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard()).getAllClaims().values()) {
+                            if (claim.getPartyName().equals(allyPartyName)) {
+                                targetClaim = claim;
+                                break;
+                            }
+                        }
+
+                        if (targetClaim == null) {
+                            player.sendSystemMessage(Component.literal("Could not find that claim"));
+                            return 0;
+                        }
+
+                        BlockPos warpPos = targetClaim.getWarpPos();
+
+                        for (WarData war : WarManager.INSTANCE.getActiveWars()) {
+                            if (war.getDefendingClaim().equals(targetClaim)) {
+                                player.teleportTo(OPAPC.getServer().overworld(), warpPos.getX() + 0.5, warpPos.getY(), warpPos.getZ() + 0.5, player.getYRot(), player.getXRot());
+                                return 1;
+                            }
+                        }
+
+                        for (RaidData raid : RaidManager.INSTANCE.getActiveRaids()) {
+                            if (raid.getDefendingClaim().equals(targetClaim)) {
+                                player.sendSystemMessage(Component.literal("That claim is being raided!"));
+                                return 0;
+                            }
+                        }
+
+                        //Ensure not in combat
+                        if (OPAPCComponents.COMBAT_COOLDOWN.get(player).isInCombat()) {
+                            player.sendSystemMessage(Component.literal("Your still in combat! Please wait " + OPAPCComponents.COMBAT_COOLDOWN.get(player).getRemainingTimeSeconds() + " seconds!"));
+                            return 0;
+                        }
+
+                        //Ensure not on cooldown
+                        if (OPAPCComponents.WARP_COOLDOWN.get(player).hasCooldown()) {
+                            player.sendSystemMessage(Component.literal("You are on cooldown from teleporting. Please wait " + OPAPCComponents.WARP_COOLDOWN.get(player).getFormattedRemainingTime() + "."));
+                            return 0;
+                        }
+
+                        player.teleportTo(OPAPC.getServer().overworld(), warpPos.getX() + 0.5, warpPos.getY(), warpPos.getZ() + 0.5, player.getYRot(), player.getXRot());
+                        return 1;
+                    })
+            );
+            //endregion
+
+            commandDispatcher.register(warpCommand);
 
         }));
     }

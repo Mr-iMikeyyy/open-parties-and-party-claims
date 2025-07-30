@@ -3,44 +3,56 @@ package com.madmike.opapc.war.data;
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCComponents;
 import com.madmike.opapc.partyclaim.data.PartyClaim;
-import com.madmike.opapc.war.WarManager;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 import xaero.pac.common.server.player.config.api.PlayerConfigOptions;
 
-import java.util.stream.Stream;
+import java.util.List;
 
 public class WarData {
 
     private final IServerPartyAPI attackingParty;
     private final IServerPartyAPI defendingParty;
+
+    private final List<ServerPlayer> attackers;
+    private final List<ServerPlayer> defenders;
+
     private final long startTime;
-    private final int durationSeconds;
-    private final boolean shouldWarp;
+    private BlockPos warBlockPosition;
+    private boolean warp;
 
     private int attackerLivesRemaining;
     private int warBlocksLeft;
-    private BlockPos warBlockPosition;
 
-    public WarData(IServerPartyAPI attackingParty, IServerPartyAPI defendingParty, BlockPos warBlockPosition, boolean shouldWarp) {
+    private final int durationSeconds;
+
+
+    public WarData(IServerPartyAPI attackingParty, IServerPartyAPI defendingParty) {
         this.attackingParty = attackingParty;
         this.defendingParty = defendingParty;
+        this.attackers = attackingParty.getOnlineMemberStream().toList();
+        this.defenders = defendingParty.getOnlineMemberStream().toList();
         this.startTime = System.currentTimeMillis();
-        this.warBlockPosition = warBlockPosition;
-        this.shouldWarp = shouldWarp;
 
         int defenderCount = (int) defendingParty.getOnlineMemberStream().count();
         int attackerCount = (int) attackingParty.getOnlineMemberStream().count();
 
         this.attackerLivesRemaining = defenderCount * 3;
         this.warBlocksLeft = defenderCount * 3;
-        this.durationSeconds = defenderCount * 60;
+        this.durationSeconds = defenderCount * 60 * 3;
 
         applyBuffs(defenderCount, attackerCount);
+    }
+
+    public boolean getWarp() {
+        return this.warp;
+    }
+
+    public void setWarp(boolean b) {
+        this.warp = b;
     }
 
     public BlockPos getWarBlockPosition() {
@@ -67,12 +79,12 @@ public class WarData {
         return OPAPC.getPlayerConfigs().getLoadedConfig(defendingParty.getOwner().getUUID()).getFromEffectiveConfig(PlayerConfigOptions.PARTY_NAME);
     }
 
-    public Stream<ServerPlayer> getAttackingPlayers() {
-        return attackingParty.getOnlineMemberStream();
+    public List<ServerPlayer> getAttackingPlayers() {
+        return attackers;
     }
 
-    public Stream<ServerPlayer> getDefendingPlayers() {
-        return defendingParty.getOnlineMemberStream();
+    public List<ServerPlayer> getDefendingPlayers() {
+        return defenders;
     }
 
     public PartyClaim getDefendingClaim() {
@@ -101,13 +113,6 @@ public class WarData {
 
     public void decrementWarBlocksLeft() {
         --warBlocksLeft;
-        if (this.warBlocksLeft <= 0) {
-            WarManager.INSTANCE.endWar(this, WarManager.EndOfWarType.ALL_BLOCKS_BROKEN);
-        }
-        else {
-            getAttackingPlayers().forEach(p -> p.sendSystemMessage(Component.literal("War Blocks left to find: " + getWarBlocksLeft())));
-            getDefendingPlayers().forEach(p -> p.sendSystemMessage(Component.literal("War Blocks left to defend: " + getWarBlocksLeft())));
-        }
     }
 
     public boolean isExpired() {
@@ -134,9 +139,5 @@ public class WarData {
 
     public int getDurationSeconds() {
         return durationSeconds;
-    }
-
-    public boolean isShouldWarp() {
-        return shouldWarp;
     }
 }

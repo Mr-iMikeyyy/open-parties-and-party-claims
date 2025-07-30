@@ -44,17 +44,16 @@ public class WarCommand {
                         §e/war declare <party> <warp> §7- Declare war on a party
                         §e/war info §7- View your current war status
                         §e/war top §7- View top performing war parties
-                    
+                        
+                        §6--- Objectives ---
+                        §7• Declaring war disables the target party claims protections and barriers
+                        §7• Destroy war blocks that spawn in the defenders territory
+                        §7• Destroying war blocks unclaims the defenders chunk claim
+                        §7• And also awards the attacking party a bonus claim
+                        
                         §6--- Rules & Mechanics ---
                         §7• Only party leaders can declare wars
-                        §7• Declaring war disables the target’s protections and barriers
-                        §7• Destroy war blocks that spawn in the defenders territory
                         §7• Logins from offline players on either team are blocked
-                    
-                        §6--- Objectives ---
-                        §7• At start, a §eWar Block §7spawns in the defender's claim
-                        §7• Attackers must destroy it to steal a claim
-                        §7• The block will respawn in a new chunk up to a max 3 per defender
                         §7• When all blocks are destroyed, attackers win
                         §7• When time runs out, or all attacker lives are lost, defenders win
                         §7• After a war ends, defenders are given war insurance
@@ -63,18 +62,27 @@ public class WarCommand {
                         §6--- Dynamic War Scaling ---
                         §7• Duration: §e3 minutes §7per online defender
                         §7• Attacker Lives: §e3 attacker lives §7per online defender
-                        §7• War Block Spawns: §e3 per defender
+                        §7• War Block Spawns: §e3 per online defender
                     
                         §6--- Buff System ---
                         §7• If teams are imbalanced, the team with less players gains §ebuffs
-                        §7• Buff strength scales with the player gap
+                        §7• Buff strength scales up the more uneven the teams are
                         """)
                     );
                 }
                 return 1;
             });
 
+            //region Declare
             warCommand.then(literal("declare")
+                    .requires(ctx -> {
+                        ServerPlayer player = ctx.getPlayer();
+                        if (player == null) {
+                            return false;
+                        }
+
+                        return OPAPC.getPartyManager().getPartyByOwner(player.getUUID()) != null;
+                    })
                     .then(argument("party", StringArgumentType.string())
                             .suggests((context, builder) -> {
                                 ServerPlayer player = context.getSource().getPlayer();
@@ -175,7 +183,9 @@ public class WarCommand {
                             )
                     )
             );
+            //endregion
 
+            //region Info
             warCommand.then(literal("info")
                     .executes(ctx -> {
                         ServerPlayer player = ctx.getSource().getPlayer();
@@ -185,6 +195,8 @@ public class WarCommand {
                         return 1;
                     })
             );
+            //endregion
+
 
             dispatcher.register(warCommand);
 

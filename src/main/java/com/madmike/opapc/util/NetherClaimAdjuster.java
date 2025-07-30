@@ -41,15 +41,12 @@ public class NetherClaimAdjuster {
 
         // Remove all nether claims if overworld claims are empty
         if (overworldClaims.isEmpty()) {
-
-            if (netherClaims.isEmpty()) {
-                return;
-            } else {
+            if (!netherClaims.isEmpty()) {
                 for (ChunkPos pos : netherClaims) {
                     OPAPC.getClaimsManager().tryToUnclaim(netherId, playerId, pos.x, pos.z, pos.x, pos.z, false);
                 }
-                return;
             }
+            return;
         }
 
         // Add missing nether claims

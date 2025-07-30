@@ -21,24 +21,28 @@ public class PartyClaim {
     private BlockPos warpPos = null;
     private long lastWarInsuranceTime;
     private long lastRaidInsuranceTime;
-    private int defencesWon;
-    private int defencesLost;
-    private int attacksLost;
-    private int attacksWon;
+    private int warDefencesWon;
+    private int warDefencesLost;
+    private int warAttacksLost;
+    private int warAttacksWon;
     private int claimsLostToWar;
     private int claimsGainedFromWar;
+    private int raidsWon;
+    private int raidsLost;
 
     public PartyClaim(UUID partyId) {
         this.partyId = partyId;
         this.lastWarInsuranceTime = System.currentTimeMillis();
         this.lastRaidInsuranceTime = System.currentTimeMillis();
         this.boughtClaims = 1;
-        this.defencesWon = 0;
-        this.defencesLost = 0;
-        this.attacksLost = 0;
-        this.attacksWon = 0;
+        this.warDefencesWon = 0;
+        this.warAttacksLost = 0;
+        this.warDefencesLost = 0;
+        this.warAttacksWon = 0;
         this.claimsLostToWar = 0;
         this.claimsGainedFromWar = 0;
+        this.raidsWon = 0;
+        this.raidsLost = 0;
     }
 
     public boolean isWarInsured() {
@@ -91,10 +95,10 @@ public class PartyClaim {
         return donations;
     }
 
-    public void addDonation(UUID playerId, String name, long value) {
+    public void addDonation(UUID playerId, long value) {
         Donor existing = donations.get(playerId);
         long total = value + (existing != null ? existing.amount() : 0);
-        donations.put(playerId, new Donor(playerId, name, total));
+        donations.put(playerId, new Donor(playerId, total));
     }
 
     public BlockPos getWarpPos() {
@@ -115,52 +119,52 @@ public class PartyClaim {
 
     // --- Stats Getters, Setters, and Incrementers ---
 
-    public int getDefencesWon() {
-        return defencesWon;
+    public int getWarDefencesWon() {
+        return warDefencesWon;
     }
 
-    public void setDefencesWon(int defencesWon) {
-        this.defencesWon = defencesWon;
+    public void setWarDefencesWon(int warDefencesWon) {
+        this.warDefencesWon = warDefencesWon;
     }
 
-    public void incrementDefencesWon() {
-        this.defencesWon++;
+    public void incrementWarDefencesWon() {
+        this.warDefencesWon++;
     }
 
-    public int getDefencesLost() {
-        return defencesLost;
+    public int getWarDefencesLost() {
+        return warDefencesLost;
     }
 
-    public void setDefencesLost(int defencesLost) {
-        this.defencesLost = defencesLost;
+    public void setWarDefencesLost(int warDefencesLost) {
+        this.warDefencesLost = warDefencesLost;
     }
 
-    public void incrementDefencesLost() {
-        this.defencesLost++;
+    public void incrementWarDefencesLost() {
+        this.warDefencesLost++;
     }
 
-    public int getAttacksLost() {
-        return attacksLost;
+    public int getWarAttacksLost() {
+        return warAttacksLost;
     }
 
-    public void setAttacksLost(int attacksLost) {
-        this.attacksLost = attacksLost;
+    public void setWarAttacksLost(int warAttacksLost) {
+        this.warAttacksLost = warAttacksLost;
     }
 
-    public void incrementAttacksLost() {
-        this.attacksLost++;
+    public void incrementWarAttacksLost() {
+        this.warAttacksLost++;
     }
 
-    public int getAttacksWon() {
-        return attacksWon;
+    public int getWarAttacksWon() {
+        return warAttacksWon;
     }
 
-    public void setAttacksWon(int attacksWon) {
-        this.attacksWon = attacksWon;
+    public void setWarAttacksWon(int warAttacksWon) {
+        this.warAttacksWon = warAttacksWon;
     }
 
-    public void incrementAttacksWon() {
-        this.attacksWon++;
+    public void incrementWarAttacksWon() {
+        this.warAttacksWon++;
     }
 
     public int getClaimsLostToWar() {
@@ -198,10 +202,10 @@ public class PartyClaim {
         nbt.putLong("LastRaidInsuranceTime", lastRaidInsuranceTime);
 
         // stats
-        nbt.putInt("DefencesWon", defencesWon);
-        nbt.putInt("DefencesLost", defencesLost);
-        nbt.putInt("AttacksLost", attacksLost);
-        nbt.putInt("AttacksWon", attacksWon);
+        nbt.putInt("WarDefencesWon", warDefencesWon);
+        nbt.putInt("WarDefencesLost", warDefencesLost);
+        nbt.putInt("WarAttacksLost", warAttacksLost);
+        nbt.putInt("WarAttacksWon", warAttacksWon);
         nbt.putInt("ClaimsLostToWar", claimsLostToWar);
         nbt.putInt("ClaimsGainedFromWar", claimsGainedFromWar);
 
@@ -230,10 +234,10 @@ public class PartyClaim {
                 : System.currentTimeMillis();
 
         // stats (with default fallback if missing)
-        this.defencesWon = nbt.getInt("DefencesWon");
-        this.defencesLost = nbt.getInt("DefencesLost");
-        this.attacksLost = nbt.getInt("AttacksLost");
-        this.attacksWon = nbt.getInt("AttacksWon");
+        this.warDefencesWon = nbt.getInt("DefencesWon");
+        this.warDefencesLost = nbt.getInt("DefencesLost");
+        this.warAttacksLost = nbt.getInt("AttacksLost");
+        this.warAttacksWon = nbt.getInt("AttacksWon");
         this.claimsLostToWar = nbt.getInt("ClaimsLostToWar");
         this.claimsGainedFromWar = nbt.getInt("ClaimsGainedFromWar");
 

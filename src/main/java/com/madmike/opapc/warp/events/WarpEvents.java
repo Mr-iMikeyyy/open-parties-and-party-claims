@@ -9,7 +9,7 @@ public class WarpEvents {
     public static void register() {
         AttackEntityCallback.EVENT.register((player, level, hand, entity, hitResult) -> {
             if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {
-                OPAPCComponents.COMBAT_TIMER.get(serverPlayer).onDamaged();
+                OPAPCComponents.COMBAT_COOLDOWN.get(serverPlayer).onDamaged();
             }
             return InteractionResult.PASS;
         });

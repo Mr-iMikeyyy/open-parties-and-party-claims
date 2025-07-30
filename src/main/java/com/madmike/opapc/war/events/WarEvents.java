@@ -19,10 +19,17 @@ public class WarEvents {
             //Checks if entity that died is a player
             if (entity instanceof ServerPlayer player) {
                 //Checks if player is in war
-                WarData war = WarManager.INSTANCE.playerIsInWar(player.getUUID());
-                if (war != null) {
-                    WarManager.INSTANCE.onPlayerDeath(player, war);
-                    return false;
+                for (WarData war : WarManager.INSTANCE.getActiveWars()) {
+                    if (!war.getAttackingPlayers().contains(player)) {
+                        WarManager.INSTANCE.onAttackerDeath(player, war);
+                        return false;
+                    }
+                }
+                for (WarData war : WarManager.INSTANCE.getActiveWars()) {
+                    if (!war.getDefendingPlayers().contains(player)) {
+                        WarManager.INSTANCE.onDefenderDeath(player, war);
+                        return false;
+                    }
                 }
             }
 
@@ -35,7 +42,7 @@ public class WarEvents {
             WarManager.INSTANCE.tick();
         });
 
-        // If player's party is in war on join, then kick
+        // If player's party is in war on join, then kick if not part of the war
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             ServerPlayer player = handler.player;
             UUID uuid = player.getUUID();
@@ -43,10 +50,12 @@ public class WarEvents {
             var party = OPAPC.getPartyManager().getPartyByMember(uuid);
             if (party == null) return;
 
-            WarData war = WarManager.INSTANCE.playerIsInWar(player.getUUID());
-
-            if (war != null) {
-                player.connection.disconnect(Component.literal("Your party is currently engaged in a war. You cannot join right now."));
+            for (WarData war : WarManager.INSTANCE.getActiveWars()) {
+                if (war.getDefendingParty().equals(party) || war.getAttackingParty().equals(party)) {
+                    if (!war.getAttackingPlayers().contains(player) || !war.getDefendingPlayers().contains(player)) {
+                        player.connection.disconnect(Component.literal("Your party is currently engaged in a war. You cannot join right now."));
+                    }
+                }
             }
         });
     }

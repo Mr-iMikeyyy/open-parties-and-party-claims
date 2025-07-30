@@ -5,11 +5,11 @@ import dev.onyxstudios.cca.api.v3.component.Component;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.player.Player;
 
-public class CombatTimerComponent implements Component {
+public class WarpCombatCooldownComponent implements Component {
     private long lastDamageTime = 0;
     private final Player player;
 
-    public CombatTimerComponent(Player player) {
+    public WarpCombatCooldownComponent(Player player) {
         this.player = player;
     }
 
@@ -20,12 +20,12 @@ public class CombatTimerComponent implements Component {
 
     /** Call this when you want to check if the player is still in combat */
     public boolean isInCombat() {
-        long durationMs = OPAPCConfig.combatDurationSeconds * 1000L;
+        long durationMs = OPAPCConfig.warpCooldownCombatSeconds * 1000L;
         return System.currentTimeMillis() - lastDamageTime < durationMs;
     }
 
     public long getRemainingTimeMs() {
-        long durationMs = OPAPCConfig.combatDurationSeconds * 1000L;
+        long durationMs = OPAPCConfig.warpCooldownCombatSeconds * 1000L;
         long remaining = durationMs - (System.currentTimeMillis() - lastDamageTime);
         return Math.max(remaining, 0);
     }
