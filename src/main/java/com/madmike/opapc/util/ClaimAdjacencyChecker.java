@@ -1,20 +1,15 @@
 package com.madmike.opapc.util;
 
-import com.madmike.opapc.OPAPC;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.Level;
 
 import java.util.*;
 
 public class ClaimAdjacencyChecker {
 
     public static boolean wouldBreakAdjacency(
-            UUID playerId,
+            List<ChunkPos> currentClaims,
             ChunkPos toUnclaim
     ) {
-        List<ChunkPos> currentClaims = new ArrayList<>();
-
-        OPAPC.getClaimsManager().getPlayerInfo(playerId).getDimension(Level.OVERWORLD.location()).getStream().forEach(e -> e.getStream().forEach(currentClaims::add));
 
         currentClaims.remove(toUnclaim);
         Set<ChunkPos> visited = new HashSet<>();
@@ -37,15 +32,12 @@ public class ClaimAdjacencyChecker {
     }
 
     public static boolean isNotAdjacentToExistingClaim(
-            UUID playerId,
+            List<ChunkPos> currentClaims,
             ChunkPos targetChunk
     ) {
-        List<ChunkPos> claimList = new ArrayList<>();
-
-        OPAPC.getClaimsManager().getPlayerInfo(playerId).getDimension(Level.OVERWORLD.location()).getStream().forEach(e -> e.getStream().forEach(claimList::add));
 
         for (ChunkPos neighbor : getNeighbors(targetChunk)) {
-            if (claimList.contains(neighbor)) {
+            if (currentClaims.contains(neighbor)) {
                 return false;
             }
         }

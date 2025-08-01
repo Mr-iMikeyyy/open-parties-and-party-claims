@@ -3,6 +3,7 @@ package com.madmike.opapc.war;
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCComponents;
 import com.madmike.opapc.partyclaim.data.PartyClaim;
+import com.madmike.opapc.util.SafeWarpFinder;
 import com.madmike.opapc.war.features.block.WarBlock;
 import com.madmike.opapc.util.ClaimAdjacencyChecker;
 import com.madmike.opapc.util.NetherClaimAdjuster;
@@ -42,7 +43,7 @@ public class WarManager {
         war.setWarBlockPosition(spawnWarBlock(war));
         if (shouldWarp) {
             for (ServerPlayer player : war.getAttackingPlayers()) {
-                BlockPos warpPos = findOutsideRespawn(war.getDefendingClaim());
+                BlockPos warpPos = SafeWarpFinder.findSafeSpawnOutsideClaim(war.getDefendingClaim());
                 if (warpPos != null) {
                     player.teleportTo(OPAPC.getServer().overworld(), warpPos.getX() + 0.5, warpPos.getY(), warpPos.getZ() + 0.5, player.getYRot(), player.getXRot());
                 }
@@ -104,7 +105,7 @@ public class WarManager {
 
             // 1) Pick random owned chunk and random x/z in that chunk
             ChunkPos chunk = ownedChunks.get(rand.nextInt(ownedChunks.size()));
-            if (ClaimAdjacencyChecker.wouldBreakAdjacency(war.getDefendingParty().getOwner().getUUID(), chunk)) {
+            if (ClaimAdjacencyChecker.wouldBreakAdjacency(claim.getClaimedChunksList(), chunk)) {
                 continue;
             }
             int baseX = chunk.x << 4;
@@ -149,7 +150,7 @@ public class WarManager {
     public void tick() {
         activeWars.removeIf(war -> {
             if (war.isExpired()) {
-                endWar(war, EndOfWarType.TIMEOUT);
+                endWar(war, EndOfWarType.ATTACKERS_LOSE);
                 return true;
             }
             return false;
@@ -157,31 +158,60 @@ public class WarManager {
     }
 
     public void onWarBlockBroken(BlockPos pos) {
+        // Early exit if no wars are active
+        if (activeWars.isEmpty()) return;
 
-        for (WarData war : activeWars) {
-            if (war.getWarBlockPosition().equals(pos)) {
+        ChunkPos brokenChunk = new ChunkPos(pos);
 
-                ChunkPos chunkPos = new ChunkPos(pos);
+        for (Iterator<WarData> it = activeWars.iterator(); it.hasNext();) {
+            WarData war = it.next();
 
-                OPAPC.getClaimsManager().unclaim(ServerLevel.OVERWORLD.location(), chunkPos.x, chunkPos.z);
+            if (!pos.equals(war.getWarBlockPosition())) continue;
 
-                war.getDefendingClaim().setBoughtClaims(war.getDefendingClaim().getBoughtClaims() - 1);
-                war.getAttackingClaim().setBoughtClaims(war.getAttackingClaim().getBoughtClaims() + 1);
+            // Unclaim the chunk
+            OPAPC.getClaimsManager().unclaim(ServerLevel.OVERWORLD.location(), brokenChunk.x, brokenChunk.z);
 
-                war.decrementWarBlocksLeft();
+            // Update defending claim
+            PartyClaim defendingClaim = war.getDefendingClaim();
+            defendingClaim.setBoughtClaims(defendingClaim.getBoughtClaims() - 1);
+            defendingClaim.incrementClaimsLostToWar();
 
-                if (war.getWarBlocksLeft() <= 0) {
-                    endWar(war, EndOfWarType.ALL_BLOCKS_BROKEN);
-                    return;
-                }
-                else {
-                    war.setWarBlockPosition(spawnWarBlock(war));
-                    war.getAttackingPlayers().forEach(p -> p.sendSystemMessage(Component.literal("War Blocks left to find: " + war.getWarBlocksLeft())));
-                    war.getDefendingPlayers().forEach(p -> p.sendSystemMessage(Component.literal("A war block has been destroyed! You have " + war.getWarBlocksLeft() + " left!")));
-                }
+            // Update attacking claim
+            PartyClaim attackingClaim = war.getAttackingClaim();
+            attackingClaim.setBoughtClaims(attackingClaim.getBoughtClaims() + 1);
+            attackingClaim.incrementClaimsGainedFromWar();
 
-                break;
+            if (defendingClaim.getBoughtClaims() <= 0) {
+                endWar(war, EndOfWarType.ANNIHILATED);
+                return; // done, no need to check further
             }
+
+            // Decrement remaining war blocks
+            war.decrementWarBlocksLeft();
+            int warBlocksLeft = war.getWarBlocksLeft();
+
+            if (warBlocksLeft <= 0) {
+                endWar(war, EndOfWarType.ATTACKERS_WIN);
+                return; // done, no need to check further
+            }
+
+            // Spawn new war block and notify players
+            BlockPos newBlock = spawnWarBlock(war);
+            if (newBlock != null) {
+                war.setWarBlockPosition(newBlock);
+            }
+            else {
+                endWar(war, EndOfWarType.BUG);
+                return;
+            }
+
+            Component attackerMsg = Component.literal("War Blocks left to find: " + warBlocksLeft);
+            Component defenderMsg = Component.literal("A war block has been destroyed! You have " + warBlocksLeft + " left!");
+
+            war.getAttackingPlayers().forEach(p -> p.sendSystemMessage(attackerMsg));
+            war.getDefendingPlayers().forEach(p -> p.sendSystemMessage(defenderMsg));
+
+            return; // stop after handling the first relevant war
         }
     }
 
@@ -189,7 +219,7 @@ public class WarManager {
         player.setHealth(player.getMaxHealth());
         PartyClaim claim = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard())
                 .getClaim(war.getDefendingParty().getId());
-        Random rand = new Random();
+
         ServerLevel level = OPAPC.getServer().overworld();
 
         // Warp to warp point if it's the last claim
@@ -199,65 +229,38 @@ public class WarManager {
             return;
         }
 
-        // Pick a random claimed chunk
-        List<ChunkPos> claimedChunks = new ArrayList<>(claim.getClaimedChunksList());
-        ChunkPos chosenChunk = claimedChunks.get(rand.nextInt(claimedChunks.size()));
+        BlockPos safePos = SafeWarpFinder.findSafeSpawnInsideClaim(claim);
 
-        // Convert chunk to world coordinates
-        int baseX = chosenChunk.x << 4;
-        int baseZ = chosenChunk.z << 4;
-
-        BlockPos safePos = null;
-
-        // Try up to 50 times to find a safe spot
-        for (int attempt = 0; attempt < 50 && safePos == null; attempt++) {
-            int x = baseX + rand.nextInt(16);
-            int z = baseZ + rand.nextInt(16);
-
-            // Start at terrain surface height
-            int startY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-            safePos = findSafeY(x, startY, z);
+        if (safePos == null) {
+            safePos = claim.getWarpPos();
         }
 
-        // Fallback to chunk center if none found
-        if (safePos == null) {
-            int centerX = baseX + 8;
-            int centerZ = baseZ + 8;
-            int surfaceY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, centerX, centerZ);
-            safePos = new BlockPos(centerX, surfaceY, centerZ);
+        if (safePos != null) {
+            player.teleportTo(OPAPC.getServer().overworld(), safePos.getX() + 0.5, safePos.getY(), safePos.getZ() + 0.5, player.getYRot(), player.getXRot());
         }
         else {
             endWar(war, EndOfWarType.BUG);
         }
-
-        // Teleport player
-        player.teleportTo(level, safePos.getX() + 0.5, safePos.getY(), safePos.getZ() + 0.5, player.getYRot(), player.getXRot());
     }
 
     public void onAttackerDeath(ServerPlayer player, WarData war) {
-        war.decrementAttackerLivesRemaining();
-        if (war.getWarBlocksLeft() <= 0) {
-            endWar(war, EndOfWarType.ALL_BLOCKS_BROKEN);
-        }
         player.setHealth(player.getMaxHealth());
+
+        war.decrementAttackerLivesRemaining();
+        if (war.getAttackerLivesRemaining() <= 0) {
+            endWar(war, EndOfWarType.ATTACKERS_LOSE);
+        }
 
         PartyClaim claim = OPAPCComponents.PARTY_CLAIMS
                 .get(OPAPC.getServer().getScoreboard())
                 .getClaim(war.getDefendingParty().getId());
         ServerLevel level = OPAPC.getServer().overworld();
 
-        if (war.getAttackerLivesRemaining() <= 0) {
-            endWar(war, EndOfWarType.DEATHS);
-            return;
-        }
-
-        // Try to find a respawn point outside of claim
-        BlockPos respawnPos = findOutsideRespawn(claim);
+        BlockPos respawnPos = SafeWarpFinder.findSafeSpawnOutsideClaim(claim);
 
         if (respawnPos != null) {
             player.teleportTo(level, respawnPos.getX() + 0.5, respawnPos.getY(), respawnPos.getZ() + 0.5, player.getYRot(), player.getXRot());
         } else {
-            // Fallback: spawn at world spawn if no safe spot found
             endWar(war, EndOfWarType.BUG);
         }
 
@@ -268,113 +271,78 @@ public class WarManager {
                 p.sendSystemMessage(Component.literal("Attackers have " + war.getAttackerLivesRemaining() + " lives left!")));
     }
 
-    private BlockPos findOutsideRespawn(PartyClaim claim) {
-        Set<ChunkPos> claimed = new HashSet<>(claim.getClaimedChunksList());
-        Random rand = new Random();
+    public enum EndOfWarType {
+        ATTACKERS_WIN,
+        ATTACKERS_LOSE,
+        ANNIHILATED,
+        BUG,
+    }
 
-        // Pick a random claimed chunk as starting point
-        List<ChunkPos> claimedList = new ArrayList<>(claimed);
-        if (claimedList.isEmpty()) return null;
-        ChunkPos startChunk = claimedList.get(rand.nextInt(claimedList.size()));
+    public void endWar(WarData war, EndOfWarType endType) {
+        cleanupWarBlock(war);
 
-        // Directions to search outward
-        ChunkPos[] directions = {
-                new ChunkPos(1, 0),   // east
-                new ChunkPos(-1, 0),  // west
-                new ChunkPos(0, 1),   // south
-                new ChunkPos(0, -1)   // north
-        };
+        // Restore protections via OPAPC permission API
+        OPAPC.getPlayerConfigs().getLoadedConfig(war.getDefendingParty().getOwner().getUUID())
+                .getUsedSubConfig()
+                .tryToSet(PlayerConfigOptions.PROTECT_CLAIMED_CHUNKS, true);
 
-        // Shuffle search directions
-        List<ChunkPos> dirList = Arrays.asList(directions);
-        Collections.shuffle(dirList);
-
-        for (ChunkPos dir : dirList) {
-            ChunkPos check = startChunk;
-            for (int distance = 2; distance <= 8; distance++) { // search up to 8 chunks away
-                check = new ChunkPos(check.x + dir.x, check.z + dir.z);
-
-                if (!claimed.contains(check)) {
-                    // Found an unclaimed chunk
-                    int baseX = check.x << 4;
-                    int baseZ = check.z << 4;
-
-                    // Try 20 random positions inside the chunk
-                    for (int i = 0; i < 20; i++) {
-                        int x = baseX + rand.nextInt(16);
-                        int z = baseZ + rand.nextInt(16);
-                        int startY = OPAPC.getServer().overworld().getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-
-                        BlockPos pos = findSafeY( x, startY, z);
-                        if (pos != null) {
-                            return pos;
-                        }
+        // Handle attacker teleports
+        if (war.getWarp()) {
+            for (ServerPlayer player : war.getAttackingPlayers()) {
+                BlockPos warpPos = war.getAttackingClaim().getWarpPos();
+                player.teleportTo(OPAPC.getServer().overworld(), warpPos.getX() + 0.5, warpPos.getY(),
+                        warpPos.getZ() + 0.5, player.getYRot(), player.getXRot());
+            }
+        } else {
+            for (ServerPlayer player : war.getAttackingPlayers()) {
+                if (war.getDefendingClaim().getClaimedChunksList().contains(player.chunkPosition())) {
+                    BlockPos safeSpawn = SafeWarpFinder.findSafeSpawnOutsideClaim(war.getDefendingClaim());
+                    if (safeSpawn != null) {
+                        player.teleportTo(OPAPC.getServer().overworld(), safeSpawn.getX() + 0.5, safeSpawn.getY(),
+                                safeSpawn.getZ() + 0.5, player.getYRot(), player.getXRot());
+                    } else {
+                        BlockPos warpPos = war.getAttackingClaim().getWarpPos();
+                        player.teleportTo(OPAPC.getServer().overworld(), warpPos.getX() + 0.5, warpPos.getY(),
+                                warpPos.getZ() + 0.5, player.getYRot(), player.getXRot());
                     }
                 }
             }
         }
-        return null; // nothing found
-    }
-
-    private BlockPos findSafeY(int x, int startY, int z) {
-        // Check downward from startY
-        ServerLevel level = OPAPC.getServer().overworld();
-        for (int y = startY; y > level.getMaxBuildHeight(); y--) {
-            BlockPos pos = new BlockPos(x, y, z);
-            BlockState below = level.getBlockState(pos.below());
-            BlockState block = level.getBlockState(pos);
-            BlockState above = level.getBlockState(pos.above());
-
-            if (below.isSolid() && block.isAir() && above.isAir() && level.canSeeSky(pos)) {
-                return pos;
-            }
-        }
-        return null;
-    }
-
-
-
-
-
-
-    public enum EndOfWarType {
-        TIMEOUT,
-        DEATHS,
-        BUG,
-        ALL_BLOCKS_BROKEN
-    }
-
-    public void endWar(WarData war, EndOfWarType endType) {
-
-        // Restore protections via OPAPC permission API
-        OPAPC.getPlayerConfigs().getLoadedConfig(war.getDefendingParty().getOwner().getUUID()).getUsedSubConfig().tryToSet(PlayerConfigOptions.PROTECT_CLAIMED_CHUNKS, true);
-
-        // Award claims stolen or rewards if attackers won
-
-        // Record Stats
-
-        // Teleport enemy players if in claim
 
         NetherClaimAdjuster.mirrorOverworldClaimsToNether(war.getDefendingParty().getOwner().getUUID());
 
-        // Optionally notify parties based on end type
+        // Get party names
+        String attackers = war.getAttackingClaim().getPartyName();
+        String defenders = war.getDefendingClaim().getPartyName();
+
+        // Build announcement
+        String message;
         switch (endType) {
-            case TIMEOUT -> {
-                // handle timeout-specific logic
-                cleanupWarBlock(war);
+            case ATTACKERS_LOSE -> {
+                war.getAttackingClaim().incrementWarAttacksLost();
+                war.getDefendingClaim().incrementWarDefencesWon();
+                message = "§c" + defenders + " have successfully defended their land against " + attackers + "!";
             }
-            case DEATHS -> {
-                // handle all attacker lives lost logic
-                cleanupWarBlock(war);
+            case ATTACKERS_WIN -> {
+                war.getAttackingClaim().incrementWarAttacksWon();
+                war.getDefendingClaim().incrementWarDefencesLost();
+                message = "§a" + attackers + " were victorious! " + defenders + " have lost the war.";
+            }
+            case ANNIHILATED -> {
+                message = attackers + " have annihilated " + defenders + "... They have been wiped off the map.";
+                OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard()).removeClaim(war.getDefendingClaim().getPartyId());
             }
             case BUG -> {
-                // handle forfeiting logic
-                cleanupWarBlock(war);
+                message = "§eThe war between " + attackers + " and " + defenders + " has ended abruptly due to an error, contact admin.";
             }
-            case ALL_BLOCKS_BROKEN -> {
-                // handle block destruction victory logic
+            default -> {
+                message = "§7The war between " + attackers + " and " + defenders + " has ended.";
             }
         }
+
+        // Broadcast server-wide
+        OPAPC.getServer().getPlayerList()
+                .broadcastSystemMessage(Component.literal(message), false);
 
         activeWars.remove(war);
     }

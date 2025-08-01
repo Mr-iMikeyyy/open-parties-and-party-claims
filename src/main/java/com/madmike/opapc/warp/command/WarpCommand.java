@@ -145,7 +145,7 @@ public class WarpCommand {
                     })
                     .then(argument("party", StringArgumentType.string())
                             .suggests((ctx, builder) -> {
-                                for (PartyClaim claim : OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard()).getAllClaims().values()) {
+                                for (PartyClaim claim : OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard()).getAllClaims()) {
                                     builder.suggest(claim.getPartyName());
                                 }
                                 return builder.buildFuture();
@@ -462,7 +462,7 @@ public class WarpCommand {
 
                         PartyClaim targetClaim = null;
 
-                        for (PartyClaim claim : OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard()).getAllClaims().values()) {
+                        for (PartyClaim claim : OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard()).getAllClaims()) {
                             if (claim.getPartyName().equals(allyPartyName)) {
                                 targetClaim = claim;
                                 break;

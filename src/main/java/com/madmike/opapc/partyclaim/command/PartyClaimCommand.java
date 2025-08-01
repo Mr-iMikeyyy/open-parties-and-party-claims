@@ -29,10 +29,7 @@ import xaero.pac.common.server.claims.api.IServerClaimsManagerAPI;
 import xaero.pac.common.server.claims.player.api.IServerPlayerClaimInfoAPI;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static com.madmike.opapc.util.NetherClaimAdjuster.mirrorOverworldClaimsToNether;
 import static net.minecraft.commands.Commands.literal;
@@ -130,7 +127,7 @@ public class PartyClaimCommand {
                         }
 
                         //Check if new chunk is adjacent to an old chunk
-                        if (ClaimAdjacencyChecker.isNotAdjacentToExistingClaim(player.getUUID(), player.chunkPosition())) {
+                        if (ClaimAdjacencyChecker.isNotAdjacentToExistingClaim(partyClaim.getClaimedChunksList(), player.chunkPosition())) {
                             ctx.getSource().sendFailure(Component.literal("Claim must be adjacent to an existing party claim."));
                             return 0;
                         }
@@ -200,20 +197,15 @@ public class PartyClaimCommand {
                             return 0;
                         }
 
-                        IServerPlayerClaimInfoAPI info = OPAPC.getClaimsManager().getPlayerInfo(player.getUUID());
-                        int totalOverworldClaims = info.getDimension(Level.OVERWORLD.location())
-                                .getStream()
-                                .mapToInt(IPlayerClaimPosListAPI::getCount)
-                                .sum();
 
                         //Check not last claim
-                        if (totalOverworldClaims <= 1) {
+                        if (partyClaim.getClaimedChunksList().size() <= 1) {
                             player.sendSystemMessage(Component.literal("You can't un-claim your last claim, use /abandon instead"));
                             return 0;
                         }
 
                         //Check would not break adjacency
-                        if (ClaimAdjacencyChecker.wouldBreakAdjacency(player.getUUID(), player.chunkPosition())) {
+                        if (ClaimAdjacencyChecker.wouldBreakAdjacency(partyClaim.getClaimedChunksList(), player.chunkPosition())) {
                             player.sendSystemMessage(Component.literal("You can't un-claim a claim that would split your territory in two"));
                             return 0;
                         }
@@ -313,21 +305,20 @@ public class PartyClaimCommand {
             //region Top
             partyClaimCommand.then(literal("top")
                     .executes(ctx -> {
+                        Collection<PartyClaim> allClaims = OPAPCComponents.PARTY_CLAIMS
+                                .get(OPAPC.getServer().getScoreboard())
+                                .getAllClaims();
 
-                        Map<UUID, PartyClaim> allClaims = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard()).getAllClaims();
-
-                        // Create a sorted list (descending by getBoughtClaims)
-                        List<Map.Entry<UUID, PartyClaim>> sortedClaims = new ArrayList<>(allClaims.entrySet());
-                        sortedClaims.sort((a, b) -> Integer.compare(b.getValue().getBoughtClaims(), a.getValue().getBoughtClaims()));
+                        // Convert to a list for sorting
+                        List<PartyClaim> sortedClaims = new ArrayList<>(allClaims);
+                        sortedClaims.sort((a, b) -> Integer.compare(b.getBoughtClaims(), a.getBoughtClaims()));
 
                         // Limit to top 10
-                        int limit = Math.min(sortedClaims.size(), 10);
+                        int limit = Math.min(sortedClaims.size(), 3);
 
                         ctx.getSource().sendSystemMessage(Component.literal("§aTop Parties by Bought Claims:"));
                         for (int i = 0; i < limit; i++) {
-                            Map.Entry<UUID, PartyClaim> entry = sortedClaims.get(i);
-                            UUID partyId = entry.getKey();
-                            PartyClaim claim = entry.getValue();
+                            PartyClaim claim = sortedClaims.get(i);
 
                             String partyName = claim.getPartyName();
                             int claims = claim.getBoughtClaims();
@@ -394,7 +385,7 @@ public class PartyClaimCommand {
 
                         wallet.modify(-costOfNewClaim);
                         partyClaim.setBoughtClaims(partyClaim.getBoughtClaims() + 1);
-                        partyClaim.addDonation(player.getUUID(), costOfNewClaim);
+                        partyClaim.addDonation(player.getUUID(), player.getGameProfile().getName(), costOfNewClaim);
                         ctx.getSource().sendSystemMessage(Component.literal("Donated to the party Successfully! Party now owns " + partyClaim.getBoughtClaims() + " claims."));
                         return 1;
                     })

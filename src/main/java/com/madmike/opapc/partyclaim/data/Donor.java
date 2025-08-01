@@ -5,18 +5,19 @@ import net.minecraft.nbt.CompoundTag;
 
 import java.util.UUID;
 
-public record Donor(UUID playerId, long amount) {
+public record Donor(String name, long amount) {
 
-    public CompoundTag toNbt() {
-        CompoundTag nbt = new CompoundTag();
-        nbt.putUUID("PlayerId", playerId);
-        nbt.putLong("Amount", amount);
-        return nbt;
+    public CompoundTag toNbt(UUID playerId) {
+        CompoundTag tag = new CompoundTag();
+        tag.putUUID("PlayerId", playerId);
+        tag.putString("Name", name);
+        tag.putLong("Amount", amount);
+        return tag;
     }
 
-    public static Donor fromNbt(CompoundTag nbt) {
-        UUID playerId = nbt.getUUID("PlayerId");
-        long amount = nbt.getLong("Amount");
-        return new Donor(playerId, amount);
+    public static Donor fromNbt(CompoundTag tag) {
+        String name = tag.getString("Name");
+        long amount = tag.getLong("Amount");
+        return new Donor(name, amount);
     }
 }

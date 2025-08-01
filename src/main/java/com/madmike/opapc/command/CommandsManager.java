@@ -17,7 +17,6 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -37,11 +36,6 @@ import xaero.pac.common.server.player.config.api.PlayerConfigOptions;
 
 import java.util.*;
 
-import static com.madmike.opapc.command.commands.claims.AbandonCommandHandler.handleAbandonCommand;
-import static com.madmike.opapc.command.commands.claims.PartyClaimCommandHandler.handlePartyClaimCommand;
-import static com.madmike.opapc.command.commands.claims.PartyUnclaimCommandHandler.handlePartyUnclaimCommand;
-import static com.madmike.opapc.command.commands.warp.GuildCommandHandler.handleGuildCommand;
-import static com.madmike.opapc.command.commands.warp.HomeCommandHandler.handleHomeCommand;
 import static com.madmike.opapc.command.commands.claims.ListPartyClaimsCommandHandler.handleListPartyClaimsCommand;
 import static com.madmike.opapc.util.NetherClaimAdjuster.mirrorOverworldClaimsToNether;
 import static net.minecraft.commands.Commands.argument;
@@ -51,213 +45,6 @@ public class CommandsManager {
 
     public static void registerCommands() {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
-
-            //region Warp Command
-            dispatcher.register(literal("warp")
-                    .then(literal("home")
-                            .executes(ctx -> {
-                                //TODO check if in a claim or raid and deny if so
-
-                                ServerPlayer player = ctx.getSource().getPlayer();
-
-                                //Check if player
-                                if (player == null) return 0;
-
-                                IServerPartyAPI party = OpenPACServerAPI.get(ctx.getSource().getServer())
-                                        .getPartyManager().getPartyByMember(player.getUUID());
-
-                                //Ensure not in party
-                                if (party != null) {
-                                    player.sendSystemMessage(Component.literal("Only players not in a party have access to the /home command."));
-                                    return 0;
-                                }
-
-                                //Ensure not in combat
-                                if (OPAPCComponents.COMBAT_COOLDOWN.get(player).isInCombat()) {
-                                    player.sendSystemMessage(Component.literal("Your still in combat! Please wait " + OPAPCComponents.COMBAT_COOLDOWN.get(player).getRemainingTimeSeconds() + " seconds!"));
-                                    return 0;
-                                }
-
-                                //Ensure not on cooldown
-                                if (OPAPCComponents.WARP_COOLDOWN.get(player).hasCooldown()) {
-                                    player.sendSystemMessage(Component.literal("You are on cooldown from teleporting. Please wait " + OPAPCComponents.WARP_COOLDOWN.get(player).getFormattedRemainingTime() + "."));
-                                    return 0;
-                                }
-
-                                handleHomeCommand(player);
-                                return 1;
-                            }))
-                    .then(literal("guild")
-                            .executes(ctx -> {
-                                //TODO check if in war and deny if so
-                                ServerPlayer player = ctx.getSource().getPlayer();
-                                if (player == null) return 0;
-
-                                IServerPartyAPI party = OpenPACServerAPI.get(ctx.getSource().getServer())
-                                        .getPartyManager().getPartyByMember(player.getUUID());
-
-                                if (party == null) {
-                                    player.sendSystemMessage(Component.literal("Only players that are in a party have access to the /guild command."));
-                                    return 0;
-                                }
-
-                                PartyClaim claim = OPAPCComponents.PARTY_CLAIMS.get(player.getScoreboard()).getClaim(party.getId());
-                                if (claim == null) {
-                                    player.sendSystemMessage(Component.literal("Your party hasn't set up a claim yet. The party leader needs to claim a chunk to start a party claim and then set a teleport spot."));
-                                    return 0;
-                                }
-
-                                if (claim.getWarpPos() == null) {
-                                    player.sendSystemMessage(Component.literal("Party leader has not set a teleport spot yet."));
-                                    return 0;
-                                }
-
-                                if (OPAPCComponents.COMBAT_COOLDOWN.get(player).isInCombat()) {
-                                    player.sendSystemMessage(Component.literal("Your still in combat! Please wait " + OPAPCComponents.COMBAT_COOLDOWN.get(player).getRemainingTimeSeconds() + " seconds!"));
-                                    return 0;
-                                }
-
-                                if (OPAPCComponents.WARP_COOLDOWN.get(player).hasCooldown()) {
-                                    player.sendSystemMessage(Component.literal("You are on cooldown from teleporting. Please wait " + OPAPCComponents.WARP_COOLDOWN.get(player).getFormattedRemainingTime() + "."));
-                                    return 0;
-                                }
-
-                                handleGuildCommand(player, claim, ctx.getSource().getServer());
-                                return 1;
-                            })
-                            .then(literal("set")
-                                    .executes(ctx -> {
-                                        ServerPlayer player = ctx.getSource().getPlayer();
-                                        if (player == null) return 0;
-                                        OpenPACServerAPI api = OpenPACServerAPI.get(ctx.getSource().getServer());
-
-                                        if (!player.level().dimension().location().equals(Level.OVERWORLD.location())) {
-                                            ctx.getSource().sendFailure(Component.literal("Must be in the Overworld to set the guild teleport."));
-                                            return 0;
-                                        }
-
-                                        IServerPartyAPI party = api
-                                                .getPartyManager().getPartyByMember(player.getUUID());
-
-                                        if (party == null) {
-                                            ctx.getSource().sendFailure(Component.literal("Must be in a party and its leader to set the guild teleport position."));
-                                            return 0;
-                                        }
-                                        if (!party.getOwner().getUUID().equals(player.getUUID())) {
-                                            ctx.getSource().sendFailure(Component.literal("Only the party leader can set the guild teleport spot."));
-                                            return 0;
-                                        }
-
-                                        PartyClaim claim = OPAPCComponents.PARTY_CLAIMS.get(player.getScoreboard()).getClaim(party.getId());
-                                        if (claim == null) {
-                                            player.sendSystemMessage(Component.literal("Your party hasn't set up a claim yet. The party leader needs to claim a chunk to start a party claim and then set a teleport spot."));
-                                            return 0;
-                                        }
-
-                                        List<ChunkPos> claimedChunks = new ArrayList<>();
-                                        api.getServerClaimsManager().getPlayerInfo(player.getUUID()).getDimension(Level.OVERWORLD.location()).getStream().forEach(e -> e.getStream().forEach(claimedChunks::add));
-
-                                        if (!claimedChunks.contains(new ChunkPos(player.getOnPos()))) {
-                                            player.sendSystemMessage(Component.literal("Your guild's teleport spot needs to be within your claim."));
-                                            return 0;
-                                        }
-
-                                        claim.setWarpPos(player.getOnPos());
-                                        player.sendSystemMessage(Component.literal("Guild Teleport Set!"));
-                                        return 1;
-                                    })
-                            )
-                    )
-                    .then(literal("party")
-                            .then(argument("player", StringArgumentType.word())
-                                    .suggests((context, builder) -> {
-                                        ServerPlayer player = context.getSource().getPlayer();
-                                        if (player != null) {
-
-                                            List<String> members = OpenPACServerAPI.get(context.getSource().getServer())
-                                                    .getPartyManager()
-                                                    .getPartyByMember(player.getUUID())
-                                                    .getOnlineMemberStream()
-                                                    .map(ServerPlayer::getName)
-                                                    .map(Component::getString)
-                                                    .toList();
-
-                                            for (String member : members) {
-                                                builder.suggest(member);
-                                            }
-                                            return builder.buildFuture();
-                                        }
-                                        return builder.buildFuture();
-                                    })
-                                    .executes(ctx -> {
-                                        ServerPlayer player = ctx.getSource().getPlayer();
-
-                                        // Check if player
-                                        if (player == null) return 0;
-
-                                        String targetPlayerName = StringArgumentType.getString(ctx, "player");
-                                        ServerPlayer targetPlayer = ctx.getSource().getServer().getPlayerList().getPlayerByName(targetPlayerName);
-
-                                        if (targetPlayer != null) {
-                                            BlockPos target = targetPlayer.getOnPos();
-
-                                            // Get the target's current yaw and pitch for teleport
-                                            float yaw = targetPlayer.getYRot();
-                                            float pitch = targetPlayer.getXRot();
-
-                                            player.teleportTo(
-                                                    targetPlayer.serverLevel(), // world
-                                                    target.getX() + 0.5, // center on block
-                                                    target.getY(),
-                                                    target.getZ() + 0.5,
-                                                    yaw,
-                                                    pitch
-                                            );
-
-                                            player.sendSystemMessage(Component.literal("Teleported to " + targetPlayerName + "."));
-                                        } else {
-                                            player.sendSystemMessage(Component.literal("Player " + targetPlayerName + " is not online."));
-                                        }
-
-                                        return 1;
-                                    })
-                            )
-                    )
-                    .then(literal("ambush")
-                            .executes(ctx -> {
-                                //TODO allow scallywags to teleport near a partyclaim for use in raids or to setup an ambush
-
-                                ServerPlayer player = ctx.getSource().getPlayer();
-
-                                //Check if player
-                                if (player == null) return 0;
-
-                                IServerPartyAPI party = OpenPACServerAPI.get(ctx.getSource().getServer())
-                                        .getPartyManager().getPartyByMember(player.getUUID());
-
-                                //Ensure not in party
-                                if (party != null) {
-                                    player.sendSystemMessage(Component.literal("Only players not in a party have access to the /home command."));
-                                    return 0;
-                                }
-
-                                if (OPAPCComponents.COMBAT_COOLDOWN.get(player).isInCombat()) {
-                                    player.sendSystemMessage(Component.literal("Your still in combat! Please wait " + OPAPCComponents.COMBAT_COOLDOWN.get(player).getRemainingTimeSeconds() + " seconds!"));
-                                    return 0;
-                                }
-
-                                if (OPAPCComponents.WARP_COOLDOWN.get(player).hasCooldown()) {
-                                    player.sendSystemMessage(Component.literal("You are on cooldown from teleporting. Please wait " + OPAPCComponents.WARP_COOLDOWN.get(player).getFormattedRemainingTime() + "."));
-                                    return 0;
-                                }
-
-                                //TODO ensure not in raid
-
-                                handleAmbushCommand(player);
-                                return 1;
-                            }))
-            );
-            //endregion
 
             //region Party Command
 
@@ -532,7 +319,7 @@ public class CommandsManager {
 
                         wallet.modify(-costOfNewClaim);
                         partyClaim.setBoughtClaims(partyClaim.getBoughtClaims() + 1);
-                        partyClaim.addDonation(player.getUUID(), costOfNewClaim);
+                        partyClaim.addDonation(player.getUUID(), player.getGameProfile().getName(), costOfNewClaim);
                         ctx.getSource().sendSystemMessage(Component.literal("Donated to the party Successfully! Party now owns " + partyClaim.getBoughtClaims() + " claims."));
                         return 1;
                     })

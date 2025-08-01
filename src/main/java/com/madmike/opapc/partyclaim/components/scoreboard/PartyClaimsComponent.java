@@ -13,8 +13,9 @@ import java.util.*;
 
 public class PartyClaimsComponent implements ComponentV3 {
     private final Scoreboard provider;
-    private final List<PartyClaim> partyClaims = new ArrayList<>();
     private final MinecraftServer server;
+
+    private final Map<UUID, PartyClaim> partyClaims = new HashMap<>();
 
     public PartyClaimsComponent(Scoreboard scoreboard, MinecraftServer server) {
         this.server = server;
@@ -23,24 +24,24 @@ public class PartyClaimsComponent implements ComponentV3 {
 
     @Override
     public void readFromNbt(CompoundTag nbt) {
-        this.partyClaims.clear();
-
+        partyClaims.clear();
         ListTag claimsList = nbt.getList("PartyClaims", Tag.TAG_COMPOUND);
+
         for (Tag element : claimsList) {
             CompoundTag claimTag = (CompoundTag) element;
-            UUID partyId = claimTag.getUUID("PartyId");
+            if (!claimTag.hasUUID("PartyId")) continue;
 
+            UUID partyId = claimTag.getUUID("PartyId");
             PartyClaim claim = new PartyClaim(partyId);
             claim.readFromNbt(claimTag);
-
-            this.partyClaims.add(claim);
+            partyClaims.put(partyId, claim);
         }
     }
 
     @Override
     public void writeToNbt(@NotNull CompoundTag nbt) {
         ListTag claimsList = new ListTag();
-        for (PartyClaim claim : partyClaims) {
+        for (PartyClaim claim : partyClaims.values()) {
             CompoundTag claimTag = claim.writeToNbt();
             claimTag.putUUID("PartyId", claim.getPartyId());
             claimsList.add(claimTag);
@@ -49,23 +50,18 @@ public class PartyClaimsComponent implements ComponentV3 {
     }
 
     public void createClaim(UUID partyId) {
-        partyClaims.add(new PartyClaim(partyId));
+        partyClaims.putIfAbsent(partyId, new PartyClaim(partyId));
     }
 
     public PartyClaim getClaim(UUID partyId) {
-        for (PartyClaim claim : partyClaims) {
-            if (claim.getPartyId().equals(partyId)) {
-                return claim;
-            }
-        }
-        return null;
+        return partyClaims.get(partyId);
     }
 
-    public List<PartyClaim> getAllClaims() {
-        return partyClaims;
+    public Collection<PartyClaim> getAllClaims() {
+        return Collections.unmodifiableCollection(partyClaims.values());
     }
 
     public void removeClaim(UUID partyId) {
-        partyClaims.removeIf(claim -> claim.getPartyId().equals(partyId));
+        partyClaims.remove(partyId);
     }
 }

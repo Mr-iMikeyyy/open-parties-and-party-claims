@@ -97,10 +97,10 @@ public class PartyClaim {
         return donations;
     }
 
-    public void addDonation(UUID playerId, long value) {
+    public void addDonation(UUID playerId, String name, long value) {
         Donor existing = donations.get(playerId);
         long total = value + (existing != null ? existing.amount() : 0);
-        donations.put(playerId, new Donor(playerId, total));
+        donations.put(playerId, new Donor(name, total));
     }
 
     public BlockPos getWarpPos() {
@@ -218,8 +218,8 @@ public class PartyClaim {
 
         // donations list
         ListTag donorList = new ListTag();
-        for (Donor donor : donations.values()) {
-            donorList.add(donor.toNbt());
+        for (Map.Entry<UUID, Donor> entry : donations.entrySet()) {
+            donorList.add(entry.getValue().toNbt(entry.getKey()));
         }
         nbt.put("Donations", donorList);
 
@@ -231,9 +231,7 @@ public class PartyClaim {
         this.partyId = nbt.getUUID("PartyId");
         this.boughtClaims = nbt.getInt("BoughtClaims");
         this.lastWarInsuranceTime = nbt.getLong("LastWarInsuranceTime");
-        this.lastRaidInsuranceTime = nbt.contains("LastRaidInsuranceTime")
-                ? nbt.getLong("LastRaidInsuranceTime")
-                : System.currentTimeMillis();
+        this.lastRaidInsuranceTime = nbt.getLong("LastRaidInsuranceTime");
 
         // stats (with default fallback if missing)
         this.warDefencesWon = nbt.getInt("DefencesWon");
@@ -250,12 +248,15 @@ public class PartyClaim {
             this.warpPos = null;
         }
 
-        // donations
+        //donations
         this.donations.clear();
         ListTag donorList = nbt.getList("Donations", Tag.TAG_COMPOUND);
+
         for (Tag element : donorList) {
-            Donor donor = Donor.fromNbt((CompoundTag) element);
-            this.donations.put(donor.playerId(), donor);
+            CompoundTag donorTag = (CompoundTag) element;
+            UUID playerId = donorTag.getUUID("PlayerId");
+            Donor donor = Donor.fromNbt(donorTag);
+            donations.put(playerId, donor);
         }
     }
 
@@ -295,15 +296,15 @@ public class PartyClaim {
         info.append(Component.literal("§eRaids Won: §f" + raidsWon + "\n"));
         info.append(Component.literal("§eRaids Lost: §f" + raidsLost + "\n"));
 
-        // Donor Info
-        if (!donations.isEmpty()) {
-            info.append(Component.literal("\n§6--- Donations ---\n"));
-            for (Donor donor : donations.values()) {
-                String name = OPAPC.getServer().getPlayerList().getPlayer(donor.playerId()) != null
-                        ? OPAPC.getServer().get
-                        : donor.playerId().toString();
-                info.append(Component.literal("§e" + name + ": §f" + donor.amount() + "\n"));
-            }
+        for (Map.Entry<UUID, Donor> entry : donations.entrySet()) {
+            UUID donorId = entry.getKey();
+            Donor donor = entry.getValue();
+
+            String displayName = OPAPC.getServer().getPlayerList().getPlayer(donorId) != null
+                    ? donor.name()  // use saved name if player is known
+                    : donorId.toString();
+
+            info.append(Component.literal("§e" + displayName + ": §f" + donor.amount() + "\n"));
         }
 
         return info;

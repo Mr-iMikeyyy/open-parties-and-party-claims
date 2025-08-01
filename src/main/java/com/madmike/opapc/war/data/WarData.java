@@ -28,6 +28,7 @@ public class WarData {
     private int warBlocksLeft;
 
     private final int durationSeconds;
+    private final long durationMilli;
 
 
     public WarData(IServerPartyAPI attackingParty, IServerPartyAPI defendingParty) {
@@ -37,12 +38,13 @@ public class WarData {
         this.defenders = defendingParty.getOnlineMemberStream().toList();
         this.startTime = System.currentTimeMillis();
 
-        int defenderCount = (int) defendingParty.getOnlineMemberStream().count();
-        int attackerCount = (int) attackingParty.getOnlineMemberStream().count();
+        int defenderCount = this.defenders.size();
+        int attackerCount = this.attackers.size();
 
         this.attackerLivesRemaining = defenderCount * 3;
         this.warBlocksLeft = defenderCount * 3;
-        this.durationSeconds = defenderCount * 60 * 3;
+        this.durationSeconds = defenderCount * 3 * 60;
+        this.durationMilli = this.durationSeconds * 1000L;
 
         applyBuffs(defenderCount, attackerCount);
     }
@@ -117,7 +119,7 @@ public class WarData {
 
     public boolean isExpired() {
         long elapsed = System.currentTimeMillis() - startTime;
-        return elapsed >= (durationSeconds * 1000L);
+        return elapsed >= durationMilli;
     }
 
     public void applyBuffs(int defenderCount, int attackerCount) {

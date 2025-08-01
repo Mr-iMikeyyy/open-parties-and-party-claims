@@ -5,6 +5,7 @@ import com.madmike.opapc.OPAPCComponents;
 import com.madmike.opapc.OPAPCConfig;
 import com.madmike.opapc.partyclaim.components.scoreboard.PartyClaimsComponent;
 import com.madmike.opapc.partyclaim.data.PartyClaim;
+import com.madmike.opapc.util.ServerRestartChecker;
 import com.madmike.opapc.war.WarManager;
 import com.madmike.opapc.war.data.WarData;
 import com.mojang.brigadier.arguments.BoolArgumentType;
@@ -95,7 +96,7 @@ public class WarCommand {
                                 PartyClaim attackingClaim = comp.getClaim(party.getId());
                                 if (attackingClaim == null) return builder.buildFuture();
 
-                                for (PartyClaim claim : comp.getAllClaims().values()) {
+                                for (PartyClaim claim : comp.getAllClaims()) {
                                     if (!claim.isWarInsured() && !claim.getPartyId().equals(attackingClaim.getPartyId())) {
                                         builder.suggest(claim.getPartyName());
                                     }
@@ -105,6 +106,11 @@ public class WarCommand {
                             })
                             .then(argument("warp", BoolArgumentType.bool())
                                     .executes(ctx -> {
+                                        if (!ServerRestartChecker.isSafeToStartEventNow()) {
+                                            ctx.getSource().sendFailure(Component.literal("Cannot declare war because the server is going to restart soon"));
+                                            return 0;
+                                        }
+
                                         ServerPlayer player = ctx.getSource().getPlayer();
                                         if (player == null) {
                                             ctx.getSource().sendFailure(Component.literal("Must be a player to use this command."));

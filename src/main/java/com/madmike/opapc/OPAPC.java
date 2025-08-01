@@ -16,7 +16,9 @@ import com.madmike.opapc.warp.events.WarpEvents;
 import net.fabricmc.api.ModInitializer;
 
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import xaero.pac.common.server.api.OpenPACServerAPI;
@@ -90,5 +92,11 @@ public class OPAPC implements ModInitializer {
 		WarFeatures.register();
 
 		LOGGER.info("OPAPC Initialized. Good luck out there!");
+	}
+
+	public static void broadcast(Component msg) {
+		for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+			player.sendSystemMessage(msg);
+		}
 	}
 }
