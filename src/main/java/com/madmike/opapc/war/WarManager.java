@@ -3,7 +3,7 @@ package com.madmike.opapc.war;
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCComponents;
 import com.madmike.opapc.partyclaim.data.PartyClaim;
-import com.madmike.opapc.util.SafeWarpFinder;
+import com.madmike.opapc.util.SafeWarpHelper;
 import com.madmike.opapc.war.features.block.WarBlock;
 import com.madmike.opapc.util.ClaimAdjacencyChecker;
 import com.madmike.opapc.util.NetherClaimAdjuster;
@@ -43,7 +43,7 @@ public class WarManager {
         war.setWarBlockPosition(spawnWarBlock(war));
         if (shouldWarp) {
             for (ServerPlayer player : war.getAttackingPlayers()) {
-                BlockPos warpPos = SafeWarpFinder.findSafeSpawnOutsideClaim(war.getDefendingClaim());
+                BlockPos warpPos = SafeWarpHelper.findSafeSpawnOutsideClaim(war.getDefendingClaim());
                 if (warpPos != null) {
                     player.teleportTo(OPAPC.getServer().overworld(), warpPos.getX() + 0.5, warpPos.getY(), warpPos.getZ() + 0.5, player.getYRot(), player.getXRot());
                 }
@@ -229,7 +229,7 @@ public class WarManager {
             return;
         }
 
-        BlockPos safePos = SafeWarpFinder.findSafeSpawnInsideClaim(claim);
+        BlockPos safePos = SafeWarpHelper.findSafeSpawnInsideClaim(claim);
 
         if (safePos == null) {
             safePos = claim.getWarpPos();
@@ -256,7 +256,7 @@ public class WarManager {
                 .getClaim(war.getDefendingParty().getId());
         ServerLevel level = OPAPC.getServer().overworld();
 
-        BlockPos respawnPos = SafeWarpFinder.findSafeSpawnOutsideClaim(claim);
+        BlockPos respawnPos = SafeWarpHelper.findSafeSpawnOutsideClaim(claim);
 
         if (respawnPos != null) {
             player.teleportTo(level, respawnPos.getX() + 0.5, respawnPos.getY(), respawnPos.getZ() + 0.5, player.getYRot(), player.getXRot());
@@ -296,7 +296,7 @@ public class WarManager {
         } else {
             for (ServerPlayer player : war.getAttackingPlayers()) {
                 if (war.getDefendingClaim().getClaimedChunksList().contains(player.chunkPosition())) {
-                    BlockPos safeSpawn = SafeWarpFinder.findSafeSpawnOutsideClaim(war.getDefendingClaim());
+                    BlockPos safeSpawn = SafeWarpHelper.findSafeSpawnOutsideClaim(war.getDefendingClaim());
                     if (safeSpawn != null) {
                         player.teleportTo(OPAPC.getServer().overworld(), safeSpawn.getX() + 0.5, safeSpawn.getY(),
                                 safeSpawn.getZ() + 0.5, player.getYRot(), player.getXRot());

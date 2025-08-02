@@ -4,13 +4,14 @@ import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.partyclaim.data.PartyClaim;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 
 import java.util.*;
 
-public class SafeWarpFinder {
+public class SafeWarpHelper {
     public static BlockPos findSafeSpawnOutsideClaim(PartyClaim claim) {
         Set<ChunkPos> claimed = new HashSet<>(claim.getClaimedChunksList());
         Random rand = new Random();
@@ -98,5 +99,9 @@ public class SafeWarpFinder {
             }
         }
         return null;
+    }
+
+    public static void warpPlayer(ServerPlayer player, BlockPos warpPos) {
+        player.teleportTo(OPAPC.getServer().overworld(), warpPos.getX() + 0.5, warpPos.getY(), warpPos.getZ() + 0.5, player.getYRot(), player.getXRot());
     }
 }

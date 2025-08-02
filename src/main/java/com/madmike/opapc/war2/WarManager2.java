@@ -41,40 +41,40 @@ public class WarManager2 {
         }
     }
 
-    public void handlePlayerDeath(ServerPlayer player) {
-        for (War war : activeWars) {
+    public void handlePlayerDeath(ServerPlayer player, War war) {
             WarData2 data = war.getData();
             if (data.getAttackingPlayers().contains(player)) {
                 war.onAttackerDeath(player);
-                break;
             }
-            if (data.getDefendingPlayers().contains(player)) {
+            else {
                 war.onDefenderDeath(player);
             }
-        }
     }
 
     public void handleWarBlockBroken(BlockPos pos) {
         for (War war : activeWars) {
             if (war.getData().getWarBlockPosition().equals(pos)) {
                 war.onBlockBroken(pos);
-                break; // assuming a player is only in one war
+                break;
             }
         }
     }
 
-    public void onRequestInfo(ServerPlayer player) {
+    public War findWarByPlayer(ServerPlayer player) {
         for (War war : activeWars) {
-            war.onRequestInfo(player);
-        }
-    }
-
-    public boolean isParticipant(ServerPlayer player) {
-        for (War war : activeWars) {
-            if (war.isParticipant(player)) {
-                return true;
+            if (war.isPlayerParticipant(player)) {
+                return war;
             }
         }
-        return false;
+        return null;
+    }
+
+    public War findWarByParty(IServerPartyAPI party) {
+        for (War war : activeWars) {
+            if (war.isPartyParticipant(party)) {
+                return war;
+            }
+        }
+        return null;
     }
 }

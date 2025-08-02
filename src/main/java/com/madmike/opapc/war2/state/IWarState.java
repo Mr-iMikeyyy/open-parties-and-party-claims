@@ -10,6 +10,5 @@ public interface IWarState {
     void onAttackerDeath(ServerPlayer player, War war);
     void onDefenderDeath(ServerPlayer player, War war);
     void onWarBlockBroken(BlockPos pos, War war);
-    void onRequestInfo(ServerPlayer player, War war);
     void end(War war, EndOfWarType type);
 }

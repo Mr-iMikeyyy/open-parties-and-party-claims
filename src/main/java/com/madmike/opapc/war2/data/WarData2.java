@@ -1,13 +1,11 @@
 package com.madmike.opapc.war2.data;
 
-import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.partyclaim.data.PartyClaim;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
-import xaero.pac.common.server.player.config.api.PlayerConfigOptions;
 
 import java.util.List;
 
@@ -43,13 +41,9 @@ public class WarData2 {
         this.attackers = attackingParty.getOnlineMemberStream().toList();
         this.defenders = defendingParty.getOnlineMemberStream().toList();
 
-        this.attackingPartyName = OPAPC.getPlayerConfigs()
-                .getLoadedConfig(attackingParty.getOwner().getUUID())
-                .getFromEffectiveConfig(PlayerConfigOptions.PARTY_NAME);
+        this.attackingPartyName = attackingClaim.getPartyName();
 
-        this.defendingPartyName = OPAPC.getPlayerConfigs()
-                .getLoadedConfig(defendingParty.getOwner().getUUID())
-                .getFromEffectiveConfig(PlayerConfigOptions.PARTY_NAME);
+        this.defendingPartyName = defendingClaim.getPartyName();
 
         this.attackingClaim = attackingClaim;
         this.defendingClaim = defendingClaim;
@@ -84,6 +78,7 @@ public class WarData2 {
     public int getDurationSeconds() { return durationSeconds; }
     public long getDurationMilli() {return durationMilli; }
     public boolean getWarp() { return warp; }
+    public boolean getWipe() { return wipe; }
     public BlockPos getWarBlockPosition() { return warBlockPosition; }
 
 
@@ -102,9 +97,13 @@ public class WarData2 {
         return System.currentTimeMillis() - startTime >= durationMilli;
     }
 
-    // --- Player Tracking ---
-    public boolean isParticipant(ServerPlayer player) {
+    // --- Tracking ---
+    public boolean isPlayerParticipant(ServerPlayer player) {
         return attackers.contains(player) || defenders.contains(player);
+    }
+
+    public boolean isPartyParticipant(IServerPartyAPI party) {
+        return attackingParty.equals(party) || defendingParty.equals(party);
     }
 
     // --- Setters / Mutators ---

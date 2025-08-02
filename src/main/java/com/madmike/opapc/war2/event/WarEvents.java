@@ -2,7 +2,8 @@ package com.madmike.opapc.war2.event;
 
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCConfig;
-import com.madmike.opapc.util.SafeWarpFinder;
+import com.madmike.opapc.partyclaim.data.PartyClaim;
+import com.madmike.opapc.util.SafeWarpHelper;
 import com.madmike.opapc.war2.EndOfWarType;
 import com.madmike.opapc.war2.War;
 import com.madmike.opapc.war2.WarManager2;
@@ -17,6 +18,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -29,6 +31,7 @@ public class WarEvents {
     public static void register() {
         WarEventBus.register(event -> {
 
+            //--- WAR DECLARED ---
             if (event instanceof WarDeclaredEvent declared) {
                 WarData2 data = declared.getWar().getData();
                 if (OPAPCConfig.shouldBroadcastWarDeclarationsServerWide) {
@@ -39,7 +42,7 @@ public class WarEvents {
                 }
             }
 
-
+            //--- WAR STARTED ---
             if (event instanceof WarStartedEvent started) {
                 WarData2 data = started.getWar().getData();
 
@@ -48,7 +51,19 @@ public class WarEvents {
                     WarBlockSpawner.spawnWarBlock(safeBlockSpawnPos);
                 }
                 else {
-                    started.getWar().end(EndOfWarType.BUG);
+                    started.getWar().getState().end(started.getWar(), EndOfWarType.BUG);
+                }
+
+                if (data.getWarp()) {
+                    for (ServerPlayer player : data.getAttackingPlayers()) {
+                        BlockPos spawnPos = SafeWarpHelper.findSafeSpawnOutsideClaim(data.getDefendingClaim());
+                        if (spawnPos != null) {
+                            SafeWarpHelper.warpPlayer(player, spawnPos);
+                        }
+                        else {
+                            started.getWar().getState().end(started.getWar(), EndOfWarType.BUG);
+                        }
+                    }
                 }
 
 
@@ -69,40 +84,115 @@ public class WarEvents {
 
             }
 
-
+            //--- WAR ENDED ---
             if (event instanceof WarEndedEvent ended) {
                 WarData2 data = ended.getWar().getData();
+                EndOfWarType type = ended.getEndType();
 
-                // Restore protections
+                // Always restore protections
                 OPAPC.getPlayerConfigs()
                         .getLoadedConfig(data.getDefendingParty().getOwner().getUUID())
                         .getUsedSubConfig().tryToSet(PlayerConfigOptions.PROTECT_CLAIMED_CHUNKS, true);
 
-                // Teleport attackers to their party claim if warp true, otherwise warp them outside the defenders claim
-                if (data.getWarp()) {
-                    for (ServerPlayer player : data.getAttackingPlayers()) {
-                        BlockPos warpPos = data.getAttackingClaim().getWarpPos();
-                        player.teleportTo(OPAPC.getServer().overworld(),
-                                warpPos.getX() + 0.5, warpPos.getY(), warpPos.getZ() + 0.5,
-                                player.getYRot(), player.getXRot());
-                    }
-                } else {
-                    for (ServerPlayer player : data.getAttackingPlayers()) {
-                        BlockPos safePos = SafeWarpFinder.findSafeSpawnOutsideClaim(data.getDefendingClaim());
-                        player.teleportTo(OPAPC.getServer().overworld(),
-                                safePos.getX() + 0.5, safePos.getY(), safePos.getZ() + 0.5,
-                                player.getYRot(), player.getXRot());
+                // Only teleport attackers if NOT a wipe without warp
+                boolean shouldTeleportAttackers = !(type == EndOfWarType.ATTACKERS_WIN_WIPE && !data.getWarp());
+
+                if (shouldTeleportAttackers) {
+                    if (data.getWarp()) {
+                        for (ServerPlayer player : data.getAttackingPlayers()) {
+                            BlockPos warpPos = data.getAttackingClaim().getWarpPos();
+                            if (warpPos != null) {
+                                SafeWarpHelper.warpPlayer(player, warpPos);
+                            } else {
+                                BlockPos sharedPos = OPAPC.getServer().overworld().getSharedSpawnPos();
+                                SafeWarpHelper.warpPlayer(player, sharedPos);
+                            }
+                        }
+                    } else {
+                        for (ServerPlayer player : data.getAttackingPlayers()) {
+                            BlockPos safePos = SafeWarpHelper.findSafeSpawnOutsideClaim(data.getDefendingClaim());
+                            if (safePos != null) {
+                                SafeWarpHelper.warpPlayer(player, safePos);
+                            } else {
+                                BlockPos sharedPos = OPAPC.getServer().overworld().getSharedSpawnPos();
+                                SafeWarpHelper.warpPlayer(player, sharedPos);
+                            }
+                        }
                     }
                 }
 
-                //Remove Buffs
+                PartyClaim defendingClaim = data.getDefendingClaim();
+                PartyClaim attackingClaim = data.getAttackingClaim();
+
+                // === Build Results Message and do stats ===
+                Component msg;
+                String winner;
+
+                MutableComponent result = Component.literal("§6§l--- War Results ---\n")
+                        .append(Component.literal("§eAttacking Party: §c" + data.getAttackingPartyName() + "\n"))
+                        .append(Component.literal("§eDefending Party: §a" + data.getDefendingPartyName() + "\n"))
+                        .append(Component.literal("§eEnd Condition: §b" + type.name().replace("_", " ") + "\n"));
+
+                switch (type) {
+                    case ATTACKERS_WIN_WIPE -> {
+
+                        attackingClaim.incrementWarAttacksWon();
+
+                        winner = "§cAttackers (" + data.getAttackingPartyName() + ")";
+                        result.append(Component.literal("§eWinner: " + winner + "\n"))
+                                .append(Component.literal("§4§lThe defending party has been wiped from the map!\n"))
+                                .append(Component.literal("§7Their claims no longer exist.\n\n"));
+                    }
+                    case ATTACKERS_WIN_BLOCKS -> {
+
+                        attackingClaim.incrementWarAttacksWon();
+                        defendingClaim.incrementWarDefencesLost();
+
+                        winner = "§cAttackers (" + data.getAttackingPartyName() + ")";
+                        result.append(Component.literal("§eWinner: " + winner + "\n"))
+                                .append(Component.literal("§eThe attackers broke all available War Blocks!\n"))
+                                .append(Component.literal("§7The defending party survives, but with reduced territory.\n\n"));
+                    }
+                    case BUG -> {
+                        winner = "§4§lNone (Error)";
+                        result.append(Component.literal("§eWinner: " + winner + "\n"))
+                                .append(Component.literal("§4§lThis war ended unexpectedly due to a bug.\n"))
+                                .append(Component.literal("§7Please report this to a server admin.\n\n"));
+                    }
+                    default -> {
+
+                        attackingClaim.incrementWarAttacksLost();
+                        defendingClaim.incrementWarDefencesWon();
+
+                        winner = "§aDefenders (" + data.getDefendingPartyName() + ")";
+                        result.append(Component.literal("§eWinner: " + winner + "\n"))
+                                .append(Component.literal("§aThe defenders successfully held their ground!\n\n"));
+                    }
+                }
+
+                if (type != EndOfWarType.BUG) {
+                    result.append(Component.literal("§eAttacker Lives Remaining: §c" + data.getAttackerLivesRemaining() + "\n"))
+                            .append(Component.literal("§eWar Blocks Remaining: §c" + data.getWarBlocksLeft() + "\n"))
+                            .append(Component.literal("§eDuration: §7" + (data.getDurationSeconds() / 60) + " min\n"))
+                            .append(Component.literal("§eClaim Wipe Possible: §c" + (data.getDefendingClaim().getClaimedChunksList().isEmpty() ? "Yes" : "No") + "\n\n"))
+                            .append(Component.literal("§cAttackers: " + data.getAttackingPlayers().size() + "\n"));
+                    for (ServerPlayer attacker : data.getAttackingPlayers()) {
+                        result.append(Component.literal(" §7- §c" + attacker.getName().getString() + "\n"));
+                    }
+                    result.append(Component.literal("§aDefenders: " + data.getDefendingPlayers().size() + "\n"));
+                    for (ServerPlayer defender : data.getDefendingPlayers()) {
+                        result.append(Component.literal(" §7- §a" + defender.getName().getString() + "\n"));
+                    }
+                }
+
+                msg = result;
 
                 // Broadcast result
-                String msg = "§cWar ended between " +
-                        data.getAttackingParty().getName() + " and " +
-                        data.getDefendingParty().getName() +
-                        " (" + ended.getEndType() + ")";
-                OPAPC.broadcast(msg);
+                if (OPAPCConfig.shouldBroadcastWarResultsToServer) {
+                    OPAPC.broadcast(msg);
+                } else {
+                    data.broadcastToWar(msg);
+                }
             }
         });
 
@@ -111,8 +201,12 @@ public class WarEvents {
 
             //Checks if entity that died is a player
             if (entity instanceof ServerPlayer player) {
-                WarManager2.INSTANCE.handlePlayerDeath(player);
-                return false;
+                WarManager2 wm = WarManager2.INSTANCE;
+                War war = wm.findWarByPlayer(player);
+                if (war != null) {
+                    wm.handlePlayerDeath(player, war);
+                    return false;
+                }
             }
 
             // Allows death
@@ -132,13 +226,15 @@ public class WarEvents {
             var party = OPAPC.getPartyManager().getPartyByMember(uuid);
             if (party == null) return;
 
-            for (War war : WarManager2.INSTANCE.getActiveWars()) {
-                WarData2 data = war.getData();
-                if (data.getDefendingParty().equals(party) || data.getAttackingParty().equals(party)) {
-                    if (!data.getAttackingPlayers().contains(player) || !data.getDefendingPlayers().contains(player)) {
-                        player.connection.disconnect(Component.literal("Your party is currently engaged in a war. You cannot join right now."));
-                    }
-                }
+            WarManager2 wm = WarManager2.INSTANCE;
+            War warByPlayer = wm.findWarByPlayer(player);
+            if (warByPlayer != null) {
+                return;
+            }
+
+            War warByParty = wm.findWarByParty(party);
+            if (warByParty != null) {
+                player.connection.disconnect(Component.literal("Your party is currently engaged in a war that you were not at the start of. You cannot join right now."));
             }
         });
     }

@@ -155,14 +155,14 @@ public class WarCommand {
                             return fail(ctx, "Must be a player to use this command.");
                         }
 
-                        WarManager2 wm = WarManager2.INSTANCE;
-                        if (wm.isParticipant(player)) {
-                            wm.onRequestInfo(player);
-                            return 1;
+                        War war = WarManager2.INSTANCE.findWarByPlayer(player);
+                        if (war != null) {
+                            war.onRequestInfo(player);
                         }
                         else {
-                            return fail(player, "You aren't in a war.");
+                            return fail(player, "You are not in a war");
                         }
+                        return 1;
                     })
             );
             //endregion

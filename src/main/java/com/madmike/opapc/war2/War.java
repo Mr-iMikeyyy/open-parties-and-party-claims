@@ -5,6 +5,7 @@ import com.madmike.opapc.war2.state.IWarState;
 import com.madmike.opapc.war2.state.WarDeclaredState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
+import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 
 public class War {
     private IWarState state;
@@ -43,8 +44,12 @@ public class War {
         state.onWarBlockBroken(pos, this);
     }
 
-    public boolean isParticipant(ServerPlayer player) {
-        return data.isParticipant(player);
+    public boolean isPlayerParticipant(ServerPlayer player) {
+        return data.isPlayerParticipant(player);
+    }
+
+    public boolean isPartyParticipant(IServerPartyAPI party) {
+        return data.isPartyParticipant(party);
     }
 
     public void onRequestInfo(ServerPlayer player) {

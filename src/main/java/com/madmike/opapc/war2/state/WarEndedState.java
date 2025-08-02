@@ -14,7 +14,6 @@ public class WarEndedState implements IWarState {
 
     @Override
     public void tick(War war) {
-        // no-op
     }
 
     @Override

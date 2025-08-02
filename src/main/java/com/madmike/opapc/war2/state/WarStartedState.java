@@ -1,7 +1,9 @@
 package com.madmike.opapc.war2.state;
 
 import com.madmike.opapc.OPAPC;
-import com.madmike.opapc.util.SafeWarpFinder;
+import com.madmike.opapc.OPAPCComponents;
+import com.madmike.opapc.partyclaim.data.PartyClaim;
+import com.madmike.opapc.util.SafeWarpHelper;
 import com.madmike.opapc.war2.EndOfWarType;
 import com.madmike.opapc.war2.War;
 import com.madmike.opapc.war2.data.WarData2;
@@ -10,6 +12,8 @@ import com.madmike.opapc.war2.event.events.WarEndedEvent;
 import com.madmike.opapc.war2.features.block.WarBlockSpawner;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 
 public class WarStartedState implements IWarState {
 
@@ -29,9 +33,9 @@ public class WarStartedState implements IWarState {
             end(war, EndOfWarType.ATTACKERS_LOSE_DEATHS);
         }
         else {
-            BlockPos safeWarpPos = SafeWarpFinder.findSafeSpawnOutsideClaim(war.getData().getDefendingClaim());
+            BlockPos safeWarpPos = SafeWarpHelper.findSafeSpawnOutsideClaim(war.getData().getDefendingClaim());
             if (safeWarpPos != null) {
-                player.teleportTo(OPAPC.getServer().overworld(), safeWarpPos.getX() + 0.5, safeWarpPos.getY(), safeWarpPos.getZ() + 0.5, player.getYRot(), player.getXRot());
+                SafeWarpHelper.warpPlayer(player, safeWarpPos);
             }
             else {
                 end(war, EndOfWarType.BUG);
@@ -42,35 +46,73 @@ public class WarStartedState implements IWarState {
     @Override
     public void onDefenderDeath(ServerPlayer player, War war) {
         player.setHealth(player.getMaxHealth());
-        BlockPos safeSpawnPos = SafeWarpFinder.findSafeSpawnInsideClaim(war.getData().getDefendingClaim());
-        if (safeSpawnPos != null) {
-            player.teleportTo(OPAPC.getServer().overworld(), safeSpawnPos.getX(), safeSpawnPos.getY(), safeSpawnPos.getZ() + 0.5, player.getYRot(), player.getXRot());
+
+        var claim = war.getData().getDefendingClaim();
+        BlockPos targetPos = SafeWarpHelper.findSafeSpawnInsideClaim(claim);
+
+        if (targetPos == null) {
+            targetPos = claim.getWarpPos();
         }
-        else if (war.getData().getDefendingClaim().getWarpPos() != null){
-            BlockPos partyWarpPos = war.getData().getDefendingClaim().getWarpPos();
-            player.teleportTo(OPAPC.getServer().overworld(), partyWarpPos.getX() + 0.5, partyWarpPos.getY(), partyWarpPos.getZ() + 0.5, player.getYRot(), player.getXRot());
-        }
-        else {
+
+        if (targetPos != null) {
+            SafeWarpHelper.warpPlayer(player, targetPos);
+        } else {
             end(war, EndOfWarType.BUG);
         }
     }
 
-    @Override
     public void onWarBlockBroken(BlockPos pos, War war) {
         WarData2 data = war.getData();
-        war.getData().decrementWarBlocksLeft();
-        if (war.getData().getWarBlocksLeft() <= 0) {
-            war.end(EndOfWarType.ATTACKERS_WIN_BLOCKS);
+        ChunkPos chunkPos = new ChunkPos(pos);
+
+        // Ensure the defending claim actually has this chunk
+        if (!data.getDefendingClaim().getClaimedChunksList().contains(chunkPos)) {
+            end(war, EndOfWarType.BUG);
+            return;
         }
-        else {
-            BlockPos safeSpawnPos = WarBlockSpawner.findSafeSpawn(data);
-            if (safeSpawnPos != null) {
-                WarBlockSpawner.spawnWarBlock(safeSpawnPos);
-            }
-            else {
-                end(war, EndOfWarType.BUG);
-            }
+
+        // Unclaim the chunk
+        OPAPC.getClaimsManager().unclaim(Level.OVERWORLD.location(), chunkPos.x, chunkPos.z);
+
+        // Double-check that unclaim succeeded
+        if (data.getDefendingClaim().getClaimedChunksList().contains(chunkPos)) {
+            end(war, EndOfWarType.BUG);
+            return;
         }
+
+        // Handle wipe condition
+        if (data.getWipe() && data.getDefendingClaim().getClaimedChunksList().isEmpty()) {
+            OPAPCComponents.PARTY_CLAIMS
+                    .get(OPAPC.getServer().getScoreboard())
+                    .removeClaim(data.getDefendingParty().getId());
+            end(war, EndOfWarType.ATTACKERS_WIN_WIPE);
+            return;
+        }
+
+        // Update stats
+        PartyClaim defendingClaim = data.getDefendingClaim();
+        PartyClaim attackingClaim = data.getAttackingClaim();
+
+        defendingClaim.setBoughtClaims(defendingClaim.getBoughtClaims() - 1);
+        defendingClaim.incrementClaimsLostToWar();
+        attackingClaim.incrementClaimsGainedFromWar();
+
+        data.decrementWarBlocksLeft();
+
+        // Check war block count
+        if (data.getWarBlocksLeft() <= 0) {
+            end(war, EndOfWarType.ATTACKERS_WIN_BLOCKS);
+            return;
+        }
+
+        // Spawn next war block
+        BlockPos nextSpawn = WarBlockSpawner.findSafeSpawn(data);
+        if (nextSpawn == null) {
+            end(war, EndOfWarType.BUG);
+            return;
+        }
+
+        WarBlockSpawner.spawnWarBlock(nextSpawn);
     }
 
     @Override

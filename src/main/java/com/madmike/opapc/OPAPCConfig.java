@@ -24,7 +24,8 @@ public class OPAPCConfig {
     public static int warpCooldownCombatSeconds;
     public static int warpCooldownSeconds;
     public static int partyRejoinCooldownHours;
-    public static boolean canOnlyAttackLargerClaims;
+    public static boolean shouldBroadcastWarDeclarationsServerWide;
+    public static boolean shouldBroadcastWarResultsToServer;
     public static int warInsuranceDurationDays;
     public static int raidInsuranceDurationDays;
     public static List<String> restartTimesRaw;
@@ -59,6 +60,12 @@ public class OPAPCConfig {
 
         config.setComment("partyRejoinCooldownHours", "Duration (in hours) that a player is not allowed to rejoin a party after leaving");
         partyRejoinCooldownHours = config.getOrElse("partyRejoinCooldownHours", 72);
+
+        config.setComment("shouldBroadcastWarDeclarationsServerWide", "Should war declarations be seen by everybody");
+        shouldBroadcastWarDeclarationsServerWide = config.getOrElse("shouldBroadcastWarDeclarationsServerWide", true);
+
+        config.setComment("shouldBroadcastWarResultsToServer", "Should end war results be shown to everybody");
+        shouldBroadcastWarResultsToServer = config.getOrElse("shouldBroadcastWarResultsToServer", true);
 
         config.setComment("raidInsuranceDurationDays", "How long (in days) insurance lasts for raids");
         raidInsuranceDurationDays = config.getOrElse("raidInsuranceDurationDays", 3);
