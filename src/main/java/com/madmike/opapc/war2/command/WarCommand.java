@@ -1,13 +1,17 @@
 package com.madmike.opapc.war2.command;
 
 import com.madmike.opapc.OPAPC;
+import com.madmike.opapc.OPAPCComponents;
+import com.madmike.opapc.partyclaim.data.PartyClaim;
 import com.madmike.opapc.util.CommandFailureHandler;
 import com.madmike.opapc.util.PartyLookup;
 import com.madmike.opapc.util.ServerRestartChecker;
+import com.madmike.opapc.war2.War;
 import com.madmike.opapc.war2.WarManager2;
 import com.madmike.opapc.war2.command.util.WarSuggestionProvider;
 import com.madmike.opapc.war2.command.util.WarValidationResult;
 import com.madmike.opapc.war2.command.util.WarValidator;
+import com.madmike.opapc.war2.data.WarData2;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -16,6 +20,8 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
+
+import java.util.List;
 
 import static com.madmike.opapc.util.CommandFailureHandler.fail;
 import static net.minecraft.commands.Commands.argument;
@@ -93,12 +99,46 @@ public class WarCommand {
                                         if (defendingParty == null)
                                             return fail(player, "No party with that name was found.");
 
-                                        WarValidationResult result = WarValidator.validateDeclaration(attackingParty, defendingParty);
-                                        if (!result.isValid())
-                                            return fail(player, result.getErrorMessage());
+                                        if (attackingParty.isAlly(defendingParty.getId())) {
+                                            return fail(player, "You cannot declare war on your allies.");
+                                        }
+
+                                        var comp = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard());
+                                        PartyClaim attackingClaim = comp.getClaim(attackingParty.getId());
+                                        if (attackingClaim == null) {
+                                            return fail(player, "Your party must own a claim to declare war.");
+                                        }
+
+                                        PartyClaim defendingClaim = comp.getClaim(defendingParty.getId());
+                                        if (defendingClaim == null) {
+                                            return fail(player, "That party does not own a claim.");
+                                        }
+
+                                        if (defendingClaim.isWarInsured()) {
+                                            return fail(player, "That party is currently insured against wars.");
+                                        }
+
+                                        // Check active wars
+                                        for (War war : WarManager2.INSTANCE.getActiveWars()) {
+                                            WarData2 data = war.getData();
+                                            if (data.getAttackingParty().getId().equals(attackingParty.getId())
+                                                    || data.getDefendingParty().getId().equals(attackingParty.getId())) {
+                                                return fail(player, "You are already in a war!");
+                                            }
+                                            if (data.getDefendingParty().getId().equals(defendingParty.getId())
+                                                    || data.getAttackingParty().getId().equals(defendingParty.getId())) {
+                                                return fail(player, "This party is already in a war!");
+                                            }
+                                        }
+
+                                        // Check online defenders
+                                        List<ServerPlayer> defenders = defendingParty.getOnlineMemberStream().toList();
+                                        if (defenders.isEmpty()) {
+                                            return fail(player, "There's no one online to defend that claim.");
+                                        }
 
                                         boolean shouldWarp = BoolArgumentType.getBool(ctx, "warp");
-                                        WarManager2.INSTANCE.declareWar(attackingParty, defendingParty, shouldWarp);
+                                        WarManager2.INSTANCE.declareWar(attackingParty, defendingParty, attackingClaim, defendingClaim, shouldWarp);
 
                                         return 1;
                                     })
@@ -112,11 +152,17 @@ public class WarCommand {
                     .executes(ctx -> {
                         ServerPlayer player = ctx.getSource().getPlayer();
                         if (player == null) {
-                            return CommandFailureHandler.fail(ctx, "Must be a player to use this command.");
+                            return fail(ctx, "Must be a player to use this command.");
                         }
 
-                        WarManager2.INSTANCE.displayWarInfo(player);
-                        return 1;
+                        WarManager2 wm = WarManager2.INSTANCE;
+                        if (wm.isParticipant(player)) {
+                            wm.onRequestInfo(player);
+                            return 1;
+                        }
+                        else {
+                            return fail(player, "You aren't in a war.");
+                        }
                     })
             );
             //endregion

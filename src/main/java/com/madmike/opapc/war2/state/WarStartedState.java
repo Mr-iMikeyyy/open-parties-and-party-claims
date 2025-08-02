@@ -46,7 +46,13 @@ public class WarStartedState implements IWarState {
         if (safeSpawnPos != null) {
             player.teleportTo(OPAPC.getServer().overworld(), safeSpawnPos.getX(), safeSpawnPos.getY(), safeSpawnPos.getZ() + 0.5, player.getYRot(), player.getXRot());
         }
-        else 
+        else if (war.getData().getDefendingClaim().getWarpPos() != null){
+            BlockPos partyWarpPos = war.getData().getDefendingClaim().getWarpPos();
+            player.teleportTo(OPAPC.getServer().overworld(), partyWarpPos.getX() + 0.5, partyWarpPos.getY(), partyWarpPos.getZ() + 0.5, player.getYRot(), player.getXRot());
+        }
+        else {
+            end(war, EndOfWarType.BUG);
+        }
     }
 
     @Override

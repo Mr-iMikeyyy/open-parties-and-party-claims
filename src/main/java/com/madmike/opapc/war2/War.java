@@ -8,7 +8,7 @@ import net.minecraft.server.level.ServerPlayer;
 
 public class War {
     private IWarState state;
-    private final WarData2 data; // holds things like claims, players, timers
+    private final WarData2 data;
 
     public IWarState getState() {
         return state;
@@ -16,7 +16,7 @@ public class War {
 
     public War(WarData2 data) {
         this.data = data;
-        this.state = new WarDeclaredState(); // default starting state
+        this.state = new WarDeclaredState();
     }
 
     public void setState(IWarState state) {
@@ -27,7 +27,6 @@ public class War {
         return data;
     }
 
-    // Delegate actions to current state
     public void tick() {
         state.tick(this);
     }
@@ -42,6 +41,14 @@ public class War {
 
     public void onBlockBroken(BlockPos pos) {
         state.onWarBlockBroken(pos, this);
+    }
+
+    public boolean isParticipant(ServerPlayer player) {
+        return data.isParticipant(player);
+    }
+
+    public void onRequestInfo(ServerPlayer player) {
+        player.sendSystemMessage(data.getInfo());
     }
 
     public void end(EndOfWarType type) {

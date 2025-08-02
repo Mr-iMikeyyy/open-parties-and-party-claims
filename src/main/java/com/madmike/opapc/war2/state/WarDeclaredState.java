@@ -3,6 +3,7 @@ package com.madmike.opapc.war2.state;
 import com.madmike.opapc.OPAPCConfig;
 import com.madmike.opapc.war2.EndOfWarType;
 import com.madmike.opapc.war2.War;
+import com.madmike.opapc.war2.data.WarData2;
 import com.madmike.opapc.war2.event.bus.WarEventBus;
 import com.madmike.opapc.war2.event.events.WarEndedEvent;
 import com.madmike.opapc.war2.event.events.WarStartedEvent;
@@ -49,6 +50,14 @@ public class WarDeclaredState implements IWarState {
     @Override
     public void onWarBlockBroken(BlockPos pos, War war) {
         // Nothing yet
+    }
+
+    @Override
+    public void onRequestInfo(ServerPlayer player, War war) {
+        WarData2 data = war.getData();
+        if (data.getDefendingPlayers().contains(player) || data.getAttackingPlayers().contains(player)) {
+            player.sendSystemMessage(data.getInfo());
+        }
     }
 
 

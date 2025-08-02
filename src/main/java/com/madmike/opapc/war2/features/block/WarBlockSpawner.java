@@ -5,6 +5,7 @@ import com.madmike.opapc.OPAPCComponents;
 import com.madmike.opapc.partyclaim.data.PartyClaim;
 import com.madmike.opapc.util.ClaimAdjacencyChecker;
 import com.madmike.opapc.war2.data.WarData2;
+import com.madmike.opapc.war2.features.WarFeatures;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
@@ -76,5 +77,13 @@ public class WarBlockSpawner {
         }
 
         return result;
+    }
+
+    public static void spawnWarBlock(BlockPos pos) {
+        // Replace this with your actual war block
+        BlockState warBlockState = WarFeatures.WAR_BLOCK.defaultBlockState();
+
+        // Place the block at the given position
+        OPAPC.getServer().overworld().setBlock(pos, warBlockState, 3);
     }
 }

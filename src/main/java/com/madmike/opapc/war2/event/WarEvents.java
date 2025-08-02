@@ -3,6 +3,7 @@ package com.madmike.opapc.war2.event;
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCConfig;
 import com.madmike.opapc.util.SafeWarpFinder;
+import com.madmike.opapc.war2.EndOfWarType;
 import com.madmike.opapc.war2.War;
 import com.madmike.opapc.war2.WarManager2;
 import com.madmike.opapc.war2.data.WarData2;
@@ -10,6 +11,7 @@ import com.madmike.opapc.war2.event.bus.WarEventBus;
 import com.madmike.opapc.war2.event.events.WarDeclaredEvent;
 import com.madmike.opapc.war2.event.events.WarEndedEvent;
 import com.madmike.opapc.war2.event.events.WarStartedEvent;
+import com.madmike.opapc.war2.features.block.WarBlockSpawner;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
@@ -40,7 +42,16 @@ public class WarEvents {
 
             if (event instanceof WarStartedEvent started) {
                 WarData2 data = started.getWar().getData();
-                //broadcast message?
+
+                BlockPos safeBlockSpawnPos = WarBlockSpawner.findSafeSpawn(data);
+                if (safeBlockSpawnPos != null) {
+                    WarBlockSpawner.spawnWarBlock(safeBlockSpawnPos);
+                }
+                else {
+                    started.getWar().end(EndOfWarType.BUG);
+                }
+
+
                 data.broadcastToWar(Component.literal("The War Has Commenced!"));
 
                 //Apply Buffs
@@ -84,6 +95,8 @@ public class WarEvents {
                     }
                 }
 
+                //Remove Buffs
+
                 // Broadcast result
                 String msg = "§cWar ended between " +
                         data.getAttackingParty().getName() + " and " +
@@ -119,10 +132,10 @@ public class WarEvents {
             var party = OPAPC.getPartyManager().getPartyByMember(uuid);
             if (party == null) return;
 
-            for (WarData2 war : WarManager2.INSTANCE.getActiveWars()) {
+            for (War war : WarManager2.INSTANCE.getActiveWars()) {
                 WarData2 data = war.getData();
-                if (war.getDefendingParty().equals(party) || war.getAttackingParty().equals(party)) {
-                    if (!war.getAttackingPlayers().contains(player) || !war.getDefendingPlayers().contains(player)) {
+                if (data.getDefendingParty().equals(party) || data.getAttackingParty().equals(party)) {
+                    if (!data.getAttackingPlayers().contains(player) || !data.getDefendingPlayers().contains(player)) {
                         player.connection.disconnect(Component.literal("Your party is currently engaged in a war. You cannot join right now."));
                     }
                 }
