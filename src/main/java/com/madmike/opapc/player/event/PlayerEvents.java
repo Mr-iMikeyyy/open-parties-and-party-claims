@@ -16,11 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.madmike.opapc.war.event.events;
+package com.madmike.opapc.player.event;
 
-import com.madmike.opapc.war.War;
-import com.madmike.opapc.war.event.events.abs.WarEvent;
+import com.madmike.opapc.OPAPC;
+import com.madmike.opapc.OPAPCComponents;
+import com.madmike.opapc.player.name.PlayerNameComponent;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 
-public class WarStartedEvent extends WarEvent {
-    public WarStartedEvent(War war) { super(war); }
+public class PlayerEvents {
+    public static void register() {
+        ServerPlayConnectionEvents.JOIN.register(((handler, sender, server) -> {
+            PlayerNameComponent comp = OPAPCComponents.PLAYER_NAMES.get(OPAPC.getServer().getScoreboard());
+            comp.addOrSet(handler.getPlayer());
+        }));
+    }
 }

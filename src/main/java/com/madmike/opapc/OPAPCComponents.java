@@ -1,7 +1,26 @@
+/*
+ * Copyright (C) 2025 Mr-iMikeyyy (and contributors)
+ *
+ * This file is part of OPAPC (Open Parties and Party Claims).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of version 3 of the GNU Lesser General Public License
+ * (LGPL-3.0-only) as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.madmike.opapc;
 
 import com.madmike.opapc.bounty.components.player.BountyComponent;
 import com.madmike.opapc.partyclaim.components.player.PartyRejoinCooldownComponent;
+import com.madmike.opapc.player.name.PlayerNameComponent;
 import com.madmike.opapc.warp.components.player.WarpCombatCooldownComponent;
 import com.madmike.opapc.warp.components.player.WarpCooldownComponent;
 import com.madmike.opapc.trade.components.player.UnlockedStoreSlotsComponent;
@@ -52,6 +71,9 @@ public class OPAPCComponents implements ScoreboardComponentInitializer, EntityCo
     public static final ComponentKey<SellersComponent> SELLERS =
             ComponentRegistryV3.INSTANCE.getOrCreate(new ResourceLocation(OPAPC.MOD_ID, "sellers"), SellersComponent.class);
 
+    public static final ComponentKey<PlayerNameComponent> PLAYER_NAMES =
+            ComponentRegistryV3.INSTANCE.getOrCreate(new ResourceLocation(OPAPC.MOD_ID, "player_names"), PlayerNameComponent.class);
+
 
 
     @Override
@@ -69,5 +91,6 @@ public class OPAPCComponents implements ScoreboardComponentInitializer, EntityCo
         registry.registerScoreboardComponent(PARTY_CLAIMS, PartyClaimsComponent::new);
         registry.registerScoreboardComponent(OFFLINE_SALES, OfflineSalesComponent::new);
         registry.registerScoreboardComponent(SELLERS, SellersComponent::new);
+        registry.registerScoreboardComponent(PLAYER_NAMES, PlayerNameComponent::new);
     }
 }

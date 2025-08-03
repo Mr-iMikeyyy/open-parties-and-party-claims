@@ -1,15 +1,33 @@
+/*
+ * Copyright (C) 2025 Mr-iMikeyyy (and contributors)
+ *
+ * This file is part of OPAPC (Open Parties and Party Claims).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of version 3 of the GNU Lesser General Public License
+ * (LGPL-3.0-only) as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.madmike.opapc.bounty.components.player;
 
 import dev.onyxstudios.cca.api.v3.component.ComponentV3;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
 
 public class BountyComponent implements ComponentV3 {
 
-    private final ServerPlayer provider; // the player this component is attached to
+    private final Player provider; // the player this component is attached to
     private long bounty;
 
-    public BountyComponent(ServerPlayer player) {
+    public BountyComponent(Player player) {
         this.provider = player;
         this.bounty = 0;
     }

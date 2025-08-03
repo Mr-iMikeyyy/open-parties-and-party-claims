@@ -1,3 +1,21 @@
+/*
+ * Copyright (C) 2025 Mr-iMikeyyy (and contributors)
+ *
+ * This file is part of OPAPC (Open Parties and Party Claims).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of version 3 of the GNU Lesser General Public License
+ * (LGPL-3.0-only) as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.madmike.opapc.partyclaim.command;
 
 import com.glisco.numismaticoverhaul.ModComponents;
@@ -10,7 +28,6 @@ import com.madmike.opapc.util.ClaimAdjacencyChecker;
 import com.madmike.opapc.util.CurrencyUtil;
 import com.madmike.opapc.war.War;
 import com.madmike.opapc.war.WarManager;
-import com.madmike.opapc.war.data.WarData;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.commands.CommandSourceStack;
@@ -21,11 +38,9 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import xaero.pac.common.claims.player.api.IPlayerChunkClaimAPI;
 import xaero.pac.common.claims.player.api.IPlayerClaimInfoAPI;
-import xaero.pac.common.claims.player.api.IPlayerClaimPosListAPI;
 import xaero.pac.common.claims.result.api.ClaimResult;
 import xaero.pac.common.parties.party.api.IPartyAPI;
 import xaero.pac.common.server.claims.api.IServerClaimsManagerAPI;
-import xaero.pac.common.server.claims.player.api.IServerPlayerClaimInfoAPI;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 
 import java.util.*;
