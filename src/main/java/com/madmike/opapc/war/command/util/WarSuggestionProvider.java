@@ -1,4 +1,4 @@
-package com.madmike.opapc.war2.command.util;
+package com.madmike.opapc.war.command.util;
 
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCComponents;

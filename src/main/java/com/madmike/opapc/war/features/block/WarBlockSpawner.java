@@ -1,11 +1,11 @@
-package com.madmike.opapc.war2.features.block;
+package com.madmike.opapc.war.features.block;
 
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCComponents;
 import com.madmike.opapc.partyclaim.data.PartyClaim;
 import com.madmike.opapc.util.ClaimAdjacencyChecker;
-import com.madmike.opapc.war2.data.WarData2;
-import com.madmike.opapc.war2.features.WarFeatures;
+import com.madmike.opapc.war.data.WarData;
+import com.madmike.opapc.war.features.WarFeatures;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
@@ -17,7 +17,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import java.util.List;
 
 public class WarBlockSpawner {
-    public static BlockPos findSafeSpawn(WarData2 war) {
+    public static BlockPos findSafeSpawn(WarData war) {
         PartyClaim claim = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard()).getClaim(war.getDefendingParty().getId());
         List<ChunkPos> ownedChunks = claim.getClaimedChunksList();
 

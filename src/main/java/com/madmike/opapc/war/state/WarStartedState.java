@@ -1,15 +1,15 @@
-package com.madmike.opapc.war2.state;
+package com.madmike.opapc.war.state;
 
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCComponents;
 import com.madmike.opapc.partyclaim.data.PartyClaim;
 import com.madmike.opapc.util.SafeWarpHelper;
-import com.madmike.opapc.war2.EndOfWarType;
-import com.madmike.opapc.war2.War;
-import com.madmike.opapc.war2.data.WarData2;
-import com.madmike.opapc.war2.event.bus.WarEventBus;
-import com.madmike.opapc.war2.event.events.WarEndedEvent;
-import com.madmike.opapc.war2.features.block.WarBlockSpawner;
+import com.madmike.opapc.war.EndOfWarType;
+import com.madmike.opapc.war.War;
+import com.madmike.opapc.war.data.WarData;
+import com.madmike.opapc.war.event.bus.WarEventBus;
+import com.madmike.opapc.war.event.events.WarEndedEvent;
+import com.madmike.opapc.war.features.block.WarBlockSpawner;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
@@ -27,7 +27,7 @@ public class WarStartedState implements IWarState {
     @Override
     public void onAttackerDeath(ServerPlayer player, War war) {
         player.setHealth(player.getMaxHealth());
-        WarData2 data = war.getData();
+        WarData data = war.getData();
         data.decrementAttackerLivesRemaining();
         if (data.getAttackerLivesRemaining() <= 0) {
             end(war, EndOfWarType.ATTACKERS_LOSE_DEATHS);
@@ -62,7 +62,7 @@ public class WarStartedState implements IWarState {
     }
 
     public void onWarBlockBroken(BlockPos pos, War war) {
-        WarData2 data = war.getData();
+        WarData data = war.getData();
         ChunkPos chunkPos = new ChunkPos(pos);
 
         // Ensure the defending claim actually has this chunk

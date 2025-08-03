@@ -1,18 +1,18 @@
-package com.madmike.opapc.war2.event;
+package com.madmike.opapc.war.event;
 
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCConfig;
 import com.madmike.opapc.partyclaim.data.PartyClaim;
 import com.madmike.opapc.util.SafeWarpHelper;
-import com.madmike.opapc.war2.EndOfWarType;
-import com.madmike.opapc.war2.War;
-import com.madmike.opapc.war2.WarManager2;
-import com.madmike.opapc.war2.data.WarData2;
-import com.madmike.opapc.war2.event.bus.WarEventBus;
-import com.madmike.opapc.war2.event.events.WarDeclaredEvent;
-import com.madmike.opapc.war2.event.events.WarEndedEvent;
-import com.madmike.opapc.war2.event.events.WarStartedEvent;
-import com.madmike.opapc.war2.features.block.WarBlockSpawner;
+import com.madmike.opapc.war.EndOfWarType;
+import com.madmike.opapc.war.War;
+import com.madmike.opapc.war.WarManager;
+import com.madmike.opapc.war.data.WarData;
+import com.madmike.opapc.war.event.bus.WarEventBus;
+import com.madmike.opapc.war.event.events.WarDeclaredEvent;
+import com.madmike.opapc.war.event.events.WarEndedEvent;
+import com.madmike.opapc.war.event.events.WarStartedEvent;
+import com.madmike.opapc.war.features.block.WarBlockSpawner;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
@@ -33,7 +33,7 @@ public class WarEvents {
 
             //--- WAR DECLARED ---
             if (event instanceof WarDeclaredEvent declared) {
-                WarData2 data = declared.getWar().getData();
+                WarData data = declared.getWar().getData();
                 if (OPAPCConfig.shouldBroadcastWarDeclarationsServerWide) {
                     OPAPC.broadcast(data.getInfo());
                 }
@@ -44,7 +44,7 @@ public class WarEvents {
 
             //--- WAR STARTED ---
             if (event instanceof WarStartedEvent started) {
-                WarData2 data = started.getWar().getData();
+                WarData data = started.getWar().getData();
 
                 BlockPos safeBlockSpawnPos = WarBlockSpawner.findSafeSpawn(data);
                 if (safeBlockSpawnPos != null) {
@@ -86,7 +86,7 @@ public class WarEvents {
 
             //--- WAR ENDED ---
             if (event instanceof WarEndedEvent ended) {
-                WarData2 data = ended.getWar().getData();
+                WarData data = ended.getWar().getData();
                 EndOfWarType type = ended.getEndType();
 
                 // Always restore protections
@@ -201,7 +201,7 @@ public class WarEvents {
 
             //Checks if entity that died is a player
             if (entity instanceof ServerPlayer player) {
-                WarManager2 wm = WarManager2.INSTANCE;
+                WarManager wm = WarManager.INSTANCE;
                 War war = wm.findWarByPlayer(player);
                 if (war != null) {
                     wm.handlePlayerDeath(player, war);
@@ -215,7 +215,7 @@ public class WarEvents {
 
         //Tick the war
         ServerTickEvents.END_SERVER_TICK.register(server -> {
-            WarManager2.INSTANCE.tickAll();
+            WarManager.INSTANCE.tickAll();
         });
 
         // If player's party is in war on join, then kick if not part of the war
@@ -226,7 +226,7 @@ public class WarEvents {
             var party = OPAPC.getPartyManager().getPartyByMember(uuid);
             if (party == null) return;
 
-            WarManager2 wm = WarManager2.INSTANCE;
+            WarManager wm = WarManager.INSTANCE;
             War warByPlayer = wm.findWarByPlayer(player);
             if (warByPlayer != null) {
                 return;

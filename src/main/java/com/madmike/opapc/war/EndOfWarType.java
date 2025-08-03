@@ -1,4 +1,4 @@
-package com.madmike.opapc.war2;
+package com.madmike.opapc.war;
 
 public enum EndOfWarType {
     ATTACKERS_WIN_BLOCKS,

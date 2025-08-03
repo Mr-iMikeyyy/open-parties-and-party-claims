@@ -1,21 +1,21 @@
-package com.madmike.opapc.war2;
+package com.madmike.opapc.war;
 
-import com.madmike.opapc.war2.data.WarData2;
-import com.madmike.opapc.war2.state.IWarState;
-import com.madmike.opapc.war2.state.WarDeclaredState;
+import com.madmike.opapc.war.data.WarData;
+import com.madmike.opapc.war.state.IWarState;
+import com.madmike.opapc.war.state.WarDeclaredState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 
 public class War {
     private IWarState state;
-    private final WarData2 data;
+    private final WarData data;
 
     public IWarState getState() {
         return state;
     }
 
-    public War(WarData2 data) {
+    public War(WarData data) {
         this.data = data;
         this.state = new WarDeclaredState();
     }
@@ -24,7 +24,7 @@ public class War {
         this.state = state;
     }
 
-    public WarData2 getData() {
+    public WarData getData() {
         return data;
     }
 

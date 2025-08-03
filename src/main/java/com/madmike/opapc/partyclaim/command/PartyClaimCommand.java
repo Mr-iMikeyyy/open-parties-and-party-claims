@@ -8,15 +8,14 @@ import com.madmike.opapc.partyclaim.components.scoreboard.PartyClaimsComponent;
 import com.madmike.opapc.partyclaim.data.PartyClaim;
 import com.madmike.opapc.util.ClaimAdjacencyChecker;
 import com.madmike.opapc.util.CurrencyUtil;
+import com.madmike.opapc.war.War;
 import com.madmike.opapc.war.WarManager;
 import com.madmike.opapc.war.data.WarData;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
@@ -31,6 +30,7 @@ import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 
 import java.util.*;
 
+import static com.madmike.opapc.util.CommandFailureHandler.fail;
 import static com.madmike.opapc.util.NetherClaimAdjuster.mirrorOverworldClaimsToNether;
 import static net.minecraft.commands.Commands.literal;
 
@@ -91,50 +91,60 @@ public class PartyClaimCommand {
                         }
 
                         // Check if in war
-                        List<WarData> wars = WarManager.INSTANCE.getActiveWars();
-                        for (WarData war : wars) {
-                            if (war.getDefendingParty().equals(party) || war.getAttackingParty().equals(party)) {
-                                ctx.getSource().sendFailure(Component.literal("Cannot claim chunks while in a war!"));
-                                return 0;
-                            }
+                        War war = WarManager.INSTANCE.findWarByParty(party);
+                        if (war != null) {
+                            return fail(player, "You cannot claim chunks while in a war.");
                         }
 
                         PartyClaimsComponent comp = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard());
                         PartyClaim partyClaim = comp.getClaim(party.getId());
 
-                        //Check if no party claim exists yet for party, if no claims then allow
-                        if (partyClaim == null) {
-                            ClaimResult<IPlayerChunkClaimAPI> result = OPAPC.getClaimsManager().tryToClaim(Level.OVERWORLD.location(), player.getUUID(), 0, player.chunkPosition().x, player.chunkPosition().z, player.chunkPosition().x, player.chunkPosition().z, false);
-                            player.sendSystemMessage(result.getResultType().message);
-                            if (result.getResultType().success) {
+                        // Handle the case where a party claim already exists
+                        if (partyClaim != null) {
+                            // Check claim limits
+                            if (partyClaim.getClaimedChunksList().size() >= partyClaim.getBoughtClaims()) {
+                                ctx.getSource().sendFailure(Component.literal("You've run out of party claims."));
+                                return 0;
+                            }
+
+                            // Check adjacency requirement
+                            if (ClaimAdjacencyChecker.isNotAdjacentToExistingClaim(partyClaim.getClaimedChunksList(), player.chunkPosition())) {
+                                ctx.getSource().sendFailure(Component.literal("Claim must be adjacent to an existing party claim."));
+                                return 0;
+                            }
+                        }
+                        else {
+                            // First claim for this party
+                            ClaimResult<IPlayerChunkClaimAPI> firstClaim = OPAPC.getClaimsManager().tryToClaim(
+                                    Level.OVERWORLD.location(),
+                                    player.getUUID(),
+                                    0,
+                                    player.chunkPosition().x, player.chunkPosition().z,
+                                    player.chunkPosition().x, player.chunkPosition().z,
+                                    false
+                            );
+
+                            player.sendSystemMessage(firstClaim.getResultType().message);
+
+                            if (firstClaim.getResultType().success) {
                                 comp.createClaim(party.getId());
                                 comp.getClaim(party.getId()).setWarpPos(player.blockPosition());
                                 mirrorOverworldClaimsToNether(player.getUUID());
                                 return 1;
                             }
+
+                            return 0; // if first claim failed, no need to continue
                         }
 
-                        IServerPlayerClaimInfoAPI info = OPAPC.getClaimsManager().getPlayerInfo(player.getUUID());
-                        int totalOverworldClaims = info.getDimension(Level.OVERWORLD.location())
-                                .getStream()
-                                .mapToInt(IPlayerClaimPosListAPI::getCount)
-                                .sum();
-
-                        // Check if party has enough bought claims
-                        if (partyClaim != null && totalOverworldClaims >= partyClaim.getBoughtClaims()) {
-                            ctx.getSource().sendFailure(Component.literal("You've run out of party claims."));
-                            return 0;
-                        }
-
-                        //Check if new chunk is adjacent to an old chunk
-                        if (ClaimAdjacencyChecker.isNotAdjacentToExistingClaim(partyClaim.getClaimedChunksList(), player.chunkPosition())) {
-                            ctx.getSource().sendFailure(Component.literal("Claim must be adjacent to an existing party claim."));
-                            return 0;
-                        }
-
-
-                        // All checks passed, try to claim!
-                        ClaimResult<IPlayerChunkClaimAPI> result = OPAPC.getClaimsManager().tryToClaim(Level.OVERWORLD.location(), player.getUUID(), 0, player.chunkPosition().x, player.chunkPosition().z, player.chunkPosition().x, player.chunkPosition().z, false);
+                        // Attempt to claim for an existing party
+                        ClaimResult<IPlayerChunkClaimAPI> result = OPAPC.getClaimsManager().tryToClaim(
+                                Level.OVERWORLD.location(),
+                                player.getUUID(),
+                                0,
+                                player.chunkPosition().x, player.chunkPosition().z,
+                                player.chunkPosition().x, player.chunkPosition().z,
+                                false
+                        );
 
                         player.sendSystemMessage(result.getResultType().message, true);
 
@@ -180,12 +190,9 @@ public class PartyClaimCommand {
                         }
 
                         // Check if in war
-                        List<WarData> wars = WarManager.INSTANCE.getActiveWars();
-                        for (WarData war : wars) {
-                            if (war.getDefendingParty().equals(party) || war.getAttackingParty().equals(party)) {
-                                player.sendSystemMessage(Component.literal("Cannot unclaim chunks while in a war!"));
-                                return 0;
-                            }
+                        War war = WarManager.INSTANCE.findWarByParty(party);
+                        if (war != null) {
+                            return fail(player, "You cannot un-claim chunks while in a war.");
                         }
 
                         PartyClaimsComponent comp = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard());
@@ -197,10 +204,9 @@ public class PartyClaimCommand {
                             return 0;
                         }
 
-
                         //Check not last claim
                         if (partyClaim.getClaimedChunksList().size() <= 1) {
-                            player.sendSystemMessage(Component.literal("You can't un-claim your last claim, use /abandon instead"));
+                            player.sendSystemMessage(Component.literal("You can't un-claim your last claim, use /partyclaim abandon instead"));
                             return 0;
                         }
 

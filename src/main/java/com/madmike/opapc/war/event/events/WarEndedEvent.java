@@ -1,8 +1,8 @@
-package com.madmike.opapc.war2.event.events;
+package com.madmike.opapc.war.event.events;
 
-import com.madmike.opapc.war2.EndOfWarType;
-import com.madmike.opapc.war2.War;
-import com.madmike.opapc.war2.event.events.abs.WarEvent;
+import com.madmike.opapc.war.EndOfWarType;
+import com.madmike.opapc.war.War;
+import com.madmike.opapc.war.event.events.abs.WarEvent;
 
 public class WarEndedEvent extends WarEvent {
     private final EndOfWarType endType;

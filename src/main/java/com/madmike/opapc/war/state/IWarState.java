@@ -1,7 +1,7 @@
-package com.madmike.opapc.war2.state;
+package com.madmike.opapc.war.state;
 
-import com.madmike.opapc.war2.EndOfWarType;
-import com.madmike.opapc.war2.War;
+import com.madmike.opapc.war.EndOfWarType;
+import com.madmike.opapc.war.War;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 

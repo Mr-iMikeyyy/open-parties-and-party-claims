@@ -1,12 +1,15 @@
 package com.madmike.opapc.war.command;
 
+import com.glisco.numismaticoverhaul.ModComponents;
+import com.glisco.numismaticoverhaul.currency.CurrencyComponent;
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCComponents;
-import com.madmike.opapc.OPAPCConfig;
-import com.madmike.opapc.partyclaim.components.scoreboard.PartyClaimsComponent;
 import com.madmike.opapc.partyclaim.data.PartyClaim;
+import com.madmike.opapc.util.PartyLookup;
 import com.madmike.opapc.util.ServerRestartChecker;
+import com.madmike.opapc.war.War;
 import com.madmike.opapc.war.WarManager;
+import com.madmike.opapc.war.command.util.WarSuggestionProvider;
 import com.madmike.opapc.war.data.WarData;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -15,17 +18,11 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import xaero.pac.common.server.parties.party.api.IPartyManagerAPI;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
-import xaero.pac.common.server.player.config.api.IPlayerConfigAPI;
-import xaero.pac.common.server.player.config.api.IPlayerConfigManagerAPI;
-import xaero.pac.common.server.player.config.api.PlayerConfigOptions;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
+import static com.madmike.opapc.util.CommandFailureHandler.fail;
 import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
 
@@ -78,112 +75,77 @@ public class WarCommand {
             warCommand.then(literal("declare")
                     .requires(ctx -> {
                         ServerPlayer player = ctx.getPlayer();
-                        if (player == null) {
-                            return false;
-                        }
-
+                        if (player == null) { return false; }
                         return OPAPC.getPartyManager().getPartyByOwner(player.getUUID()) != null;
                     })
                     .then(argument("party", StringArgumentType.string())
-                            .suggests((context, builder) -> {
-                                ServerPlayer player = context.getSource().getPlayer();
-                                if (player == null) return builder.buildFuture();
-
-                                IServerPartyAPI party = OPAPC.getPartyManager().getPartyByOwner(player.getUUID());
-                                if (party == null) return builder.buildFuture();
-
-                                PartyClaimsComponent comp = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard());
-                                PartyClaim attackingClaim = comp.getClaim(party.getId());
-                                if (attackingClaim == null) return builder.buildFuture();
-
-                                for (PartyClaim claim : comp.getAllClaims()) {
-                                    if (!claim.isWarInsured() && !claim.getPartyId().equals(attackingClaim.getPartyId())) {
-                                        builder.suggest(claim.getPartyName());
-                                    }
-                                }
-
-                                return builder.buildFuture();
-                            })
+                            .suggests(WarSuggestionProvider::suggestTargets)
                             .then(argument("warp", BoolArgumentType.bool())
                                     .executes(ctx -> {
-                                        if (!ServerRestartChecker.isSafeToStartEventNow()) {
-                                            ctx.getSource().sendFailure(Component.literal("Cannot declare war because the server is going to restart soon"));
-                                            return 0;
-                                        }
 
                                         ServerPlayer player = ctx.getSource().getPlayer();
-                                        if (player == null) {
-                                            ctx.getSource().sendFailure(Component.literal("Must be a player to use this command."));
-                                            return 0;
+                                        if (player == null) return fail(ctx, "Must be a player to use this command.");
+
+                                        if (!ServerRestartChecker.isSafeToStartEventNow())
+                                            return fail(player, "Cannot declare war because the server is going to restart soon");
+
+                                        IServerPartyAPI attackingParty = PartyLookup.getOwnerParty(player);
+                                        if (attackingParty == null)
+                                            return fail(player, "Must own a party to declare a war");
+
+                                        String targetName = StringArgumentType.getString(ctx, "party");
+                                        IServerPartyAPI defendingParty = PartyLookup.findByName(targetName);
+                                        if (defendingParty == null)
+                                            return fail(player, "No party with that name was found.");
+
+                                        if (attackingParty.isAlly(defendingParty.getId())) {
+                                            return fail(player, "You cannot declare war on your allies.");
                                         }
 
-                                        IServerPartyAPI attackingParty = OPAPC.getPartyManager().getPartyByOwner(player.getUUID());
-                                        if (attackingParty == null) {
-                                            ctx.getSource().sendFailure(Component.literal("Must own a party to declare a war"));
-                                            return 0;
-                                        }
-
-                                        PartyClaim attackingClaim = OPAPCComponents.PARTY_CLAIMS
-                                                .get(OPAPC.getServer().getScoreboard()).getClaim(attackingParty.getId());
+                                        var comp = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard());
+                                        PartyClaim attackingClaim = comp.getClaim(attackingParty.getId());
                                         if (attackingClaim == null) {
-                                            ctx.getSource().sendFailure(Component.literal("Your party must own a claim to declare war"));
-                                            return 0;
+                                            return fail(player, "Your party must own a claim to declare war.");
                                         }
 
-                                        String inputName = StringArgumentType.getString(ctx, "party");
-                                        boolean shouldWarp = BoolArgumentType.getBool(ctx, "warp");
-
-                                        IPartyManagerAPI pm = OPAPC.getPartyManager();
-                                        IPlayerConfigManagerAPI cm = OPAPC.getPlayerConfigs();
-
-                                        IServerPartyAPI defendingParty = null;
-                                        for (IServerPartyAPI party : pm.getAllStream().toList()) {
-                                            UUID ownerId = party.getOwner().getUUID();
-                                            IPlayerConfigAPI ownerConfig = cm.getLoadedConfig(ownerId);
-                                            String partyName = ownerConfig.getEffective(PlayerConfigOptions.PARTY_NAME);
-
-                                            if (partyName.equalsIgnoreCase(inputName)) {
-                                                defendingParty = party;
-                                                break;
-                                            }
-                                        }
-
-                                        if (defendingParty == null) {
-                                            ctx.getSource().sendFailure(Component.literal("No party with that name was found."));
-                                            return 0;
-                                        }
-
-                                        PartyClaim defendingClaim = OPAPCComponents.PARTY_CLAIMS
-                                                .get(OPAPC.getServer().getScoreboard()).getClaim(defendingParty.getId());
+                                        PartyClaim defendingClaim = comp.getClaim(defendingParty.getId());
                                         if (defendingClaim == null) {
-                                            ctx.getSource().sendFailure(Component.literal("That party does not own a party claim"));
-                                            return 0;
+                                            return fail(player, "That party does not own a claim.");
                                         }
 
                                         if (defendingClaim.isWarInsured()) {
-                                            ctx.getSource().sendFailure(Component.literal("That party is currently insured against wars"));
-                                            return 0;
+                                            return fail(player, "That party is currently insured against wars.");
                                         }
 
-                                        for (WarData war : WarManager.INSTANCE.getActiveWars()) {
-                                            if (war.getAttackingParty().getId().equals(attackingParty.getId())
-                                                    || war.getDefendingParty().getId().equals(attackingParty.getId())) {
-                                                player.sendSystemMessage(Component.literal("You are already in a war!"));
-                                                return 0;
+                                        // Check active wars
+                                        for (War war : WarManager.INSTANCE.getActiveWars()) {
+                                            WarData data = war.getData();
+                                            if (data.getAttackingParty().getId().equals(attackingParty.getId())
+                                                    || data.getDefendingParty().getId().equals(attackingParty.getId())) {
+                                                return fail(player, "You are already in a war!");
                                             }
-                                            if (war.getDefendingParty().getId().equals(defendingParty.getId())
-                                                    || war.getAttackingParty().getId().equals(defendingParty.getId())) {
-                                                player.sendSystemMessage(Component.literal("This party is already in a war."));
-                                                return 0;
+                                            if (data.getDefendingParty().getId().equals(defendingParty.getId())
+                                                    || data.getAttackingParty().getId().equals(defendingParty.getId())) {
+                                                return fail(player, "This party is already in a war!");
                                             }
                                         }
 
-                                        if (defendingParty.getOnlineMemberStream().toList().isEmpty()) {
-                                            player.sendSystemMessage(Component.literal("There's no one online to defend that claim."));
-                                            return 0;
+                                        // Check online defenders
+                                        List<ServerPlayer> defenders = defendingParty.getOnlineMemberStream().toList();
+                                        if (defenders.isEmpty()) {
+                                            return fail(player, "There's no one online to defend that claim.");
                                         }
 
-                                        WarManager.INSTANCE.declareWar(attackingParty, defendingParty, shouldWarp);
+                                        //Check player has enough money
+                                        CurrencyComponent wallet = ModComponents.CURRENCY.get(player);
+                                        int cost = defendingClaim.getClaimedChunksList().size();
+                                        if (wallet.getValue() < defendingClaim.getClaimedChunksList().size()) {
+                                            return fail(player, "You don't have enough gold to attack this claim. Requires " + cost + " gold.");
+                                        }
+
+                                        boolean shouldWarp = BoolArgumentType.getBool(ctx, "warp");
+                                        WarManager.INSTANCE.declareWar(attackingParty, defendingParty, attackingClaim, defendingClaim, shouldWarp);
+                                        wallet.modify(-cost);
                                         return 1;
                                     })
                             )
@@ -195,8 +157,16 @@ public class WarCommand {
             warCommand.then(literal("info")
                     .executes(ctx -> {
                         ServerPlayer player = ctx.getSource().getPlayer();
-                        if (player != null) {
-                            WarManager.INSTANCE.displayWarInfo(player);
+                        if (player == null) {
+                            return fail(ctx, "Must be a player to use this command.");
+                        }
+
+                        War war = WarManager.INSTANCE.findWarByPlayer(player);
+                        if (war != null) {
+                            war.onRequestInfo(player);
+                        }
+                        else {
+                            return fail(player, "You are not in a war");
                         }
                         return 1;
                     })

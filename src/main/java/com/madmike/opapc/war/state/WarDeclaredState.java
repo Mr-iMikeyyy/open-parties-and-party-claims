@@ -1,11 +1,11 @@
-package com.madmike.opapc.war2.state;
+package com.madmike.opapc.war.state;
 
 import com.madmike.opapc.OPAPCConfig;
-import com.madmike.opapc.war2.EndOfWarType;
-import com.madmike.opapc.war2.War;
-import com.madmike.opapc.war2.event.bus.WarEventBus;
-import com.madmike.opapc.war2.event.events.WarEndedEvent;
-import com.madmike.opapc.war2.event.events.WarStartedEvent;
+import com.madmike.opapc.war.EndOfWarType;
+import com.madmike.opapc.war.War;
+import com.madmike.opapc.war.event.bus.WarEventBus;
+import com.madmike.opapc.war.event.events.WarEndedEvent;
+import com.madmike.opapc.war.event.events.WarStartedEvent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;

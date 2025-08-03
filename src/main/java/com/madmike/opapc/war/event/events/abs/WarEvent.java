@@ -1,6 +1,6 @@
-package com.madmike.opapc.war2.event.events.abs;
+package com.madmike.opapc.war.event.events.abs;
 
-import com.madmike.opapc.war2.War;
+import com.madmike.opapc.war.War;
 
 public abstract class WarEvent {
     private final War war;

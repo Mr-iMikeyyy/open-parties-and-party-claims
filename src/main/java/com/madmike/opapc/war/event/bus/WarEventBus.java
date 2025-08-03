@@ -1,6 +1,6 @@
-package com.madmike.opapc.war2.event.bus;
+package com.madmike.opapc.war.event.bus;
 
-import com.madmike.opapc.war2.event.events.abs.WarEvent;
+import com.madmike.opapc.war.event.events.abs.WarEvent;
 
 import java.util.ArrayList;
 import java.util.List;

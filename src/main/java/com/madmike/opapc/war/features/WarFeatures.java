@@ -26,4 +26,8 @@ public class WarFeatures {
             entries.accept(WAR_BLOCK_ITEM);
         });
     }
+
+    public static Block getWarBlock() {
+        return WAR_BLOCK;
+    }
 }
