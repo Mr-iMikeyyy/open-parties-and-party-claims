@@ -18,19 +18,64 @@
 
 package com.madmike.opapc.raid;
 
-import com.madmike.opapc.raid.data.RaidData;
+import com.madmike.opapc.partyclaim.data.PartyClaim;
+import com.madmike.opapc.war.War;
+import net.minecraft.server.level.ServerPlayer;
+import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class RaidManager {
     public static final RaidManager INSTANCE = new RaidManager();
 
-    private final List<RaidData> activeRaids = new ArrayList<>();
+    private final List<Raid> activeRaids = new ArrayList<>();
 
     private RaidManager() {}
 
     public void startRaid() {
 
+    }
+
+    public void tickAll() {
+        Iterator<Raid> it = activeRaids.iterator();
+        while (it.hasNext()) {
+            Raid raid = it.next();
+            raid.tick();
+
+            if (raid.getState() instanceof RaidEndedState) {
+                it.remove();
+            }
+        }
+    }
+
+    public void handlePlayerDeath(ServerPlayer player, Raid raid) {
+
+    }
+
+    public void handleBlockBroken() {
+
+    }
+
+    public Raid findRaidByParty(IServerPartyAPI party) {
+        for (Raid raid : activeRaids) {
+            if (raid.isPartyParticipant(party)) {
+                return raid;
+            }
+        }
+        return null;
+    }
+
+    public Raid findRaidByClaim(PartyClaim claim) {
+        
+    }
+
+    public Raid findRaidByPlayer(ServerPlayer player) {
+
+    }
+
+    public boolean hasRaids() {
+        return !activeRaids.isEmpty();
     }
 }
