@@ -18,7 +18,6 @@
 
 package com.madmike.opapc.duel.events;
 
-import com.madmike.opapc.raid.RaidManager;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.minecraft.server.level.ServerPlayer;
 

@@ -19,9 +19,9 @@
 package com.madmike.opapc;
 
 import com.madmike.opapc.bounty.events.BountyEvents;
-import com.madmike.opapc.command.CommandsManager;
 import com.madmike.opapc.duel.events.DuelEvents;
 import com.madmike.opapc.partyclaim.command.PartyClaimCommand;
+import com.madmike.opapc.player.event.PlayerEvents;
 import com.madmike.opapc.raid.command.RaidCommand;
 import com.madmike.opapc.raid.events.RaidEvents;
 import com.madmike.opapc.trade.events.TradeEvents;
@@ -88,6 +88,7 @@ public class OPAPC implements ModInitializer {
 		});
 
 		//Register Events
+		PlayerEvents.register();
 		BountyEvents.register();
 		DeathMatchEvents.register();
 		DuelEvents.register();
@@ -98,7 +99,6 @@ public class OPAPC implements ModInitializer {
 
 		// Register commands
 		PartyClaimCommand.register();
-		CommandsManager.registerCommands();
 		WarCommand.register();
 		WarpCommand.register();
 		RaidCommand.register();

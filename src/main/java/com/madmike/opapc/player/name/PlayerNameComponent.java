@@ -19,6 +19,7 @@
 package com.madmike.opapc.player.name;
 
 import dev.onyxstudios.cca.api.v3.component.ComponentV3;
+import dev.onyxstudios.cca.api.v3.component.sync.AutoSyncedComponent;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -30,7 +31,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class PlayerNameComponent implements ComponentV3 {
+public class PlayerNameComponent implements ComponentV3, AutoSyncedComponent {
     private final Map<UUID, String> idToNameMap = new HashMap<>();
     private Scoreboard provider;
 

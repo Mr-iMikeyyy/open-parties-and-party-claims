@@ -16,7 +16,35 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.madmike.opapc.bounty.command;
+package com.madmike.opapc.raid.components.player;
 
-public class BountyCommand {
+import dev.onyxstudios.cca.api.v3.component.ComponentV3;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.entity.player.Player;
+
+public class RaidCooldownComponent implements ComponentV3 {
+    private Player player;
+    private long lastRaidTime;
+
+    public RaidCooldownComponent(Player player) {
+        this.player = player;
+    }
+
+    public void setLastRaidTime() {
+        this.lastRaidTime = System.currentTimeMillis();
+    }
+
+    public long getLastRaidTime() {
+        return this.lastRaidTime;
+    }
+
+    @Override
+    public void readFromNbt(CompoundTag tag) {
+
+    }
+
+    @Override
+    public void writeToNbt(CompoundTag tag) {
+
+    }
 }

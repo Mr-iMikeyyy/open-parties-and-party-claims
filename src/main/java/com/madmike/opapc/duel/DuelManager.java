@@ -18,5 +18,10 @@
 
 package com.madmike.opapc.duel;
 
+import java.util.ArrayList;
+
 public class DuelManager {
+    private final List<Duel> activeDuels = new ArrayList<>();
+    public static DuelManager INSTANCE = new DuelManager();
+
 }
