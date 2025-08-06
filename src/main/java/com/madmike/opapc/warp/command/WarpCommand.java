@@ -23,6 +23,8 @@ import com.madmike.opapc.OPAPCComponents;
 import com.madmike.opapc.partyclaim.data.PartyClaim;
 import com.madmike.opapc.raid.RaidManager;
 import com.madmike.opapc.raid.data.RaidData;
+import com.madmike.opapc.util.SafeWarpHelper;
+import com.madmike.opapc.war.War;
 import com.madmike.opapc.war.WarManager;
 import com.madmike.opapc.war.data.WarData;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -43,6 +45,7 @@ import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 
 import java.util.*;
 
+import static com.madmike.opapc.util.CommandFailureHandler.fail;
 import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
 
@@ -57,11 +60,11 @@ public class WarpCommand {
                     player.sendSystemMessage(Component.literal("""
                             §6====== Warp Command Help ======
                             
-                            §6--- Only available to Lone Wolves ---
+                            §6--- If you are not in a party ---
                             §e/warp home §7- Warp to your respawn point
-                            §e/warp ambush <party> §7- Warp outside a party claim
+                            §e/warp ambush <party> §7- Warp outside any party claim
                             
-                            §6--- Only available to Party Members ---
+                            §6--- If you are in a party ---
                             §e/warp <player> §7- Warp to a party member
                             §e/warp party §7- Warp to your party's claim
                             §e/warp <ally> §7- Warp to an ally's claim
@@ -282,10 +285,9 @@ public class WarpCommand {
                             return 0;
                         }
 
-                        for (WarData war : WarManager.INSTANCE.getActiveWars()) {
-                            if (war.getDefendingParty().equals(party) || war.getAttackingParty().equals(party)) {
-                                player.sendSystemMessage(Component.literal("Cannot teleport to party members during a war"));
-                                return 0;
+                        if (WarManager.INSTANCE.isWarActive()) {
+                            if (WarManager.INSTANCE.findWarByParty(party) != null) {
+                                return fail(player, "You cannot warp to a party member during a war!");
                             }
                         }
 
@@ -339,11 +341,17 @@ public class WarpCommand {
                             return 0;
                         }
 
-                        for (WarData war : WarManager.INSTANCE.getActiveWars()) {
-                            if (war.getDefendingPlayers().contains(player)) {
-                                BlockPos warpPos = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard()).getClaim(party.getId()).getWarpPos();
-                                player.teleportTo(OPAPC.getServer().overworld(), warpPos.getX(), warpPos.getY(), warpPos.getZ(), player.getYRot(), player.getXRot());
-                                return 1;
+
+                        if (WarManager.INSTANCE.isWarActive()) {
+                            War war = WarManager.INSTANCE.findWarByParty(party);
+                            if (war != null) {
+                                if (war.getData().getDefenderIds().contains(player.getUUID())) {
+                                    SafeWarpHelper.warpPlayer(player, war.getData().getDefendingClaim().getWarpPos());
+                                    return 1;
+                                }
+                                else {
+                                    return fail(player, "You can't warp to your party claim while attacking another claim.");
+                                }
                             }
                         }
 
@@ -369,6 +377,7 @@ public class WarpCommand {
 
                         BlockPos warpPos = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard()).getClaim(party.getId()).getWarpPos();
                         player.teleportTo(OPAPC.getServer().overworld(), warpPos.getX() + 0.5, warpPos.getY(), warpPos.getZ() + 0.5, player.getYRot(), player.getXRot());
+
                         return 1;
                     })
                     .then(literal("set")

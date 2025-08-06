@@ -18,7 +18,10 @@
 
 package com.madmike.opapc.war.data;
 
+import com.madmike.opapc.OPAPC;
+import com.madmike.opapc.OPAPCComponents;
 import com.madmike.opapc.partyclaim.data.PartyClaim;
+import com.madmike.opapc.player.name.PlayerNameComponent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -26,14 +29,15 @@ import net.minecraft.server.level.ServerPlayer;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 
 import java.util.List;
+import java.util.UUID;
 
 public class WarData {
 
     private final IServerPartyAPI attackingParty;
     private final IServerPartyAPI defendingParty;
 
-    private final List<ServerPlayer> attackers;
-    private final List<ServerPlayer> defenders;
+    private final List<UUID> attackerIds;
+    private final List<UUID> defenderIds;
 
     private final String attackingPartyName;
     private final String defendingPartyName;
@@ -56,8 +60,8 @@ public class WarData {
         this.attackingParty = attackingParty;
         this.defendingParty = defendingParty;
 
-        this.attackers = attackingParty.getOnlineMemberStream().toList();
-        this.defenders = defendingParty.getOnlineMemberStream().toList();
+        this.attackerIds = attackingParty.getOnlineMemberStream().map(ServerPlayer::getUUID).toList();
+        this.defenderIds = defendingParty.getOnlineMemberStream().map(ServerPlayer::getUUID).toList();
 
         this.attackingPartyName = attackingClaim.getPartyName();
 
@@ -66,7 +70,7 @@ public class WarData {
         this.attackingClaim = attackingClaim;
         this.defendingClaim = defendingClaim;
 
-        int defenderCount = this.defenders.size();
+        int defenderCount = this.defenderIds.size();
 
         this.attackerLivesRemaining = defenderCount * 3;
         this.durationSeconds = defenderCount * 3 * 60;
@@ -87,8 +91,8 @@ public class WarData {
     public IServerPartyAPI getDefendingParty() { return defendingParty; }
     public String getAttackingPartyName() { return attackingPartyName; }
     public String getDefendingPartyName() { return defendingPartyName; }
-    public List<ServerPlayer> getAttackingPlayers() { return attackers; }
-    public List<ServerPlayer> getDefendingPlayers() { return defenders; }
+    public List<UUID> getAttackerIds() {return attackerIds; }
+    public List<UUID> getDefenderIds() {return defenderIds; }
     public PartyClaim getDefendingClaim() { return defendingClaim; }
     public PartyClaim getAttackingClaim() { return attackingClaim; }
     public int getAttackerLivesRemaining() { return attackerLivesRemaining; }
@@ -117,7 +121,7 @@ public class WarData {
 
     // --- Tracking ---
     public boolean isPlayerParticipant(ServerPlayer player) {
-        return attackers.contains(player) || defenders.contains(player);
+        return attackerIds.contains(player.getUUID()) || defenderIds.contains(player.getUUID());
     }
 
     public boolean isPartyParticipant(IServerPartyAPI party) {
@@ -133,11 +137,11 @@ public class WarData {
 
     // --- Messaging ---
     public void broadcastToAttackers(Component msg) {
-        attackers.forEach(p -> p.sendSystemMessage(msg));
+        attackingParty.getOnlineMemberStream().forEach(p -> p.sendSystemMessage(msg));
     }
 
     public void broadcastToDefenders(Component msg) {
-        defenders.forEach(p -> p.sendSystemMessage(msg));
+        defendingParty.getOnlineMemberStream().forEach(p -> p.sendSystemMessage(msg));
     }
 
     public void broadcastToWar(Component msg) {
@@ -166,15 +170,16 @@ public class WarData {
                 .append(Component.literal("§eClaim Wipe Possible: §c" + (wipe ? "Yes!" : "No") +"\n\n"));
 
         // List attackers
-        info.append(Component.literal("§cAttackers (" + attackers.size() + "):\n"));
-        for (ServerPlayer player : attackers) {
-            info.append(Component.literal(" §7- §c" + player.getName().getString() + "\n"));
+        PlayerNameComponent pnc = OPAPCComponents.PLAYER_NAMES.get(OPAPC.getServer().getScoreboard());
+        info.append(Component.literal("§cAttackers (" + attackerIds.size() + "):\n"));
+        for (UUID id : attackerIds) {
+            info.append(Component.literal(" §7- §c" + pnc.getPlayerNameById(id) + "\n"));
         }
 
         // List defenders
-        info.append(Component.literal("§aDefenders (" + defenders.size() + "):\n"));
-        for (ServerPlayer player : defenders) {
-            info.append(Component.literal(" §7- §a" + player.getName().getString() + "\n"));
+        info.append(Component.literal("§aDefenders (" + defenderIds.size() + "):\n"));
+        for (UUID id : defenderIds) {
+            info.append(Component.literal(" §7- §a" + pnc.getPlayerNameById(id) + "\n"));
         }
 
         return info;

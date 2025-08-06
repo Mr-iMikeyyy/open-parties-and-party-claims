@@ -73,8 +73,4 @@ public class War {
     public void onRequestInfo(ServerPlayer player) {
         player.sendSystemMessage(data.getInfo());
     }
-
-    public void end(EndOfWarType type) {
-        state.end(this, type);
-    }
 }

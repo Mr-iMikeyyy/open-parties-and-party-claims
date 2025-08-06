@@ -61,7 +61,7 @@ public class WarManager {
 
     public void handlePlayerDeath(ServerPlayer player, War war) {
             WarData data = war.getData();
-            if (data.getAttackingPlayers().contains(player)) {
+            if (data.getAttackerIds().contains(player.getUUID())) {
                 war.onAttackerDeath(player);
             }
             else {
@@ -94,5 +94,9 @@ public class WarManager {
             }
         }
         return null;
+    }
+
+    public boolean isWarActive() {
+        return !activeWars.isEmpty();
     }
 }

@@ -16,24 +16,24 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.madmike.opapc.duel.events;
+package com.madmike.opapc.duel.event.bus;
 
-import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
-import net.minecraft.server.level.ServerPlayer;
+import com.madmike.opapc.duel.event.events.abs.DuelEvent;
 
-public class DuelEvents {
-    public static void register() {
-        ServerLivingEntityEvents.ALLOW_DEATH.register((entity, damageSource, amount) -> {
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
 
-            if (entity instanceof ServerPlayer player) {
-                if (DuelManager.INSTANCE.playerIsInDuel(player.getUUID())) {
-                    DuelManager.INSTANCE.onDuelerDeath(player);
-                    return false;
-                }
-            }
+public class DuelEventBus {
+    private static final List<Consumer<DuelEvent>> listeners = new ArrayList<>();
 
-            return true;
+    public static void register(Consumer<DuelEvent> listener) {
+        listeners.add(listener);
+    }
 
-        });
+    public static void post(DuelEvent event) {
+        for (Consumer<DuelEvent> listener : listeners) {
+            listener.accept(event);
+        }
     }
 }

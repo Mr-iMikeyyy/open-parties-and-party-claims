@@ -16,32 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.madmike.opapc.duel;
+package com.madmike.opapc.duel.state;
 
+import com.madmike.opapc.duel.Duel;
+import com.madmike.opapc.duel.EndOfDuelType;
 import net.minecraft.server.level.ServerPlayer;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class DuelManager {
-    private final List<Duel> activeDuels = new ArrayList<>();
-    public static DuelManager INSTANCE = new DuelManager();
-
-    public boolean isDuelOngoing() {
-        return !activeDuels.isEmpty();
-    }
-
-    public boolean handlePlayerDeath(ServerPlayer player) {
-        for (Duel duel : activeDuels) {
-            if (duel.isChallenger(player.getUUID())) {
-                duel.handleChallengerDeath(player);
-                return false;
-            }
-            if (duel.isOpponent(player.getUUID())) {
-                duel.handleOpponentDeath(player);
-                return false;
-            }
-        }
-        return true;
-    }
+public interface IDuelState {
+    void tick(Duel duel);
+    void onChallengerDeath(ServerPlayer ch, Duel duel);
+    void onOpponentDeath(ServerPlayer opp, Duel duel);
+    void end(Duel duel, EndOfDuelType type);
 }

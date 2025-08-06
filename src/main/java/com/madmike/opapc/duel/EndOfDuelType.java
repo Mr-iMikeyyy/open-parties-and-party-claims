@@ -16,7 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.madmike.opapc.duel.data;
+package com.madmike.opapc.duel;
 
-public class DuelStat {
+public enum EndOfDuelType {
+    DUEL_TIMER_RAN_OUT,
+    CHALLENGER_NO_LIVES_LEFT,
+    OPPONENT_NO_LIVES_LEFT,
+    DENIED,
+    CHALLENGE_TIMER_RAN_OUT,
+    DISCONNECT
 }

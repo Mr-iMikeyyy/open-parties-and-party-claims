@@ -38,7 +38,7 @@ public class WarStartedState implements IWarState {
     @Override
     public void tick(War war) {
         if (war.getData().isExpired()) {
-            war.end(EndOfWarType.ATTACKERS_LOSE_TIME);
+            end(war, EndOfWarType.ATTACKERS_LOSE_TIME);
         }
     }
 
