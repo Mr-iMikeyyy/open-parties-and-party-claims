@@ -32,8 +32,6 @@ public class RaidManager {
 
     private final List<Raid> activeRaids = new ArrayList<>();
 
-    private RaidManager() {}
-
     public void startRaid() {
 
     }
