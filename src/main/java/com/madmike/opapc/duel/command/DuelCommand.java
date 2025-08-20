@@ -19,6 +19,7 @@
 package com.madmike.opapc.duel.command;
 
 import com.madmike.opapc.OPAPC;
+import com.madmike.opapc.duel.DuelManager;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -91,7 +92,7 @@ public class DuelCommand {
                             })
                             .then(argument("map", StringArgumentType.string())
                                     .suggests(((context, builder) -> {
-
+                                        DuelManager.INSTANCE.getDuelMaps()
                                     }))
                             )
                     )

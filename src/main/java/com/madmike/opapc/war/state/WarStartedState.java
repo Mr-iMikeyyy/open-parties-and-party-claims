@@ -98,15 +98,6 @@ public class WarStartedState implements IWarState {
             return;
         }
 
-        // Handle wipe condition
-        if (data.getWipe() && data.getDefendingClaim().getClaimedChunksList().isEmpty()) {
-            OPAPCComponents.PARTY_CLAIMS
-                    .get(OPAPC.getServer().getScoreboard())
-                    .removeClaim(data.getDefendingParty().getId());
-            end(war, EndOfWarType.ATTACKERS_WIN_WIPE);
-            return;
-        }
-
         // Update stats
         PartyClaim defendingClaim = data.getDefendingClaim();
         PartyClaim attackingClaim = data.getAttackingClaim();
@@ -116,6 +107,15 @@ public class WarStartedState implements IWarState {
         attackingClaim.incrementClaimsGainedFromWar();
 
         data.decrementWarBlocksLeft();
+
+        // Handle wipe condition
+        if (data.getWipe() && data.getDefendingClaim().getClaimedChunksList().isEmpty()) {
+            OPAPCComponents.PARTY_CLAIMS
+                    .get(OPAPC.getServer().getScoreboard())
+                    .removeClaim(data.getDefendingParty().getId());
+            end(war, EndOfWarType.ATTACKERS_WIN_WIPE);
+            return;
+        }
 
         // Check war block count
         if (data.getWarBlocksLeft() <= 0) {
@@ -131,6 +131,7 @@ public class WarStartedState implements IWarState {
         }
 
         WarBlockSpawner.spawnWarBlock(nextSpawn);
+        data.setWarBlockPosition(nextSpawn);
     }
 
     @Override

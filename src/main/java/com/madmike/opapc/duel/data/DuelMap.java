@@ -47,6 +47,10 @@ public class DuelMap {
         return name;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
     public List<BlockPos> getPlayer1Spawns() {
         return player1Spawns;
     }
