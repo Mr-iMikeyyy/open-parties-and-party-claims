@@ -102,7 +102,7 @@ public class DuelCommand {
                                         if (server == null) return builder.buildFuture();
 
                                         DuelMapsComponent comp = OPAPCComponents.DUEL_MAPS.get(server.getScoreboard());
-                                        if (comp != null && !comp.isEmpty()) {
+                                        if (!comp.getAll().isEmpty()) {
                                             for (DuelMap map : comp.getAll()) {
                                                 if (!map.getPlayer1Spawns().isEmpty() && !map.getPlayer2Spawns().isEmpty()) {
                                                     builder.suggest(map.getName());
@@ -162,7 +162,7 @@ public class DuelCommand {
             duelCommand.then(literal("stats").executes(ctx -> {
                 ServerPlayer self = ctx.getSource().getPlayer();
                 if (self != null) {
-                    self.sendSystemMessage(Component.literal("Duel stats coming soon."));
+                    self.sendSystemMessage(OPAPCComponents.DUEL_STATS.get(self).getPrintedStats());
                 }
                 return 1;
             }));

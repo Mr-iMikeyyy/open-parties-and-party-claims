@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.madmike.opapc.duel.data;
+package com.madmike.opapc.duel;
 
 import com.madmike.opapc.OPAPCConfig;
 import net.minecraft.core.RegistryAccess;
