@@ -16,30 +16,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.madmike.opapc.duel.state;
+package com.madmike.opapc.duel.state.duel;
 
 import com.madmike.opapc.duel.Duel;
 import com.madmike.opapc.duel.EndOfDuelType;
 import net.minecraft.server.level.ServerPlayer;
 
-public class DuelChallengedState implements IDuelState{
-    @Override
-    public void tick(Duel duel) {
-
-    }
-
-    @Override
-    public void onChallengerDeath(ServerPlayer ch, Duel duel) {
-
-    }
-
-    @Override
-    public void onOpponentDeath(ServerPlayer opp, Duel duel) {
-
-    }
-
-    @Override
-    public void end(Duel duel, EndOfDuelType type) {
-
-    }
+public interface IDuelState {
+    default void enter(Duel duel) {}                // called when state becomes active
+    void tick(Duel duel);
+    void onChallengerDeath(ServerPlayer ch, Duel duel);
+    void onOpponentDeath(ServerPlayer opp, Duel duel);
+    void end(Duel duel, EndOfDuelType type);
 }

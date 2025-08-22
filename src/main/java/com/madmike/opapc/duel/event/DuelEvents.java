@@ -18,7 +18,6 @@
 
 package com.madmike.opapc.duel.event;
 
-import com.madmike.opapc.duel.Duel;
 import com.madmike.opapc.duel.DuelManager;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.minecraft.server.level.ServerPlayer;

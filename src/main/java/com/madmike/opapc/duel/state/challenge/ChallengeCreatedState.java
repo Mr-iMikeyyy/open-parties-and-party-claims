@@ -16,7 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.madmike.opapc.duel.state;
+package com.madmike.opapc.duel.state.challenge;
 
-public class DuelOngoingState implements IDuelState{
+import com.madmike.opapc.duel.data.PendingChallenge;
+
+public class ChallengeCreatedState implements IChallengeState{
+    @Override
+    public void enter(PendingChallenge pc) {
+        IChallengeState.super.enter(pc);
+    }
+
+    @Override
+    public void tick(PendingChallenge pc) {
+
+    }
 }

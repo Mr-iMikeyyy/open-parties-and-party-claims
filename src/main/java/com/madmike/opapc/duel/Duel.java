@@ -18,51 +18,102 @@
 
 package com.madmike.opapc.duel;
 
+import com.madmike.opapc.OPAPC;
+import com.madmike.opapc.OPAPCConfig;
 import com.madmike.opapc.duel.data.DuelData;
+import com.madmike.opapc.duel.data.DuelMap;
+import com.madmike.opapc.duel.state.duel.DuelAcceptedState;
 import com.madmike.opapc.duel.state.DuelChallengedState;
-import com.madmike.opapc.duel.state.IDuelState;
+import com.madmike.opapc.duel.state.duel.DuelEndedState;
+import com.madmike.opapc.duel.state.duel.IDuelState;
+import com.madmike.opapc.util.SafeWarpHelper;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.RandomSource;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
 public class Duel {
     private IDuelState state;
     private final DuelData data;
+    private final RandomSource rng = RandomSource.create();
 
-    public Duel(DuelData data) {
-        this.data = data;
-        this.state = new DuelChallengedState();
+    public Duel(ServerPlayer challenger, ServerPlayer opponent, DuelMap map, long wager) {
+        // 3 kills to win, no hard timeout (Long.MAX_VALUE), warp back after
+        this.data = new DuelData(challenger, opponent, map, wager, OPAPCConfig.duelMaxLives, OPAPCConfig.duelMaxTime);
+        setState(new DuelAcceptedState(3000)); // 3s countdown
     }
 
-    public void setState(IDuelState state) {
-        this.state = state;
+    /* ---------- routing ---------- */
+    public void tick(MinecraftServer server) { state.tick(this); }
+    public void handleChallengerDeath(ServerPlayer ch) { state.onChallengerDeath(ch, this); }
+    public void handleOpponentDeath(ServerPlayer opp) { state.onOpponentDeath(opp, this); }
+    public void end(EndOfDuelType type) { state.end(this, type); }
+
+    /* ---------- membership ---------- */
+    public boolean isChallenger(UUID id) { return data.getChallengerId().equals(id); }
+    public boolean isOpponent(UUID id)   { return data.getOpponentId().equals(id); }
+    public boolean contains(UUID id)     { return isChallenger(id) || isOpponent(id); }
+    public boolean isEnded()             { return data.isEnded(); }
+
+    /* ---------- state mgmt ---------- */
+    public void setState(IDuelState next) {
+        this.state = next;
+        this.state.enter(this);
     }
 
-    public DuelData getData() {
-        return data;
+    /* ---------- getters used by states ---------- */
+    public DuelData getData() { return data; }
+
+    public @Nullable ServerPlayer getChallengerPlayer() {
+        return OPAPC.getServer().getPlayerList().getPlayer(data.getChallengerId());
+    }
+    public @Nullable ServerPlayer getOpponentPlayer() {
+        return OPAPC.getServer().getPlayerList().getPlayer(data.getOpponentId());
     }
 
-    public void tick() {
-        state.tick(this);
+    /* ---------- helpers usable by states ---------- */
+    public void teleportToSpawns() {
+        var ch = getChallengerPlayer();
+        var op = getOpponentPlayer();
+
+        var map = data.getMap();
+
+        var cSpawnOpt = map.randomChallengerSpawn(rng);
+        var oSpawnOpt = map.randomOpponentSpawn(rng);
+
+        if (cSpawnOpt.isEmpty() || oSpawnOpt.isEmpty()) {
+            if (ch != null) ch.sendSystemMessage(Component.literal("§cDuel map has no valid spawns for one side."));
+            if (op != null) op.sendSystemMessage(Component.literal("§cDuel map has no valid spawns for one side."));
+            finish(EndOfDuelType.DISCONNECT); // or add MAP_INVALID, your call
+            return;
+        }
+
+        if (ch != null) SafeWarpHelper.warpPlayer(ch, cSpawnOpt.get());
+        if (op != null) SafeWarpHelper.warpPlayer(op, oSpawnOpt.get());
     }
 
-    public boolean isChallenger(UUID id) {
-        return data.getChallengerId().equals(id);
+    public void respawnAtSpawn(ServerPlayer p, boolean challenger) {
+        var map = data.getMap();
+        var spawnOpt = challenger ? map.randomChallengerSpawn(rng) : map.randomOpponentSpawn(rng);
+        if (spawnOpt.isEmpty()) return; // already handled elsewhere / or end duel
+
+        p.setHealth(p.getMaxHealth());
+        p.getFoodData().setFoodLevel(20);
+        SafeWarpHelper.warpPlayer(p, spawnOpt.get());
     }
 
-    public boolean isOpponent(UUID id) {
-        return data.getOpponentId().equals(id);
-    }
-
-    public void handleChallengerDeath(ServerPlayer player) {
-        state.onChallengerDeath(player, this);
-    }
-
-    public void handleOpponentDeath(ServerPlayer player) {
-        state.onOpponentDeath(player, this);
-    }
-
-    public void end(EndOfDuelType type) {
-        state.end(this, type);
+    public void finish(EndOfDuelType type) {
+        if (data.isEnded()) return;
+        switch (type) {
+            case CHALLENGER_NO_LIVES_LEFT -> data.end(data.getOpponentId());
+            case OPPONENT_NO_LIVES_LEFT   -> data.end(data.getChallengerId());
+            case DUEL_TIMER_RAN_OUT, DISCONNECT -> data.end(null);
+        }
+        // payout / refund wager here if you want
+        setState(new DuelEndedState());
+        // Optionally warp players back to saved origin positions if you tracked them
     }
 }

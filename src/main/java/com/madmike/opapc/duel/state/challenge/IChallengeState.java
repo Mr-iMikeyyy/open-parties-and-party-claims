@@ -16,7 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.madmike.opapc.duel.state;
+package com.madmike.opapc.duel.state.challenge;
 
-public class DuelEndedState implements IDuelState{
+import com.madmike.opapc.duel.Duel;
+import com.madmike.opapc.duel.data.PendingChallenge;
+
+public interface IChallengeState {
+    default void enter(PendingChallenge pc) {}                // called when state becomes active
+    void tick(PendingChallenge pc);
 }

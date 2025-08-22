@@ -46,6 +46,10 @@ public class OPAPCConfig {
     public static boolean shouldBroadcastWarResultsToServer;
     public static int warInsuranceDurationDays;
     public static int raidInsuranceDurationDays;
+    public static int duelMaxTime;
+    public static int duelMaxLives;
+    public static int duelChallengeMaxTime;
+    public static List<String> duelBannedItemsRaw;
     public static List<String> restartTimesRaw;
     public static List<LocalTime> restartTimes = new ArrayList<>();
     public static String restartTimezoneRaw;
@@ -68,7 +72,7 @@ public class OPAPCConfig {
         discount = config.getOrElse("discount", 0.5);
 
         config.setComment("markup", "Markup to apply when a markup is warranted, i.e. when a lone wolf buys from a party or vice versa");
-        markup = config.getOrElse("discount", 2.0);
+        markup = config.getOrElse("markup", 2.0);
 
         config.setComment("warpCooldownCombatSeconds", "Duration (in seconds) that a player cannot warp after taking damage");
         warpCooldownCombatSeconds = config.getOrElse("warpCooldownCombatSeconds", 60);
@@ -90,6 +94,21 @@ public class OPAPCConfig {
 
         config.setComment("warInsuranceDurationDays", "How long (in days) insurance lasts for wars, insurance for wars only given after losing a war");
         warInsuranceDurationDays = config.getOrElse("warInsuranceDurationDays", 3);
+
+        config.setComment("duelMaxLives", "How many lives should each player get in a duel");
+        duelMaxLives = config.getOrElse("duelMaxLives", 3);
+
+        config.setComment("duelMaxTime", "How long (in min) should a duel last at max");
+        duelMaxTime = config.getOrElse("duelMaxTime", 10);
+
+        config.setComment("duelChallengeMaxTime", "How long (in sec) should a duel challenge invite last before expiring");
+        duelChallengeMaxTime = config.getOrElse("duelChallengeMaxTime", 30);
+
+        config.setComment("duelBannedItems",
+                "Extra banned items for duels (in addition to the tag, if duelUseTag=true). " +
+                        "List of item IDs like \"minecraft:ender_pearl\".");
+        duelBannedItemsRaw = config.getOrElse("duelBannedItems",
+                List.of("minecraft:ender_pearl", "minecraft:chorus_fruit"));
 
         config.setComment("restartTimes", "List of daily server restart times in HH:mm format (e.g., \"04:00\", \"12:00\", \"20:00\"). The mod will block wars and duels 30 min before these times.");
         restartTimesRaw = config.getOrElse("restartTimes", List.of());

@@ -18,7 +18,7 @@
 
 package com.madmike.opapc;
 
-import com.madmike.opapc.bounty.components.player.BountyComponent;
+import com.madmike.opapc.duel.components.scoreboard.DuelMapsComponent;
 import com.madmike.opapc.partyclaim.components.player.PartyRejoinCooldownComponent;
 import com.madmike.opapc.player.name.PlayerNameComponent;
 import com.madmike.opapc.warp.components.player.WarpCombatCooldownComponent;
@@ -53,14 +53,13 @@ public class OPAPCComponents implements ScoreboardComponentInitializer, EntityCo
     public static final ComponentKey<PartyRejoinCooldownComponent> PARTY_REJOIN_COOLDOWN =
             ComponentRegistryV3.INSTANCE.getOrCreate(new ResourceLocation(OPAPC.MOD_ID, "party_rejoin_cooldown"), PartyRejoinCooldownComponent.class);
 
-    public static final ComponentKey<BountyComponent> BOUNTY =
-            ComponentRegistryV3.INSTANCE.getOrCreate(new ResourceLocation(OPAPC.MOD_ID, "bounty"), BountyComponent.class);
-
-
     //Scoreboard Components
 
     public static final ComponentKey<OffersComponent> OFFERS =
             ComponentRegistryV3.INSTANCE.getOrCreate(new ResourceLocation(OPAPC.MOD_ID, "offers"), OffersComponent.class);
+
+    public static final ComponentKey<DuelMapsComponent> DUEL_MAPS =
+            ComponentRegistryV3.INSTANCE.getOrCreate(new ResourceLocation(OPAPC.MOD_ID, "duel_maps"), DuelMapsComponent.class);
 
     public static final ComponentKey<PartyClaimsComponent> PARTY_CLAIMS =
             ComponentRegistryV3.INSTANCE.getOrCreate(new ResourceLocation(OPAPC.MOD_ID, "party_claims"), PartyClaimsComponent.class);
@@ -82,12 +81,12 @@ public class OPAPCComponents implements ScoreboardComponentInitializer, EntityCo
         registry.registerForPlayers(COMBAT_COOLDOWN, WarpCombatCooldownComponent::new, RespawnCopyStrategy.ALWAYS_COPY);
         registry.registerForPlayers(WARP_COOLDOWN, WarpCooldownComponent::new, RespawnCopyStrategy.ALWAYS_COPY);
         registry.registerForPlayers(PARTY_REJOIN_COOLDOWN, PartyRejoinCooldownComponent::new, RespawnCopyStrategy.ALWAYS_COPY);
-        registry.registerForPlayers(BOUNTY, BountyComponent::new, RespawnCopyStrategy.ALWAYS_COPY);
     }
 
     @Override
     public void registerScoreboardComponentFactories(ScoreboardComponentFactoryRegistry registry) {
         registry.registerScoreboardComponent(OFFERS, OffersComponent::new);
+        registry.registerScoreboardComponent(DUEL_MAPS, DuelMapsComponent::new);
         registry.registerScoreboardComponent(PARTY_CLAIMS, PartyClaimsComponent::new);
         registry.registerScoreboardComponent(OFFLINE_SALES, OfflineSalesComponent::new);
         registry.registerScoreboardComponent(SELLERS, SellersComponent::new);

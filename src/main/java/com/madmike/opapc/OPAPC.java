@@ -19,6 +19,7 @@
 package com.madmike.opapc;
 
 import com.madmike.opapc.bounty.events.BountyEvents;
+import com.madmike.opapc.duel.data.DuelBannedItems;
 import com.madmike.opapc.duel.event.DuelEvents;
 import com.madmike.opapc.partyclaim.command.PartyClaimCommand;
 import com.madmike.opapc.player.event.PlayerEvents;
@@ -86,6 +87,12 @@ public class OPAPC implements ModInitializer {
 			claimsManager = null;
 			playerConfigs = null;
 		});
+
+		//Load Config
+		OPAPCConfig.load();
+
+		//Banned Items
+		DuelBannedItems.reloadFromConfig();
 
 		//Register Events
 		PlayerEvents.register();

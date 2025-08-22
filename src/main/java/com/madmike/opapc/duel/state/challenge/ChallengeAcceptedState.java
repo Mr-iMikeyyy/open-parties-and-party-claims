@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.madmike.opapc.duel.state;
+package com.madmike.opapc.duel.state.challenge;
 
-public class DuelAcceptedState implements IDuelState{
+public class ChallengeAcceptedState {
 }
