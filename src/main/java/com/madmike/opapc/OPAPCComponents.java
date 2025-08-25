@@ -18,6 +18,7 @@
 
 package com.madmike.opapc;
 
+import com.madmike.opapc.duel.components.player.InDuelComponent;
 import com.madmike.opapc.duel.components.scoreboard.DuelMapsComponent;
 import com.madmike.opapc.partyclaim.components.player.PartyRejoinCooldownComponent;
 import com.madmike.opapc.player.name.PlayerNameComponent;
@@ -53,6 +54,9 @@ public class OPAPCComponents implements ScoreboardComponentInitializer, EntityCo
     public static final ComponentKey<PartyRejoinCooldownComponent> PARTY_REJOIN_COOLDOWN =
             ComponentRegistryV3.INSTANCE.getOrCreate(new ResourceLocation(OPAPC.MOD_ID, "party_rejoin_cooldown"), PartyRejoinCooldownComponent.class);
 
+    public static final ComponentKey<InDuelComponent> IN_DUEL =
+            ComponentRegistryV3.INSTANCE.getOrCreate(new ResourceLocation(OPAPC.MOD_ID, "in_duel"), InDuelComponent.class);
+
     //Scoreboard Components
 
     public static final ComponentKey<OffersComponent> OFFERS =
@@ -81,6 +85,7 @@ public class OPAPCComponents implements ScoreboardComponentInitializer, EntityCo
         registry.registerForPlayers(COMBAT_COOLDOWN, WarpCombatCooldownComponent::new, RespawnCopyStrategy.ALWAYS_COPY);
         registry.registerForPlayers(WARP_COOLDOWN, WarpCooldownComponent::new, RespawnCopyStrategy.ALWAYS_COPY);
         registry.registerForPlayers(PARTY_REJOIN_COOLDOWN, PartyRejoinCooldownComponent::new, RespawnCopyStrategy.ALWAYS_COPY);
+        registry.registerForPlayers(IN_DUEL, InDuelComponent::new, RespawnCopyStrategy.ALWAYS_COPY);
     }
 
     @Override

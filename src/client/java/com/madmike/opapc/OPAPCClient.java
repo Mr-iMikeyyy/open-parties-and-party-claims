@@ -18,6 +18,7 @@
 
 package com.madmike.opapc;
 
+import com.madmike.opapc.duel.DuelClientEvents;
 import com.madmike.opapc.trade.keybind.TradingScreenKeyBind;
 import com.madmike.opapc.trade.net.TradingClientReceiver;
 import net.fabricmc.api.ClientModInitializer;
@@ -30,6 +31,8 @@ public class OPAPCClient implements ClientModInitializer {
 		TradingScreenKeyBind.register();
 
 		TradingClientReceiver.register();
+
+		DuelClientEvents.register();
 
 		OPAPC.LOGGER.info("Client initialized");
 	}

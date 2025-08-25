@@ -18,10 +18,9 @@
 
 package com.madmike.opapc.duel.state.challenge;
 
-import com.madmike.opapc.duel.Duel;
-import com.madmike.opapc.duel.data.PendingChallenge;
+import com.madmike.opapc.duel.DuelChallenge;
 
 public interface IChallengeState {
-    default void enter(PendingChallenge pc) {}                // called when state becomes active
-    void tick(PendingChallenge pc);
+    default void enter(DuelChallenge pc) {}                // called when state becomes active
+    void tick(DuelChallenge pc);
 }

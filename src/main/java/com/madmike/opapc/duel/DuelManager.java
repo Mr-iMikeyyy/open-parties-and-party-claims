@@ -18,13 +18,10 @@
 
 package com.madmike.opapc.duel;
 
-import com.madmike.opapc.OPAPCComponents;
-import com.madmike.opapc.duel.components.scoreboard.DuelMapsComponent;
 import com.madmike.opapc.duel.data.DuelMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.util.RandomSource;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -41,14 +38,14 @@ public class DuelManager {
 
     public static final DuelManager INSTANCE = new DuelManager();
 
-    /* ================= Active duels ================= */
-    private final List<Duel> activeDuels = new ArrayList<>();
-
-
-
     private DuelManager() {}
 
+    /* ================= Active duels ================= */
+
+    private final List<Duel> activeDuels = new ArrayList<>();
+
     /* ================= Queries ================= */
+
     public boolean isDuelOngoing() { return !activeDuels.isEmpty(); }
 
     public boolean isPlayerInDuel(UUID playerId) {
@@ -56,22 +53,16 @@ public class DuelManager {
         return false;
     }
 
-
-
-
-
     /* ================= Duel lifecycle ================= */
 
     public Duel startDuel(MinecraftServer server,
                           ServerPlayer challenger,
                           ServerPlayer opponent,
                           DuelMap map,
-                          BlockPos challengerSpawn,
-                          BlockPos opponentSpawn,
                           long wager) {
 
         // Adjust ctor/signature for your Duel class:
-        Duel duel = new Duel(challenger, opponent, map, challengerSpawn, opponentSpawn, wager);
+        Duel duel = new Duel(challenger, opponent, map, wager);
         activeDuels.add(duel);
         return duel;
     }
@@ -92,13 +83,6 @@ public class DuelManager {
     /* ================= Tick + Events ================= */
 
     public void tick(MinecraftServer server) {
-        long now = System.currentTimeMillis();
-        List<UUID> toRemove = new ArrayList<>();
-        for (var e : challengesById.entrySet()) {
-            if (now >= e.getValue().expiresAtMs) toRemove.add(e.getKey());
-        }
-        for (UUID id : toRemove) cancelChallenge(id);
-
         for (Duel d : activeDuels) d.tick(server);
         gcEnded();
     }

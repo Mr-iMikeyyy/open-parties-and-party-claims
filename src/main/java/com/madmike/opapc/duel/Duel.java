@@ -25,6 +25,7 @@ import com.madmike.opapc.duel.data.DuelMap;
 import com.madmike.opapc.duel.state.duel.DuelAcceptedState;
 import com.madmike.opapc.duel.state.DuelChallengedState;
 import com.madmike.opapc.duel.state.duel.DuelEndedState;
+import com.madmike.opapc.duel.state.duel.DuelStartedState;
 import com.madmike.opapc.duel.state.duel.IDuelState;
 import com.madmike.opapc.util.SafeWarpHelper;
 import net.minecraft.network.chat.Component;
@@ -41,9 +42,8 @@ public class Duel {
     private final RandomSource rng = RandomSource.create();
 
     public Duel(ServerPlayer challenger, ServerPlayer opponent, DuelMap map, long wager) {
-        // 3 kills to win, no hard timeout (Long.MAX_VALUE), warp back after
         this.data = new DuelData(challenger, opponent, map, wager, OPAPCConfig.duelMaxLives, OPAPCConfig.duelMaxTime);
-        setState(new DuelAcceptedState(3000)); // 3s countdown
+        setState(new DuelStartedState());
     }
 
     /* ---------- routing ---------- */
@@ -91,8 +91,8 @@ public class Duel {
             return;
         }
 
-        if (ch != null) SafeWarpHelper.warpPlayer(ch, cSpawnOpt.get());
-        if (op != null) SafeWarpHelper.warpPlayer(op, oSpawnOpt.get());
+        if (ch != null) SafeWarpHelper.warpPlayerToOverworldPos(ch, cSpawnOpt.get());
+        if (op != null) SafeWarpHelper.warpPlayerToOverworldPos(op, oSpawnOpt.get());
     }
 
     public void respawnAtSpawn(ServerPlayer p, boolean challenger) {
@@ -102,7 +102,7 @@ public class Duel {
 
         p.setHealth(p.getMaxHealth());
         p.getFoodData().setFoodLevel(20);
-        SafeWarpHelper.warpPlayer(p, spawnOpt.get());
+        SafeWarpHelper.warpPlayerToOverworldPos(p, spawnOpt.get());
     }
 
     public void finish(EndOfDuelType type) {

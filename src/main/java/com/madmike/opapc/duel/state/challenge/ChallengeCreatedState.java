@@ -18,16 +18,16 @@
 
 package com.madmike.opapc.duel.state.challenge;
 
-import com.madmike.opapc.duel.data.PendingChallenge;
+import com.madmike.opapc.duel.DuelChallenge;
 
 public class ChallengeCreatedState implements IChallengeState{
     @Override
-    public void enter(PendingChallenge pc) {
+    public void enter(DuelChallenge pc) {
         IChallengeState.super.enter(pc);
     }
 
     @Override
-    public void tick(PendingChallenge pc) {
+    public void tick(DuelChallenge pc) {
 
     }
 }

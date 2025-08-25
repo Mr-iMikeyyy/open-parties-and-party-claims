@@ -119,7 +119,7 @@ public class SafeWarpHelper {
         return null;
     }
 
-    public static void warpPlayer(ServerPlayer player, BlockPos warpPos) {
+    public static void warpPlayerToOverworldPos(ServerPlayer player, BlockPos warpPos) {
         player.teleportTo(OPAPC.getServer().overworld(), warpPos.getX() + 0.5, warpPos.getY(), warpPos.getZ() + 0.5, player.getYRot(), player.getXRot());
     }
 

@@ -25,7 +25,7 @@ import com.madmike.opapc.duel.data.DuelData;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
-public class DuelOngoingState implements IDuelState {
+public class DuelStartedState implements IDuelState {
 
     @Override
     public void enter(Duel duel) {
@@ -38,7 +38,7 @@ public class DuelOngoingState implements IDuelState {
 
     @Override public void tick(Duel duel) {
         // Optional: time limit handling if you use DuelData.maxDurationMs
-        if (OPAPCConfig.)
+        if (OPAPCConfig.duelMaxTime > )
         DuelData data = duel.getData();
         if ()
         if (System.currentTimeMillis() - data.getElapsedMs() >= 0 && data.getElapsedMs() >= data.getElapsedMs()) {

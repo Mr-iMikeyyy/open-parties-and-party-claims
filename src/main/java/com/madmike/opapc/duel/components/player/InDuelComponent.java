@@ -18,17 +18,15 @@
 
 package com.madmike.opapc.duel.components.player;
 
-import com.madmike.opapc.OPAPCComponents;
 import dev.onyxstudios.cca.api.v3.component.ComponentV3;
 import dev.onyxstudios.cca.api.v3.component.sync.AutoSyncedComponent;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 
 public class InDuelComponent implements ComponentV3, AutoSyncedComponent {
-    private final Player owner;         // entity this component is attached to
-    private boolean inDuel;             // persisted & synced
+    private final Player owner;
+    private boolean inDuel;
 
     public InDuelComponent(Player owner) {
         this.owner = owner;

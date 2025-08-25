@@ -53,7 +53,7 @@ public class WarStartedState implements IWarState {
         else {
             BlockPos safeWarpPos = SafeWarpHelper.findSafeSpawnOutsideClaim(war.getData().getDefendingClaim());
             if (safeWarpPos != null) {
-                SafeWarpHelper.warpPlayer(player, safeWarpPos);
+                SafeWarpHelper.warpPlayerToOverworldPos(player, safeWarpPos);
             }
             else {
                 end(war, EndOfWarType.BUG);
@@ -73,7 +73,7 @@ public class WarStartedState implements IWarState {
         }
 
         if (targetPos != null) {
-            SafeWarpHelper.warpPlayer(player, targetPos);
+            SafeWarpHelper.warpPlayerToOverworldPos(player, targetPos);
         } else {
             end(war, EndOfWarType.BUG);
         }

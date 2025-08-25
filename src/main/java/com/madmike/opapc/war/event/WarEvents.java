@@ -76,7 +76,7 @@ public class WarEvents {
                     for (ServerPlayer player : data.getAttackingPlayers()) {
                         BlockPos spawnPos = SafeWarpHelper.findSafeSpawnOutsideClaim(data.getDefendingClaim());
                         if (spawnPos != null) {
-                            SafeWarpHelper.warpPlayer(player, spawnPos);
+                            SafeWarpHelper.warpPlayerToOverworldPos(player, spawnPos);
                         }
                         else {
                             started.getWar().getState().end(started.getWar(), EndOfWarType.BUG);
@@ -120,20 +120,20 @@ public class WarEvents {
                         for (ServerPlayer player : data.getAttackingPlayers()) {
                             BlockPos warpPos = data.getAttackingClaim().getWarpPos();
                             if (warpPos != null) {
-                                SafeWarpHelper.warpPlayer(player, warpPos);
+                                SafeWarpHelper.warpPlayerToOverworldPos(player, warpPos);
                             } else {
                                 BlockPos sharedPos = OPAPC.getServer().overworld().getSharedSpawnPos();
-                                SafeWarpHelper.warpPlayer(player, sharedPos);
+                                SafeWarpHelper.warpPlayerToOverworldPos(player, sharedPos);
                             }
                         }
                     } else {
                         for (ServerPlayer player : data.getAttackingPlayers()) {
                             BlockPos safePos = SafeWarpHelper.findSafeSpawnOutsideClaim(data.getDefendingClaim());
                             if (safePos != null) {
-                                SafeWarpHelper.warpPlayer(player, safePos);
+                                SafeWarpHelper.warpPlayerToOverworldPos(player, safePos);
                             } else {
                                 BlockPos sharedPos = OPAPC.getServer().overworld().getSharedSpawnPos();
-                                SafeWarpHelper.warpPlayer(player, sharedPos);
+                                SafeWarpHelper.warpPlayerToOverworldPos(player, sharedPos);
                             }
                         }
                     }

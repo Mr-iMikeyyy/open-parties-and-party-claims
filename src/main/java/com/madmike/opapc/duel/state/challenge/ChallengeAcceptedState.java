@@ -18,5 +18,17 @@
 
 package com.madmike.opapc.duel.state.challenge;
 
-public class ChallengeAcceptedState {
+import com.madmike.opapc.duel.DuelChallenge;
+
+public class ChallengeAcceptedState implements IChallengeState{
+    @Override
+    public void enter(DuelChallenge pc) {
+        IChallengeState.super.enter(pc);
+
+    }
+
+    @Override
+    public void tick(DuelChallenge pc) {
+
+    }
 }

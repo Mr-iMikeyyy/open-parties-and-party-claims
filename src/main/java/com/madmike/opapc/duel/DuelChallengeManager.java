@@ -22,7 +22,6 @@ import com.madmike.opapc.OPAPCComponents;
 import com.madmike.opapc.OPAPCConfig;
 import com.madmike.opapc.duel.components.scoreboard.DuelMapsComponent;
 import com.madmike.opapc.duel.data.DuelMap;
-import com.madmike.opapc.duel.data.PendingChallenge;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -33,14 +32,18 @@ import java.util.*;
 
 public class DuelChallengeManager {
 
+    public static final DuelChallengeManager INSTANCE = new DuelChallengeManager();
+
+    private DuelChallengeManager() {}
+
     /* ================= Pending challenges ================= */
-    private final Map<UUID, PendingChallenge> challenges = new HashMap<>();
+    private final Map<UUID, DuelChallenge> challenges = new HashMap<>();
 
     private static final long CHALLENGE_TIMEOUT_MS = OPAPCConfig.duelChallengeMaxTime * 1000L;
 
     /* ================= Queries ================= */
 
-    public PendingChallenge getChallengeFor(UUID playerId) {
+    public DuelChallenge getChallengeFor(UUID playerId) {
         return challenges.get(playerId);
     }
 
@@ -53,7 +56,7 @@ public class DuelChallengeManager {
         }
         long now = System.currentTimeMillis();
         UUID id = UUID.randomUUID();
-        PendingChallenge pc = new PendingChallenge(
+        DuelChallenge pc = new DuelChallenge(
                 id,
                 challenger.getUUID(), opponent.getUUID(),
                 challenger.getGameProfile().getName(), opponent.getGameProfile().getName(),
@@ -67,7 +70,7 @@ public class DuelChallengeManager {
     }
 
     public boolean cancelChallenge(UUID id) {
-        PendingChallenge pc = challenges.remove(id);
+        DuelChallenge pc = challenges.remove(id);
         if (pc == null) return false;
         removeChallengeIdForPlayer(pc.challengerId, id);
         removeChallengeIdForPlayer(pc.opponentId, id);
@@ -78,7 +81,7 @@ public class DuelChallengeManager {
         var ids = new HashSet<>(challengesByPlayer.getOrDefault(challengerId, Collections.emptySet()));
         int removed = 0;
         for (UUID id : ids) {
-            PendingChallenge pc = challenges.get(id);
+            DuelChallenge pc = challenges.get(id);
             if (pc != null && pc.challengerId.equals(challengerId)) {
                 if (cancelChallenge(id)) removed++;
             }
@@ -90,7 +93,7 @@ public class DuelChallengeManager {
         var ids = new HashSet<>(challengesByPlayer.getOrDefault(opponentId, Collections.emptySet()));
         int removed = 0;
         for (UUID id : ids) {
-            PendingChallenge pc = challenges.get(id);
+            DuelChallenge pc = challenges.get(id);
             if (pc != null && pc.opponentId.equals(opponentId)) {
                 if (cancelChallenge(id)) removed++;
             }
@@ -113,13 +116,13 @@ public class DuelChallengeManager {
     /* ================= Accept ================= */
 
     public DuelManager.AcceptResult acceptLatestFor(ServerPlayer accepter, MinecraftServer server, RandomSource random) {
-        Optional<PendingChallenge> opt = getLatestIncomingFor(accepter.getUUID());
+        Optional<DuelChallenge> opt = getLatestIncomingFor(accepter.getUUID());
         if (opt.isEmpty()) return DuelManager.AcceptResult.noSuchChallenge();
         return acceptById(opt.get().id, accepter, server, random);
     }
 
     public DuelManager.AcceptResult acceptById(UUID challengeId, ServerPlayer accepter, MinecraftServer server, RandomSource random) {
-        PendingChallenge pc = challenges.get(challengeId);
+        DuelChallenge pc = challenges.get(challengeId);
         if (pc == null) return DuelManager.AcceptResult.noSuchChallenge();
         if (!pc.opponentId.equals(accepter.getUUID())) return DuelManager.AcceptResult.notYourChallenge();
         if (isPlayerInDuel(pc.challengerId) || isPlayerInDuel(pc.opponentId)) {

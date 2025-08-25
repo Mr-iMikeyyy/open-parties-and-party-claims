@@ -16,14 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.madmike.opapc.duel.data;
+package com.madmike.opapc.duel;
 
 import com.madmike.opapc.OPAPCConfig;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
-public final class PendingChallenge {
+public final class DuelChallenge {
     public final UUID id;
     public final UUID challengerId;
     public final UUID opponentId;
@@ -34,12 +34,12 @@ public final class PendingChallenge {
     public final long createdAtMs;
     public final long expiresAtMs;
 
-    public PendingChallenge(UUID id,
-                            UUID challengerId, UUID opponentId,
-                            String challengerName, String opponentName,
-                            @Nullable String desiredMapName,
-                            long wager,
-                            long createdAtMs, long expiresAtMs) {
+    public DuelChallenge(UUID id,
+                         UUID challengerId, UUID opponentId,
+                         String challengerName, String opponentName,
+                         @Nullable String desiredMapName,
+                         long wager,
+                         long createdAtMs, long expiresAtMs) {
         this.id = id;
         this.challengerId = challengerId;
         this.opponentId = opponentId;

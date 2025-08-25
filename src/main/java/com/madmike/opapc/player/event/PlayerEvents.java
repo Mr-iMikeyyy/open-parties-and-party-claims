@@ -67,7 +67,7 @@ public class PlayerEvents {
                         .getClaim(playerParty.getId());
 
                 if (claim != null && claim.getWarpPos() != null) {
-                    SafeWarpHelper.warpPlayer(player, claim.getWarpPos());
+                    SafeWarpHelper.warpPlayerToOverworldPos(player, claim.getWarpPos());
                 } else {
                     SafeWarpHelper.warpPlayerToWorldSpawn(player);
                 }

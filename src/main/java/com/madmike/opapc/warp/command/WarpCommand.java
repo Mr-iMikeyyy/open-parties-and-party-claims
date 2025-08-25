@@ -346,7 +346,7 @@ public class WarpCommand {
                             War war = WarManager.INSTANCE.findWarByParty(party);
                             if (war != null) {
                                 if (war.getData().getDefenderIds().contains(player.getUUID())) {
-                                    SafeWarpHelper.warpPlayer(player, war.getData().getDefendingClaim().getWarpPos());
+                                    SafeWarpHelper.warpPlayerToOverworldPos(player, war.getData().getDefendingClaim().getWarpPos());
                                     return 1;
                                 }
                                 else {

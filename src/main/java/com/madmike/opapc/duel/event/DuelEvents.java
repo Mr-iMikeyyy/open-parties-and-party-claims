@@ -18,22 +18,54 @@
 
 package com.madmike.opapc.duel.event;
 
+import com.madmike.opapc.OPAPC;
+import com.madmike.opapc.OPAPCComponents;
+import com.madmike.opapc.duel.DuelChallengeManager;
 import com.madmike.opapc.duel.DuelManager;
+import com.madmike.opapc.duel.components.player.InDuelComponent;
+import com.madmike.opapc.partyclaim.data.PartyClaim;
+import com.madmike.opapc.util.SafeWarpHelper;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.level.ServerPlayer;
+import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 
 public class DuelEvents {
     public static void register() {
         ServerLivingEntityEvents.ALLOW_DEATH.register((entity, damageSource, amount) -> {
 
             if (entity instanceof ServerPlayer player) {
-                if (DuelManager.INSTANCE.isDuelOngoing()) {
+                if (OPAPCComponents.IN_DUEL.get(player).isInDuel()) {
                     return DuelManager.INSTANCE.handlePlayerDeath(player);
                 }
             }
 
             return true;
 
+        });
+
+        ServerPlayConnectionEvents.JOIN.register((listener, sd, sv) -> {
+            ServerPlayer player = listener.getPlayer();
+            InDuelComponent comp = OPAPCComponents.IN_DUEL.get(player);
+            if (comp.isInDuel()) {
+                IServerPartyAPI party = OPAPC.getPartyManager().getPartyByMember(listener.getPlayer().getUUID());
+                if ( party != null) {
+                    PartyClaim pc = OPAPCComponents.PARTY_CLAIMS.get(sv.getScoreboard()).getClaim(party.getId());
+                    if (pc != null && pc.getWarpPos() != null) {
+                        SafeWarpHelper.warpPlayerToOverworldPos(player, pc.getWarpPos());
+                    }
+                } else if (player.getRespawnPosition() != null) {
+                    SafeWarpHelper.warpPlayerToOverworldPos(player, player.getRespawnPosition());
+                } else {
+                    SafeWarpHelper.warpPlayerToWorldSpawn(player);
+                }
+                comp.setInDuel(false);
+            }
+        });
+
+        ServerPlayConnectionEvents.DISCONNECT.register((d, ds) -> {
+            DuelManager.INSTANCE.handlePlayerQuit(d.getPlayer());
+            DuelChallengeManager.INSTANCE.handlePlayerQuit(d.getPlayer());
         });
     }
 }
