@@ -36,7 +36,7 @@ public class WarData {
     private final IServerPartyAPI attackingParty;
     private final IServerPartyAPI defendingParty;
 
-    private final List<UUID> attackerIds;
+    private List<UUID> attackerIds;
     private final List<UUID> defenderIds;
 
     private final String attackingPartyName;
@@ -51,12 +51,11 @@ public class WarData {
     private final boolean wipe;
 
     private long startTime;
+    private boolean isExpired;
     private BlockPos warBlockPosition;
-    private boolean warp;
-    private int attackerLivesRemaining;
     private int warBlocksLeft;
 
-    public WarData(IServerPartyAPI attackingParty, IServerPartyAPI defendingParty, PartyClaim defendingClaim, PartyClaim attackingClaim, boolean warp) {
+    public WarData(IServerPartyAPI attackingParty, IServerPartyAPI defendingParty, PartyClaim defendingClaim, PartyClaim attackingClaim) {
         this.attackingParty = attackingParty;
         this.defendingParty = defendingParty;
 
@@ -72,11 +71,9 @@ public class WarData {
 
         int defenderCount = this.defenderIds.size();
 
-        this.attackerLivesRemaining = defenderCount * 3;
         this.durationSeconds = defenderCount * 3 * 60;
         this.durationMilli = this.durationSeconds * 1000L;
-        this.warp = warp;
-        if (this.defendingClaim.getClaimedChunksList().size() < warBlocksLeft) {
+        if (this.defendingClaim.getClaimedChunksList().size() < defenderCount * 3) {
             this.wipe = true;
             this.warBlocksLeft = this.defendingClaim.getClaimedChunksList().size();
         }
@@ -84,6 +81,8 @@ public class WarData {
             this.wipe = false;
             this.warBlocksLeft = defenderCount * 3;
         }
+
+        this.isExpired = false;
     }
 
     // --- Core Getters ---
@@ -91,15 +90,13 @@ public class WarData {
     public IServerPartyAPI getDefendingParty() { return defendingParty; }
     public String getAttackingPartyName() { return attackingPartyName; }
     public String getDefendingPartyName() { return defendingPartyName; }
-    public List<UUID> getAttackerIds() {return attackerIds; }
-    public List<UUID> getDefenderIds() {return defenderIds; }
+    public List<UUID> getAttackerIds() { return attackerIds; }
+    public List<UUID> getDefenderIds() { return defenderIds; }
     public PartyClaim getDefendingClaim() { return defendingClaim; }
     public PartyClaim getAttackingClaim() { return attackingClaim; }
-    public int getAttackerLivesRemaining() { return attackerLivesRemaining; }
     public int getWarBlocksLeft() { return warBlocksLeft; }
     public int getDurationSeconds() { return durationSeconds; }
-    public long getDurationMilli() {return durationMilli; }
-    public boolean getWarp() { return warp; }
+    public long getDurationMilli() { return durationMilli; }
     public boolean getWipe() { return wipe; }
     public BlockPos getWarBlockPosition() { return warBlockPosition; }
 
@@ -113,10 +110,7 @@ public class WarData {
     }
 
     public boolean isExpired() {
-        if (startTime <= 0) {
-            return false; // war hasn't started yet
-        }
-        return System.currentTimeMillis() - startTime >= durationMilli;
+        return isExpired;
     }
 
     // --- Tracking ---
@@ -129,11 +123,11 @@ public class WarData {
     }
 
     // --- Setters / Mutators ---
-    public void setWarp(boolean warp) { this.warp = warp; }
     public void setWarBlockPosition(BlockPos newPos) { this.warBlockPosition = newPos; }
     public void setStartTime(long startTime) { this.startTime = startTime; }
-    public void decrementAttackerLivesRemaining() { attackerLivesRemaining--; }
     public void decrementWarBlocksLeft() { warBlocksLeft--; }
+    public void removeAttacker(UUID id) { attackerIds.remove(id); }
+    public void setIsExpired(boolean t) { this.isExpired = t; }
 
     // --- Messaging ---
     public void broadcastToAttackers(Component msg) {
@@ -160,17 +154,16 @@ public class WarData {
         MutableComponent info = Component.literal("§6--- War Info ---\n")
                 .append(Component.literal("§eAttacking Party: §c" + attackingPartyName + "\n"))
                 .append(Component.literal("§eDefending Party: §a" + defendingPartyName + "\n"))
-                .append(Component.literal("§eAttacker Lives: §c" + attackerLivesRemaining + "\n"))
                 .append(Component.literal("§eWar Blocks: §c" + warBlocksLeft + "\n"))
                 .append(Component.literal("§eDuration: §7" + (durationSeconds / 60) + " min\n"))
                 .append(Component.literal("§eTime Remaining: §a"
                         + (remainingSeconds / 60) + " min "
                         + (remainingSeconds % 60) + " sec\n"))
-                .append(Component.literal("§eWarp Enabled: §b" + (warp ? "Yes" : "No") + "\n"))
+                .append(Component.literal("§eAttackers Remaining: §c" + attackerIds.size()))
                 .append(Component.literal("§eClaim Wipe Possible: §c" + (wipe ? "Yes!" : "No") +"\n\n"));
 
         // List attackers
-        PlayerNameComponent pnc = OPAPCComponents.PLAYER_NAMES.get(OPAPC.getServer().getScoreboard());
+        PlayerNameComponent pnc = OPAPCComponents.PLAYER_NAMES.get(OPAPC.scoreboard());
         info.append(Component.literal("§cAttackers (" + attackerIds.size() + "):\n"));
         for (UUID id : attackerIds) {
             info.append(Component.literal(" §7- §c" + pnc.getPlayerNameById(id) + "\n"));

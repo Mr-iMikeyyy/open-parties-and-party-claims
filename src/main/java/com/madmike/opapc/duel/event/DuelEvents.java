@@ -20,12 +20,14 @@ package com.madmike.opapc.duel.event;
 
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCComponents;
+import com.madmike.opapc.OPAPCConfig;
 import com.madmike.opapc.duel.DuelChallengeManager;
 import com.madmike.opapc.duel.DuelManager;
 import com.madmike.opapc.duel.components.player.InDuelComponent;
 import com.madmike.opapc.partyclaim.data.PartyClaim;
 import com.madmike.opapc.util.SafeWarpHelper;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.level.ServerPlayer;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
@@ -66,6 +68,10 @@ public class DuelEvents {
         ServerPlayConnectionEvents.DISCONNECT.register((d, ds) -> {
             DuelManager.INSTANCE.handlePlayerQuit(d.getPlayer());
             DuelChallengeManager.INSTANCE.handlePlayerQuit(d.getPlayer());
+        });
+
+        ServerLifecycleEvents.SERVER_STARTED.register((s) -> {
+            OPAPCComponents.DUEL_BANNED_ITEMS.get(s.getScoreboard()).setAll(OPAPCConfig.duelBannedItemsRaw, OPAPCConfig.duelBannedItemTagsRaw, OPAPCConfig.allowBlockPlacementInDuel);
         });
     }
 }

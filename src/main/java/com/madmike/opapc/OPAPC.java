@@ -39,6 +39,8 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.scores.Scoreboard;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import xaero.pac.common.server.api.OpenPACServerAPI;
@@ -52,21 +54,28 @@ public class OPAPC implements ModInitializer {
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
 	private static MinecraftServer server;
-	private static IPartyManagerAPI partyManager;
-	private static IServerClaimsManagerAPI claimsManager;
-	private static IPlayerConfigManagerAPI playerConfigs;
 
-	public static MinecraftServer getServer() {
+	public static @Nullable MinecraftServer getServer() { return server; }
+
+	public static MinecraftServer requireServer() {
+		if (server == null) throw new IllegalStateException("Server not available yet");
 		return server;
 	}
-	public static IPartyManagerAPI getPartyManager() {
-		return partyManager;
+
+	public static Scoreboard scoreboard() {
+		return requireServer().getScoreboard();
 	}
-	public static IServerClaimsManagerAPI getClaimsManager() {
-		return claimsManager;
+
+	public static IPartyManagerAPI parties() {
+		return OpenPACServerAPI.get(requireServer()).getPartyManager();
 	}
-	public static IPlayerConfigManagerAPI getPlayerConfigs() {
-		return playerConfigs;
+
+	public static IServerClaimsManagerAPI claims() {
+		return OpenPACServerAPI.get(requireServer()).getServerClaimsManager();
+	}
+
+	public static IPlayerConfigManagerAPI playerConfigs() {
+		return OpenPACServerAPI.get(requireServer()).getPlayerConfigs();
 	}
 
 	@Override
@@ -76,17 +85,11 @@ public class OPAPC implements ModInitializer {
 		// Register to capture the server on start
 		ServerLifecycleEvents.SERVER_STARTED.register(s -> {
 			server = s;
-			partyManager = OpenPACServerAPI.get(server).getPartyManager();
-			claimsManager = OpenPACServerAPI.get(server).getServerClaimsManager();
-			playerConfigs = OpenPACServerAPI.get(server).getPlayerConfigs();
 		});
 
 		// Clear reference when the server stops to avoid leaks
 		ServerLifecycleEvents.SERVER_STOPPED.register(s -> {
 			server = null;
-			partyManager = null;
-			claimsManager = null;
-			playerConfigs = null;
 		});
 
 		//Load Config

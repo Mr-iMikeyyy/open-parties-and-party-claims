@@ -18,11 +18,16 @@
 
 package com.madmike.opapc.duel;
 
+import com.madmike.opapc.OPAPC;
+import com.madmike.opapc.OPAPCComponents;
+import com.madmike.opapc.OPAPCConfig;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.event.player.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 
 public class DuelClientEvents {
@@ -31,17 +36,29 @@ public class DuelClientEvents {
         // Right-click in air (items like pearls, food, potions, bows)
         UseItemCallback.EVENT.register((player, world, hand) -> {
             ItemStack stack = player.getItemInHand(hand);
-            if (world.isClientSide && DuelStatus.inDuel(player) && DuelRules.isBlockedInDuel(stack)) {
+            if (world.isClientSide
+                    && OPAPCComponents.IN_DUEL.get(player).isInDuel()
+                    && OPAPCComponents.DUEL_BANNED_ITEMS.get(world.getScoreboard()).isBlocked(stack)) {
+
                 player.displayClientMessage(Component.literal("Can't use this during a duel."), true);
-                return TypedActionResult.fail(stack); // cancels client-side and stops packet
+                return InteractionResultHolder.fail(stack);   // ✅ cancel client-side; no packet
             }
-            return TypedActionResult.pass(stack);
+            return InteractionResultHolder.pass(stack);
         });
 
         // Right-click on block (buckets, flint & steel on blocks, doors, etc.)
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
             ItemStack stack = player.getItemInHand(hand);
-            if (world.isClientSide && DuelStatus.inDuel(player) && DuelRules.isBlockedInDuel(stack)) {
+
+            // 🚫 NEW: block placement while in a duel
+            if (OPAPCComponents.IN_DUEL.get(player).isInDuel()
+                    && stack.getItem() instanceof BlockItem
+                    && OPAPCComponents.DUEL_BANNED_ITEMS.get(world.getScoreboard()).isBlockPlacementDisabled()) {
+                player.displayClientMessage(Component.literal("Can't place blocks during a duel."), true);
+                return InteractionResult.FAIL; // cancel client-side; prevents place packet
+            }
+
+            if (world.isClientSide && OPAPCComponents.IN_DUEL.get(player).isInDuel() && OPAPCComponents.DUEL_BANNED_ITEMS.get(world.getScoreboard()).isBlocked(stack)) {
                 return InteractionResult.FAIL;
             }
             return InteractionResult.PASS;
@@ -50,7 +67,7 @@ public class DuelClientEvents {
         // Right-click on entity (name tags, buckets on mobs, leads)
         UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
             ItemStack stack = player.getItemInHand(hand);
-            if (world.isClientSide && DuelStatus.inDuel(player) && DuelRules.isBlockedInDuel(stack)) {
+            if (world.isClientSide && OPAPCComponents.IN_DUEL.get(player).isInDuel() && OPAPCComponents.DUEL_BANNED_ITEMS.get(world.getScoreboard()).isBlocked(stack)) {
                 return InteractionResult.FAIL;
             }
             return InteractionResult.PASS;
@@ -58,12 +75,12 @@ public class DuelClientEvents {
 
         // Optional: block breaking/attacking during duel (if you want)
         AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
-            if (world.isClientSide && DuelStatus.inDuel(player)) return InteractionResult.FAIL;
+            if (world.isClientSide && OPAPCComponents.IN_DUEL.get(player).isInDuel()) return InteractionResult.FAIL;
             return InteractionResult.PASS;
         });
         AttackEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
             // If you *don't* want to stop melee, delete this handler.
-            if (world.isClientSide && DuelStatus.inDuel(player) && DuelRules.isBlockedInDuel(player.getItemInHand(hand))) {
+            if (world.isClientSide && OPAPCComponents.IN_DUEL.get(player).isInDuel() && OPAPCComponents.DUEL_BANNED_ITEMS.get(world.getScoreboard()).isBlocked(player.getItemInHand(hand))) {
                 return InteractionResult.FAIL;
             }
             return InteractionResult.PASS;
@@ -71,12 +88,11 @@ public class DuelClientEvents {
 
         // Safety net: stop continuous use (bows, shields, food if it somehow started)
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            Minecraft mc = client;
-            if (mc.player == null || !mc.level.isClientSide) return;
-            if (DuelStatus.inDuel(mc.player) && mc.player.isUsingItem()) {
-                ItemStack using = mc.player.getUseItem();
-                if (DuelRules.isBlockedInDuel(using)) {
-                    mc.player.stopUsingItem(); // halts charging/eating if it slipped through
+            if (client.player == null || !client.level.isClientSide) return;
+            if (OPAPCComponents.IN_DUEL.get(client.player).isInDuel() && client.player.isUsingItem()) {
+                ItemStack using = client.player.getUseItem();
+                if (OPAPCComponents.DUEL_BANNED_ITEMS.get(client.level.getScoreboard()).isBlocked(using)) {
+                    client.player.stopUsingItem(); // halts charging/eating if it slipped through
                 }
             }
         });

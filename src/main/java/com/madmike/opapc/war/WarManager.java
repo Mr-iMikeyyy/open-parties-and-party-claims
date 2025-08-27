@@ -19,6 +19,7 @@
 package com.madmike.opapc.war;
 
 import com.madmike.opapc.partyclaim.data.PartyClaim;
+import com.madmike.opapc.util.SafeWarpHelper;
 import com.madmike.opapc.war.data.WarData;
 import com.madmike.opapc.war.event.bus.WarEventBus;
 import com.madmike.opapc.war.event.events.WarDeclaredEvent;
@@ -40,11 +41,14 @@ public class WarManager {
         return activeWars;
     }
 
-    public void declareWar(IServerPartyAPI attackingParty, IServerPartyAPI defendingParty, PartyClaim attackingClaim, PartyClaim defendingClaim, boolean warp) {
-        WarData data = new WarData(attackingParty, defendingParty, attackingClaim, defendingClaim, warp);
+    public void declareWar(IServerPartyAPI attackingParty, IServerPartyAPI defendingParty, PartyClaim attackingClaim, PartyClaim defendingClaim, BlockPos ownersPos) {
+        WarData data = new WarData(attackingParty, defendingParty, attackingClaim, defendingClaim);
         War war = new War(data);  // starts in PreparingState
         activeWars.add(war);
         WarEventBus.post(new WarDeclaredEvent(war));
+        for (ServerPlayer player : attackingParty.getOnlineMemberStream().toList()) {
+            SafeWarpHelper.warpPlayerToOverworldPos(player, ownersPos);
+        }
     }
 
     public void tickAll() {
@@ -53,7 +57,7 @@ public class WarManager {
             War war = it.next();
             war.tick();
 
-            if (war.getState() instanceof WarEndedState) {
+            if (war.getData().isExpired()) {
                 it.remove();
             }
         }

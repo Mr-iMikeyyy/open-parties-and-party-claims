@@ -62,43 +62,6 @@ public class WarEvents {
 
             //--- WAR STARTED ---
             if (event instanceof WarStartedEvent started) {
-                WarData data = started.getWar().getData();
-
-                BlockPos safeBlockSpawnPos = WarBlockSpawner.findSafeSpawn(data);
-                if (safeBlockSpawnPos != null) {
-                    WarBlockSpawner.spawnWarBlock(safeBlockSpawnPos);
-                }
-                else {
-                    started.getWar().getState().end(started.getWar(), EndOfWarType.BUG);
-                }
-
-                if (data.getWarp()) {
-                    for (ServerPlayer player : data.getAttackingPlayers()) {
-                        BlockPos spawnPos = SafeWarpHelper.findSafeSpawnOutsideClaim(data.getDefendingClaim());
-                        if (spawnPos != null) {
-                            SafeWarpHelper.warpPlayerToOverworldPos(player, spawnPos);
-                        }
-                        else {
-                            started.getWar().getState().end(started.getWar(), EndOfWarType.BUG);
-                        }
-                    }
-                }
-
-
-                data.broadcastToWar(Component.literal("The War Has Commenced!"));
-
-                //Apply Buffs
-                int attackerCount = data.getAttackingPlayers().size();
-                int defenderCount = data.getDefendingPlayers().size();
-                if (defenderCount == attackerCount) return;
-
-                int amp = Math.abs(attackerCount - defenderCount);
-                List<ServerPlayer> buffTargets = defenderCount < attackerCount ? data.getDefendingPlayers() : data.getAttackingPlayers();
-
-                for (ServerPlayer player : buffTargets) {
-                    player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, data.getDurationSeconds(), amp, true, true));
-                    player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, data.getDurationSeconds(), amp, true, true));
-                }
 
             }
 
@@ -108,36 +71,9 @@ public class WarEvents {
                 EndOfWarType type = ended.getEndType();
 
                 // Always restore protections
-                OPAPC.getPlayerConfigs()
+                OPAPC.playerConfigs()
                         .getLoadedConfig(data.getDefendingParty().getOwner().getUUID())
                         .getUsedSubConfig().tryToSet(PlayerConfigOptions.PROTECT_CLAIMED_CHUNKS, true);
-
-                // Only teleport attackers if NOT a wipe without warp
-                boolean shouldTeleportAttackers = !(type == EndOfWarType.ATTACKERS_WIN_WIPE && !data.getWarp());
-
-                if (shouldTeleportAttackers) {
-                    if (data.getWarp()) {
-                        for (ServerPlayer player : data.getAttackingPlayers()) {
-                            BlockPos warpPos = data.getAttackingClaim().getWarpPos();
-                            if (warpPos != null) {
-                                SafeWarpHelper.warpPlayerToOverworldPos(player, warpPos);
-                            } else {
-                                BlockPos sharedPos = OPAPC.getServer().overworld().getSharedSpawnPos();
-                                SafeWarpHelper.warpPlayerToOverworldPos(player, sharedPos);
-                            }
-                        }
-                    } else {
-                        for (ServerPlayer player : data.getAttackingPlayers()) {
-                            BlockPos safePos = SafeWarpHelper.findSafeSpawnOutsideClaim(data.getDefendingClaim());
-                            if (safePos != null) {
-                                SafeWarpHelper.warpPlayerToOverworldPos(player, safePos);
-                            } else {
-                                BlockPos sharedPos = OPAPC.getServer().overworld().getSharedSpawnPos();
-                                SafeWarpHelper.warpPlayerToOverworldPos(player, sharedPos);
-                            }
-                        }
-                    }
-                }
 
                 PartyClaim defendingClaim = data.getDefendingClaim();
                 PartyClaim attackingClaim = data.getAttackingClaim();
@@ -189,18 +125,10 @@ public class WarEvents {
                 }
 
                 if (type != EndOfWarType.BUG) {
-                    result.append(Component.literal("§eAttacker Lives Remaining: §c" + data.getAttackerLivesRemaining() + "\n"))
+                    result.append(Component.literal("§eAttacker Lives Remaining: §c" + data.getAttackersLeftToKill().size() + "\n"))
                             .append(Component.literal("§eWar Blocks Remaining: §c" + data.getWarBlocksLeft() + "\n"))
                             .append(Component.literal("§eDuration: §7" + (data.getDurationSeconds() / 60) + " min\n"))
-                            .append(Component.literal("§eClaim Wipe Possible: §c" + (data.getDefendingClaim().getClaimedChunksList().isEmpty() ? "Yes" : "No") + "\n\n"))
-                            .append(Component.literal("§cAttackers: " + data.getAttackingPlayers().size() + "\n"));
-                    for (ServerPlayer attacker : data.getAttackingPlayers()) {
-                        result.append(Component.literal(" §7- §c" + attacker.getName().getString() + "\n"));
-                    }
-                    result.append(Component.literal("§aDefenders: " + data.getDefendingPlayers().size() + "\n"));
-                    for (ServerPlayer defender : data.getDefendingPlayers()) {
-                        result.append(Component.literal(" §7- §a" + defender.getName().getString() + "\n"));
-                    }
+                            .append(Component.literal("§eClaim Wipe Possible: §c" + (data.getDefendingClaim().getClaimedChunksList().isEmpty() ? "Yes" : "No") + "\n\n"));
                 }
 
                 msg = result;
@@ -217,12 +145,11 @@ public class WarEvents {
         //Cancel death and inform WarManager if player died while in war
         ServerLivingEntityEvents.ALLOW_DEATH.register((entity, damageSource, amount) -> {
 
-            //Checks if entity that died is a player
             if (entity instanceof ServerPlayer player) {
-                WarManager wm = WarManager.INSTANCE;
-                War war = wm.findWarByPlayer(player);
+                War war = WarManager.INSTANCE.findWarByPlayer(player);
                 if (war != null) {
-                    wm.handlePlayerDeath(player, war);
+                    WarManager.INSTANCE.handlePlayerDeath(player, war);
+                    //Disallow Death
                     return false;
                 }
             }
@@ -241,7 +168,7 @@ public class WarEvents {
             ServerPlayer player = handler.player;
             UUID uuid = player.getUUID();
 
-            var party = OPAPC.getPartyManager().getPartyByMember(uuid);
+            var party = OPAPC.parties().getPartyByMember(uuid);
             if (party == null) return;
 
             WarManager wm = WarManager.INSTANCE;
@@ -252,7 +179,7 @@ public class WarEvents {
 
             War warByParty = wm.findWarByParty(party);
             if (warByParty != null) {
-                player.connection.disconnect(Component.literal("Your party is currently engaged in a war that you were not at the start of. You cannot join right now."));
+                player.connection.disconnect(Component.literal("Your party is currently engaged in a war. You cannot join right now."));
             }
         });
     }

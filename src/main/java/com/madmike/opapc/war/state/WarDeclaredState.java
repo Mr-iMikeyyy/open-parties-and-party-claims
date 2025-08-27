@@ -19,8 +19,10 @@
 package com.madmike.opapc.war.state;
 
 import com.madmike.opapc.OPAPCConfig;
+import com.madmike.opapc.util.SafeWarpHelper;
 import com.madmike.opapc.war.EndOfWarType;
 import com.madmike.opapc.war.War;
+import com.madmike.opapc.war.data.WarData;
 import com.madmike.opapc.war.event.bus.WarEventBus;
 import com.madmike.opapc.war.event.events.WarEndedEvent;
 import com.madmike.opapc.war.event.events.WarStartedEvent;
@@ -29,12 +31,14 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
 public class WarDeclaredState implements IWarState {
-    private final long declareTime;
-    private final long warPreparationPeriodSeconds;
+    private long declareTime;
+    private long warPreparationPeriodSeconds;
 
-    public WarDeclaredState() {
+
+    @Override
+    public void enter(War war) {
         this.declareTime = System.currentTimeMillis();
-        this.warPreparationPeriodSeconds = OPAPCConfig.warPreparationPeriodSeconds * 1000L;
+        this.warPreparationPeriodSeconds = OPAPCConfig.warPreparationSeconds * 1000L;
     }
 
     @Override
@@ -56,12 +60,12 @@ public class WarDeclaredState implements IWarState {
 
     @Override
     public void onAttackerDeath(ServerPlayer player, War war) {
-
+        player.setHealth(player.getMaxHealth());
     }
 
     @Override
     public void onDefenderDeath(ServerPlayer player, War war) {
-
+        player.setHealth(player.getMaxHealth());
     }
 
     @Override

@@ -24,9 +24,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 
 public interface IWarState {
+    void enter(War war);
     void tick(War war);
     void onAttackerDeath(ServerPlayer player, War war);
     void onDefenderDeath(ServerPlayer player, War war);
     void onWarBlockBroken(BlockPos pos, War war);
+    void onDefenderQuit(ServerPlayer player, War war);
+    void onAttackerQuit(ServerPlayer player, War war);
     void end(War war, EndOfWarType type);
 }

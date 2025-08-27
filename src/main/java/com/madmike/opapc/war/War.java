@@ -40,6 +40,7 @@ public class War {
 
     public void setState(IWarState state) {
         this.state = state;
+        this.state.enter(this);
     }
 
     public WarData getData() {

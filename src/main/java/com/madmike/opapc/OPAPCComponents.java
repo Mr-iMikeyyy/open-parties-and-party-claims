@@ -19,6 +19,7 @@
 package com.madmike.opapc;
 
 import com.madmike.opapc.duel.components.player.InDuelComponent;
+import com.madmike.opapc.duel.components.scoreboard.DuelBannedItemsComponent;
 import com.madmike.opapc.duel.components.scoreboard.DuelMapsComponent;
 import com.madmike.opapc.partyclaim.components.player.PartyRejoinCooldownComponent;
 import com.madmike.opapc.player.name.PlayerNameComponent;
@@ -77,6 +78,9 @@ public class OPAPCComponents implements ScoreboardComponentInitializer, EntityCo
     public static final ComponentKey<PlayerNameComponent> PLAYER_NAMES =
             ComponentRegistryV3.INSTANCE.getOrCreate(new ResourceLocation(OPAPC.MOD_ID, "player_names"), PlayerNameComponent.class);
 
+    public static final ComponentKey<DuelBannedItemsComponent> DUEL_BANNED_ITEMS =
+            ComponentRegistryV3.INSTANCE.getOrCreate(new ResourceLocation(OPAPC.MOD_ID, "duel_banned_items"), DuelBannedItemsComponent.class);
+
 
 
     @Override
@@ -96,5 +100,6 @@ public class OPAPCComponents implements ScoreboardComponentInitializer, EntityCo
         registry.registerScoreboardComponent(OFFLINE_SALES, OfflineSalesComponent::new);
         registry.registerScoreboardComponent(SELLERS, SellersComponent::new);
         registry.registerScoreboardComponent(PLAYER_NAMES, PlayerNameComponent::new);
+        registry.registerScoreboardComponent(DUEL_BANNED_ITEMS, DuelBannedItemsComponent::new);
     }
 }

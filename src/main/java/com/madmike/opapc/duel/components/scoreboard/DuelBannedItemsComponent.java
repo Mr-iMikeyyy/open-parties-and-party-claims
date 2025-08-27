@@ -25,8 +25,10 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.scores.Scoreboard;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashSet;
@@ -46,6 +48,18 @@ public final class DuelBannedItemsComponent implements ComponentV3, AutoSyncedCo
 
     // Resolved cache (fast lookup). Not persisted—rebuilt from ids.
     private final Set<Item> resolvedItems = new HashSet<>();
+
+    // Server-toggled duel rule (synced to clients)
+    private boolean blockPlacementDisabled = true; // default: disallow block placement during duels
+
+    // Provider
+    private MinecraftServer server;
+    private Scoreboard sb;
+
+    public DuelBannedItemsComponent(Scoreboard sb, MinecraftServer sv) {
+        this.server = sv;
+        this.sb = sb;
+    }
 
     /* ---------------- Public API ---------------- */
 
@@ -101,6 +115,18 @@ public final class DuelBannedItemsComponent implements ComponentV3, AutoSyncedCo
             }
         }
         return false;
+    }
+
+    //server Only
+    public void setBlockPlacementDisabled(boolean disabled) {
+        if (this.blockPlacementDisabled != disabled) {
+            this.blockPlacementDisabled = disabled;
+        }
+    }
+
+    /** Client/server read. */
+    public boolean isBlockPlacementDisabled() {
+        return blockPlacementDisabled;
     }
 
     /* ---------------- Internal ---------------- */

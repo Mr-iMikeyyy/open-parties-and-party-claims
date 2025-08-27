@@ -45,11 +45,14 @@ public class OPAPCConfig {
     public static boolean shouldBroadcastWarDeclarationsServerWide;
     public static boolean shouldBroadcastWarResultsToServer;
     public static int warInsuranceDurationDays;
+    public static int warPreparationSeconds;
+    public static int warEndingDurationSeconds;
     public static int raidInsuranceDurationDays;
     public static int duelMaxTime;
     public static int duelMaxLives;
     public static int duelChallengeMaxTime;
     public static List<String> duelBannedItemsRaw;
+    public static List<String> duelBannedItemTagsRaw;
     public static List<String> restartTimesRaw;
     public static List<LocalTime> restartTimes = new ArrayList<>();
     public static String restartTimezoneRaw;
@@ -95,6 +98,12 @@ public class OPAPCConfig {
         config.setComment("warInsuranceDurationDays", "How long (in days) insurance lasts for wars, insurance for wars only given after losing a war");
         warInsuranceDurationDays = config.getOrElse("warInsuranceDurationDays", 3);
 
+        config.setComment("warPreparationSeconds", "How long (in seconds) the teams get to prepare after a war is declared");
+        warPreparationSeconds = config.getOrElse("warPreparationSeconds", 10);
+
+        config.setComment("warEndingDurationSeconds", "How long (in seconds) the teams get to retreat before being teleported back to their claims if left in the defending claim.");
+        warEndingDurationSeconds = config.getOrElse("warEndingDurationSeconds", 10);
+
         config.setComment("duelMaxLives", "How many lives should each player get in a duel");
         duelMaxLives = config.getOrElse("duelMaxLives", 3);
 
@@ -105,10 +114,13 @@ public class OPAPCConfig {
         duelChallengeMaxTime = config.getOrElse("duelChallengeMaxTime", 30);
 
         config.setComment("duelBannedItems",
-                "Extra banned items for duels (in addition to the tag, if duelUseTag=true). " +
-                        "List of item IDs like \"minecraft:ender_pearl\".");
-        duelBannedItemsRaw = config.getOrElse("duelBannedItems",
-                List.of("minecraft:ender_pearl", "minecraft:chorus_fruit"));
+                "Ban these specific items during duels. Item IDs like \"minecraft:ender_pearl\".");
+        duelBannedItemsRaw = config.getOrElse("duelBannedItems", List.of());
+
+        config.setComment("duelBannedItemTags",
+                "Ban ALL items that are members of these item tags (e.g. \"minecraft:logs\", \"fabric:tools\"). " +
+                        "Leave empty to disable tag-based blocking.");
+        duelBannedItemTagsRaw = config.getOrElse("duelBannedItemTags", List.of());
 
         config.setComment("restartTimes", "List of daily server restart times in HH:mm format (e.g., \"04:00\", \"12:00\", \"20:00\"). The mod will block wars and duels 30 min before these times.");
         restartTimesRaw = config.getOrElse("restartTimes", List.of());

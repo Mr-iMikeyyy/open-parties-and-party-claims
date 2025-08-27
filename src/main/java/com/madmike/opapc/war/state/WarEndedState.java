@@ -18,10 +18,13 @@
 
 package com.madmike.opapc.war.state;
 
+import com.madmike.opapc.util.SafeWarpHelper;
 import com.madmike.opapc.war.EndOfWarType;
 import com.madmike.opapc.war.War;
+import com.madmike.opapc.war.data.WarData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.ChunkPos;
 
 public class WarEndedState implements IWarState {
     private final EndOfWarType endType;
@@ -31,8 +34,45 @@ public class WarEndedState implements IWarState {
     }
 
     @Override
-    public void tick(War war) {
+    public void enter(War war) {
+        WarData data = war.getData();
+        switch (endType) {
+            case ATTACKERS_WIN_WIPE -> {
+                data.getAttackingClaim().incrementWarAttacksWon();
+            }
+
+            case ATTACKERS_WIN_BLOCKS -> {
+                data.getAttackingClaim().incrementWarAttacksWon();
+                data.getDefendingClaim().incrementWarDefencesLost();
+            }
+
+            case ATTACKERS_LOSE_DEATHS, ATTACKERS_LOSE_TIME -> {
+                data.getDefendingClaim().incrementWarDefencesWon();
+                data.getAttackingClaim().incrementWarAttacksLost();
+            }
+
+            case BUG -> {
+
+            }
+        }
+
+        for (ServerPlayer player : data.getAttackingParty().getOnlineMemberStream().toList()) {
+            if (data.getDefendingClaim().getClaimedChunksList().contains(new ChunkPos(player.blockPosition()))) {
+                BlockPos warpPos = data.getDefendingClaim().getWarpPos();
+                if (warpPos != null) {
+                    SafeWarpHelper.warpPlayerToOverworldPos(player, warpPos);
+                }
+                else {
+                    SafeWarpHelper.warpPlayerToWorldSpawn(player);
+                }
+            }
+        }
+
+        data.setIsExpired(true);
     }
+
+    @Override
+    public void tick(War war) { }
 
     @Override
     public void onAttackerDeath(ServerPlayer player, War war) { }
@@ -44,7 +84,5 @@ public class WarEndedState implements IWarState {
     public void onWarBlockBroken(BlockPos pos, War war) { }
 
     @Override
-    public void end(War war, EndOfWarType type) {
-        // already ended
-    }
+    public void end(War war, EndOfWarType type) { }
 }
