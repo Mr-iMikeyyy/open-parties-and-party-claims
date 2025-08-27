@@ -69,7 +69,15 @@ public class WarDeclaredState implements IWarState {
     }
 
     @Override
-    public void onWarBlockBroken(BlockPos pos, War war) {
+    public void onWarBlockBroken(BlockPos pos, War war) { }
+
+    @Override
+    public void onDefenderQuit(ServerPlayer player, War war) {
+
+    }
+
+    @Override
+    public void onAttackerQuit(ServerPlayer player, War war) {
 
     }
 

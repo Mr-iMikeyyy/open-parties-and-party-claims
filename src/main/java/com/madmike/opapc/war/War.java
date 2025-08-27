@@ -59,6 +59,10 @@ public class War {
         state.onDefenderDeath(player, this);
     }
 
+    public void onAttackerQuit(ServerPlayer player) { state.onAttackerQuit(player, this);}
+
+    public void onDefenderQuit(ServerPlayer player) { state.onDefenderQuit(player, this);}
+
     public void onBlockBroken(BlockPos pos) {
         state.onWarBlockBroken(pos, this);
     }

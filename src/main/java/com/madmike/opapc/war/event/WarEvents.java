@@ -163,7 +163,7 @@ public class WarEvents {
             WarManager.INSTANCE.tickAll();
         });
 
-        // If player's party is in war on join, then kick if not part of the war
+        // If player's party is in war on join
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             ServerPlayer player = handler.player;
             UUID uuid = player.getUUID();
@@ -172,14 +172,19 @@ public class WarEvents {
             if (party == null) return;
 
             WarManager wm = WarManager.INSTANCE;
-            War warByPlayer = wm.findWarByPlayer(player);
-            if (warByPlayer != null) {
-                return;
-            }
 
             War warByParty = wm.findWarByParty(party);
             if (warByParty != null) {
                 player.connection.disconnect(Component.literal("Your party is currently engaged in a war. You cannot join right now."));
+            }
+        });
+
+        ServerPlayConnectionEvents.DISCONNECT.register((t, w) -> {
+            ServerPlayer
+            War war = WarManager.INSTANCE.findWarByPlayer(t.getPlayer());
+            if (war != null) {
+                WarData data = war.getData();
+                if (data.getAttackerIds().contains(pla))
             }
         });
     }
