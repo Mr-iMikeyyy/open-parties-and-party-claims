@@ -28,6 +28,7 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -38,6 +39,8 @@ public class WarData {
 
     private List<UUID> attackerIds;
     private final List<UUID> defenderIds;
+
+    private List<UUID> mercenaryIds;
 
     private final String attackingPartyName;
     private final String defendingPartyName;
@@ -61,6 +64,8 @@ public class WarData {
 
         this.attackerIds = attackingParty.getOnlineMemberStream().map(ServerPlayer::getUUID).toList();
         this.defenderIds = defendingParty.getOnlineMemberStream().map(ServerPlayer::getUUID).toList();
+
+        this.mercenaryIds = new ArrayList<>();
 
         this.attackingPartyName = attackingClaim.getPartyName();
 
@@ -115,7 +120,8 @@ public class WarData {
 
     // --- Tracking ---
     public boolean isPlayerParticipant(ServerPlayer player) {
-        return attackerIds.contains(player.getUUID()) || defenderIds.contains(player.getUUID());
+        UUID id = player.getUUID();
+        return attackerIds.contains(id) || defenderIds.contains(id) || mercenaryIds.contains(id);
     }
 
     public boolean isPartyParticipant(IServerPartyAPI party) {

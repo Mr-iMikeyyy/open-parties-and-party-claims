@@ -174,11 +174,10 @@ public class WarEvents {
         });
 
         ServerPlayConnectionEvents.DISCONNECT.register((t, w) -> {
-            ServerPlayer
+            ServerPlayer player = t.getPlayer();
             War war = WarManager.INSTANCE.findWarByPlayer(t.getPlayer());
             if (war != null) {
-                WarData data = war.getData();
-                if (data.getAttackerIds().contains(pla))
+                war.onPlayerQuit(player);
             }
         });
     }

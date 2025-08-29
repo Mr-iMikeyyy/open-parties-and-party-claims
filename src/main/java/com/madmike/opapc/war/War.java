@@ -51,17 +51,9 @@ public class War {
         state.tick(this);
     }
 
-    public void onAttackerDeath(ServerPlayer player) {
-        state.onAttackerDeath(player, this);
-    }
+    public void onPlayerDeath(ServerPlayer player) { state.onPlayerDeath(player, this); }
 
-    public void onDefenderDeath(ServerPlayer player) {
-        state.onDefenderDeath(player, this);
-    }
-
-    public void onAttackerQuit(ServerPlayer player) { state.onAttackerQuit(player, this);}
-
-    public void onDefenderQuit(ServerPlayer player) { state.onDefenderQuit(player, this);}
+    public void onPlayerQuit(ServerPlayer player) { state.onPlayerQuit(player, this); }
 
     public void onBlockBroken(BlockPos pos) {
         state.onWarBlockBroken(pos, this);
