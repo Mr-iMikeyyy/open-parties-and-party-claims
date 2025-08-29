@@ -55,8 +55,6 @@ public class TradeEvents {
                 // Remove sales
                 component.clearSales(playerId);
             }
-
-            OPAPCComponents.SELLERS.get(server.getScoreboard()).updateSellerNameIfChanged(playerId, player.getGameProfile().getName());
         });
     }
 }
