@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.madmike.opapc.trade.packets;
+package com.madmike.opapc.trade.net;
 
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -24,8 +24,8 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
-import static com.madmike.opapc.trade.packets.TradePacketIds.REBUILD_TABS;
-import static com.madmike.opapc.trade.packets.TradePacketIds.REFRESH_TRADE_SCREEN;
+import static com.madmike.opapc.trade.net.packets.TradePacketIds.REBUILD_TABS;
+import static com.madmike.opapc.trade.net.packets.TradePacketIds.REFRESH_TRADE_SCREEN;
 
 public class TradeScreenRefreshS2CSender {
 

@@ -21,7 +21,7 @@ package com.madmike.opapc.player.event;
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCComponents;
 import com.madmike.opapc.partyclaim.data.PartyClaim;
-import com.madmike.opapc.util.SafeWarpHelper;
+import com.madmike.opapc.warp.util.SafeWarpHelper;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
@@ -77,7 +77,7 @@ public class PlayerEvents {
                     SafeWarpHelper.warpPlayerToWorldSpawn(player);
                 }
             }
-            
+
         });
     }
 }

@@ -16,9 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.madmike.opapc.trade.packets;
+package com.madmike.opapc.trade.net;
 
 import com.madmike.opapc.OPAPCComponents;
+import com.madmike.opapc.trade.net.packets.TradePacketIds;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 
 import java.util.UUID;

@@ -44,59 +44,63 @@ public class OfflineSalesComponent implements Component {
     @Override
     public void readFromNbt(CompoundTag tag) {
         offlineSales.clear();
-        ListTag list = tag.getList("OfflineSales", Tag.TAG_COMPOUND);
-        for (int i = 0; i < list.size(); i++) {
-            CompoundTag saleTag = list.getCompound(i);
-            OfflineSale sale = OfflineSale.fromNbt(saleTag);
-            offlineSales.computeIfAbsent(sale.sellerID(), k -> new ArrayList<>()).add(sale);
+
+        if (tag.contains("OfflineSales", Tag.TAG_COMPOUND)) {
+            CompoundTag salesTag = tag.getCompound("OfflineSales");
+            for (String key : salesTag.getAllKeys()) {
+                try {
+                    UUID id = UUID.fromString(key);
+                    ListTag saleList = salesTag.getList(key, Tag.TAG_COMPOUND);
+
+                    List<OfflineSale> parsed = new ArrayList<>();
+                    for (int i = 0; i < saleList.size(); i++) {
+                        parsed.add(OfflineSale.fromNbt(saleList.getCompound(i)));
+                    }
+                    if (!parsed.isEmpty()) {
+                        offlineSales.put(id, parsed);
+                    }
+                } catch (IllegalArgumentException ignored) {
+                    // skip invalid UUID keys
+                }
+            }
         }
     }
 
     @Override
     public void writeToNbt(CompoundTag tag) {
-        ListTag list = new ListTag();
-        for (List<OfflineSale> sales : offlineSales.values()) {
-            for (OfflineSale sale : sales) {
-                list.add(sale.toNbt());
+        CompoundTag salesTag = new CompoundTag();
+        for (Map.Entry<UUID, List<OfflineSale>> entry : offlineSales.entrySet()) {
+            ListTag saleList = new ListTag();
+            for (OfflineSale sale : entry.getValue()) {
+                saleList.add(sale.toNbt());
             }
+            salesTag.put(entry.getKey().toString(), saleList);
         }
-        tag.put("OfflineSales", list);
+        tag.put("OfflineSales", salesTag);
     }
 
-    /**
-     * Add a new offline sale for the player.
-     */
+    /* ---------------- Public API ---------------- */
+
     public void addSale(UUID sellerID, long profit) {
-        OfflineSale sale = new OfflineSale(sellerID, profit);
-        offlineSales.computeIfAbsent(sellerID, k -> new ArrayList<>()).add(sale);
+        offlineSales
+                .computeIfAbsent(sellerID, k -> new ArrayList<>())
+                .add(new OfflineSale(profit));
     }
 
-    /**
-     * Get all offline sales for a specific player.
-     */
     public List<OfflineSale> getSales(UUID sellerID) {
         return offlineSales.getOrDefault(sellerID, Collections.emptyList());
     }
 
-    /**
-     * Check if the player has any offline sales.
-     */
     public boolean hasSales(UUID sellerID) {
         return offlineSales.containsKey(sellerID);
     }
 
-    /**
-     * Clear all offline sales for the player and sync.
-     */
     public void clearSales(UUID sellerID) {
         if (offlineSales.remove(sellerID) != null) {
             OPAPCComponents.OFFLINE_SALES.sync(scoreboard);
         }
     }
 
-    /**
-     * Return the entire offline sales map for persistence or advanced queries.
-     */
     public Map<UUID, List<OfflineSale>> getAllOfflineSales() {
         return offlineSales;
     }

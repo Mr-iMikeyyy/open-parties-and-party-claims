@@ -21,9 +21,7 @@ package com.madmike.opapc.warp.command;
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCComponents;
 import com.madmike.opapc.partyclaim.data.PartyClaim;
-import com.madmike.opapc.raid.RaidManager;
-import com.madmike.opapc.raid.data.RaidData;
-import com.madmike.opapc.util.SafeWarpHelper;
+import com.madmike.opapc.warp.util.SafeWarpHelper;
 import com.madmike.opapc.war.War;
 import com.madmike.opapc.war.WarManager;
 import com.madmike.opapc.war.data.WarData;
@@ -85,7 +83,7 @@ public class WarpCommand {
                         //Ensure no party
                         ServerPlayer player = ctx.getPlayer();
                         if (player != null) {
-                            return OPAPC.getPartyManager().getPartyByMember(player.getUUID()) == null;
+                            return OPAPC.parties().getPartyByMember(player.getUUID()) == null;
                         }
                         return false;
                     })
@@ -115,12 +113,6 @@ public class WarpCommand {
                         //Ensure not on cooldown
                         if (OPAPCComponents.WARP_COOLDOWN.get(player).hasCooldown()) {
                             player.sendSystemMessage(Component.literal("You are on cooldown from teleporting. Please wait " + OPAPCComponents.WARP_COOLDOWN.get(player).getFormattedRemainingTime() + "."));
-                            return 0;
-                        }
-
-                        //Check if in raid
-                        if (RaidManager.INSTANCE.isPlayerInRaid(player.getUUID())) {
-                            player.sendSystemMessage(Component.literal("You cannot use /home while in a raid!"));
                             return 0;
                         }
 
@@ -159,7 +151,7 @@ public class WarpCommand {
                     .requires(ctx -> {
                         ServerPlayer player = ctx.getPlayer();
                         if (player != null) {
-                            return OPAPC.getPartyManager().getPartyByMember(player.getUUID()) == null;
+                            return OPAPC.parties().getPartyByMember(player.getUUID()) == null;
                         }
                         return false;
                     })
@@ -177,11 +169,11 @@ public class WarpCommand {
                                 //Check if player
                                 if (player == null) return 0;
 
-                                IServerPartyAPI party = OPAPC.getPartyManager().getPartyByMember(player.getUUID());
+                                IServerPartyAPI party = OPAPC.parties().getPartyByMember(player.getUUID());
 
                                 //Ensure not in party
                                 if (party != null) {
-                                    player.sendSystemMessage(Component.literal("Only players without a party have access to the /home command."));
+                                    player.sendSystemMessage(Component.literal("Only players without a party can use the ambush command."));
                                     return 0;
                                 }
 
@@ -197,33 +189,29 @@ public class WarpCommand {
                                     return 0;
                                 }
 
-                                //Check if in raid
-                                if (RaidManager.INSTANCE.playerIsInRaid(player.getUUID())) {
-                                    player.sendSystemMessage(Component.literal("You can't warp while in a raid."));
-                                    return 0;
-                                }
-
                                 //All Checks passed, warp player outside party claim
+
+                                player.sendSystemMessage(Component.literal("Finding a safe spot to teleport..."));
+
                                 String chosenPartyName = ctx.getArgument("party", String.class);
-                                for (Map.Entry<UUID, PartyClaim> claim : OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard()).getAllClaims().entrySet()) {
-                                    if (claim.getValue().getPartyName().equalsIgnoreCase(chosenPartyName)) {
+                                for (PartyClaim claim : OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard()).getAllClaims()) {
+                                    if (claim.getPartyName().equalsIgnoreCase(chosenPartyName)) {
 
-                                        List<ChunkPos> claimedChunks = claim.getValue().getClaimedChunksList();
+                                        // Run async lookup
+                                        SafeWarpHelper.findAmbushSpotAsync(claim, false).thenAccept(pos -> {
+                                            if (pos == null) {
+                                                OPAPC.getServer().execute(() -> {
+                                                    player.sendSystemMessage(Component.literal("No safe teleport spot found. Warp cancelled."));
+                                                });
+                                                return;
+                                            }
 
-                                        Random rand = new Random();
-                                        ChunkPos randomChunk = claimedChunks.get(rand.nextInt(claimedChunks.size()));
-
-                                        int direction = rand.nextInt(4);
-                                        boolean goodChunkNotFound = true;
-
-
-                                        switch (direction) {
-                                            case 0:
-                                                while (goodChunkNotFound) {
-                                                    
-                                                }
-                                        }
-                                        break;
+                                            // Found a position
+                                            OPAPC.getServer().execute(() -> {
+                                                // Countdown messages
+                                                countdownAndTeleport(player, pos);
+                                            });
+                                        });
                                     }
                                 }
 

@@ -20,7 +20,6 @@ package com.madmike.opapc;
 
 import com.madmike.opapc.bounty.events.BountyEvents;
 import com.madmike.opapc.duel.DuelBannedItems;
-import com.madmike.opapc.duel.components.scoreboard.DuelBannedItemsComponent;
 import com.madmike.opapc.duel.event.DuelEvents;
 import com.madmike.opapc.partyclaim.command.PartyClaimCommand;
 import com.madmike.opapc.player.event.PlayerEvents;
@@ -29,7 +28,7 @@ import com.madmike.opapc.raid.events.RaidEvents;
 import com.madmike.opapc.trade.events.TradeEvents;
 import com.madmike.opapc.war.event.WarEvents;
 import com.madmike.opapc.war.features.WarFeatures;
-import com.madmike.opapc.trade.packets.TradeServerReceiver;
+import com.madmike.opapc.trade.net.TradeServerReceiver;
 import com.madmike.opapc.war.command.WarCommand;
 import com.madmike.opapc.warp.command.WarpCommand;
 import com.madmike.opapc.warp.events.WarpEvents;

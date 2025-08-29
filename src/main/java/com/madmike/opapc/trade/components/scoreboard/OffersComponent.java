@@ -22,7 +22,7 @@ import com.glisco.numismaticoverhaul.ModComponents;
 import com.glisco.numismaticoverhaul.currency.CurrencyComponent;
 import com.madmike.opapc.OPAPCComponents;
 import com.madmike.opapc.trade.data.Offer;
-import com.madmike.opapc.trade.packets.TradeScreenRefreshS2CSender;
+import com.madmike.opapc.trade.net.TradeScreenRefreshS2CSender;
 import dev.onyxstudios.cca.api.v3.component.sync.AutoSyncedComponent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.ChatFormatting;

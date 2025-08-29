@@ -22,8 +22,8 @@ import com.madmike.opapc.trade.gui.TradingScreen;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.screens.Screen;
 
-import static com.madmike.opapc.trade.packets.TradePacketIds.REBUILD_TABS;
-import static com.madmike.opapc.trade.packets.TradePacketIds.REFRESH_TRADE_SCREEN;
+import static com.madmike.opapc.trade.net.packets.TradePacketIds.REBUILD_TABS;
+import static com.madmike.opapc.trade.net.packets.TradePacketIds.REFRESH_TRADE_SCREEN;
 
 public class TradingClientReceiver {
     public static void register() {

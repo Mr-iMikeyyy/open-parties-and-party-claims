@@ -16,16 +16,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.madmike.opapc.raid.data;
+package com.madmike.opapc.trade.net.packets;
 
-import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
+import com.madmike.opapc.OPAPC;
+import net.minecraft.resources.ResourceLocation;
 
-public class RaidData {
-    private final long startTime;
-    private final IServerPartyAPI defendingParty;
+public class TradePacketIds {
 
-    public RaidData(IServerPartyAPI defendingParty) {
-        this.startTime = System.currentTimeMillis();
-        this.defendingParty = defendingParty;
-    }
+    public static final ResourceLocation REMOVE_OFFER = new ResourceLocation(OPAPC.MOD_ID, "remove_offer");
+    public static final ResourceLocation BUY_OFFER = new ResourceLocation(OPAPC.MOD_ID, "buy_offer");
+
+    public static final ResourceLocation REFRESH_TRADE_SCREEN = new ResourceLocation(OPAPC.MOD_ID, "refresh_trades");
+    public static final ResourceLocation REBUILD_TABS = new ResourceLocation(OPAPC.MOD_ID, "rebuild_tabs");
 }

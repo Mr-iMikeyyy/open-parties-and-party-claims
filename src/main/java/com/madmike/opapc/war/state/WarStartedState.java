@@ -21,7 +21,7 @@ package com.madmike.opapc.war.state;
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCComponents;
 import com.madmike.opapc.partyclaim.data.PartyClaim;
-import com.madmike.opapc.util.SafeWarpHelper;
+import com.madmike.opapc.warp.util.SafeWarpHelper;
 import com.madmike.opapc.war.EndOfWarType;
 import com.madmike.opapc.war.War;
 import com.madmike.opapc.war.data.WarData;

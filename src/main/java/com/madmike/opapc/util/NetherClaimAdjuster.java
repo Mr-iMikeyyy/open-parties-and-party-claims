@@ -37,7 +37,7 @@ public class NetherClaimAdjuster {
         ResourceLocation netherId = Level.NETHER.location();
 
         List<ChunkPos> overworldClaims = new ArrayList<>();
-        OPAPC.getClaimsManager().getPlayerInfo(playerId)
+        OPAPC.claims().getPlayerInfo(playerId)
                 .getDimension(Level.OVERWORLD.location())
                 .getStream()
                 .forEach(e -> e.getStream().forEach(overworldClaims::add));
@@ -50,7 +50,7 @@ public class NetherClaimAdjuster {
             netherChunksToClaim.add(new ChunkPos(netherX, netherZ));
         }
         List<ChunkPos> netherClaims = new ArrayList<>();
-        var dimensionClaims = OPAPC.getClaimsManager().getPlayerInfo(playerId).getDimension(Level.NETHER.location());
+        var dimensionClaims = OPAPC.claims().getPlayerInfo(playerId).getDimension(Level.NETHER.location());
         if (dimensionClaims != null) {
             dimensionClaims.getStream().forEach(e -> e.getStream().forEach(netherClaims::add));
         }
@@ -61,7 +61,7 @@ public class NetherClaimAdjuster {
         if (overworldClaims.isEmpty()) {
             if (!netherClaims.isEmpty()) {
                 for (ChunkPos pos : netherClaims) {
-                    OPAPC.getClaimsManager().tryToUnclaim(netherId, playerId, pos.x, pos.z, pos.x, pos.z, false);
+                    OPAPC.claims().tryToUnclaim(netherId, playerId, pos.x, pos.z, pos.x, pos.z, false);
                 }
             }
             return;
@@ -70,14 +70,14 @@ public class NetherClaimAdjuster {
         // Add missing nether claims
         for (ChunkPos chunk : netherChunksToClaim) {
             if (!currentNetherClaimsSet.contains(chunk)) {
-                OPAPC.getClaimsManager().tryToClaim(netherId, playerId, 0, chunk.x, chunk.z, chunk.x, chunk.z, false);
+                OPAPC.claims().tryToClaim(netherId, playerId, 0, chunk.x, chunk.z, chunk.x, chunk.z, false);
             }
         }
 
         // Remove stale nether claims
         for (ChunkPos chunk : currentNetherClaimsSet) {
             if (!netherChunksToClaim.contains(chunk)) {
-                OPAPC.getClaimsManager().tryToUnclaim(netherId, playerId, chunk.x, chunk.z, chunk.x, chunk.z, false);
+                OPAPC.claims().tryToUnclaim(netherId, playerId, chunk.x, chunk.z, chunk.x, chunk.z, false);
             }
         }
     }

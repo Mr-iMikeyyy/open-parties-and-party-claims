@@ -33,8 +33,8 @@ public class PartyLookup {
      * Find a party by its name (case-insensitive).
      */
     public static IServerPartyAPI findByName(String inputName) {
-        IPartyManagerAPI pm = OPAPC.getPartyManager();
-        IPlayerConfigManagerAPI cm = OPAPC.getPlayerConfigs();
+        IPartyManagerAPI pm = OPAPC.parties();
+        IPlayerConfigManagerAPI cm = OPAPC.playerConfigs();
 
         return pm.getAllStream()
                 .filter(party -> {
@@ -52,13 +52,13 @@ public class PartyLookup {
      * Get the party owned by the given player or null if none exist.
      */
     public static IServerPartyAPI getOwnerParty(ServerPlayer player) {
-        return OPAPC.getPartyManager().getPartyByOwner(player.getUUID());
+        return OPAPC.parties().getPartyByOwner(player.getUUID());
     }
 
     /**
      * Get the party a player is currently a member of.
      */
     public static IServerPartyAPI getMemberParty(ServerPlayer player) {
-        return OPAPC.getPartyManager().getPartyByMember(player.getUUID());
+        return OPAPC.parties().getPartyByMember(player.getUUID());
     }
 }

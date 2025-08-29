@@ -27,7 +27,7 @@ import com.madmike.opapc.duel.state.DuelChallengedState;
 import com.madmike.opapc.duel.state.duel.DuelEndedState;
 import com.madmike.opapc.duel.state.duel.DuelStartedState;
 import com.madmike.opapc.duel.state.duel.IDuelState;
-import com.madmike.opapc.util.SafeWarpHelper;
+import com.madmike.opapc.warp.util.SafeWarpHelper;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;

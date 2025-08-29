@@ -21,7 +21,6 @@ package com.madmike.opapc.war.event;
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCConfig;
 import com.madmike.opapc.partyclaim.data.PartyClaim;
-import com.madmike.opapc.util.SafeWarpHelper;
 import com.madmike.opapc.war.EndOfWarType;
 import com.madmike.opapc.war.War;
 import com.madmike.opapc.war.WarManager;
@@ -30,19 +29,14 @@ import com.madmike.opapc.war.event.bus.WarEventBus;
 import com.madmike.opapc.war.event.events.WarDeclaredEvent;
 import com.madmike.opapc.war.event.events.WarEndedEvent;
 import com.madmike.opapc.war.event.events.WarStartedEvent;
-import com.madmike.opapc.war.features.block.WarBlockSpawner;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
 import xaero.pac.common.server.player.config.api.PlayerConfigOptions;
 
-import java.util.List;
 import java.util.UUID;
 
 public class WarEvents {
