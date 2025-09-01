@@ -41,9 +41,6 @@ public class PlayerEvents {
                     .get(server.getScoreboard())
                     .addOrSet(player);
 
-            // Only care about overworld spawns
-            if (!player.level().dimension().equals(Level.OVERWORLD)) return;
-
             IPlayerChunkClaimAPI spawnClaim =
                     OPAPC.claims().get(Level.OVERWORLD.location(), player.chunkPosition());
 

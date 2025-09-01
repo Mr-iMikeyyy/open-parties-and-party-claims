@@ -55,7 +55,7 @@ public class War {
 
     public void onPlayerQuit(ServerPlayer player) { state.onPlayerQuit(player, this); }
 
-    public void onBlockBroken(BlockPos pos) {
+    public void onWarBlockBroken(BlockPos pos) {
         state.onWarBlockBroken(pos, this);
     }
 

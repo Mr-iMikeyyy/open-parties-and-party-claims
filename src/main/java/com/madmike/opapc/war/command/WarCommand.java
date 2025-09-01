@@ -29,8 +29,6 @@ import com.madmike.opapc.war.War;
 import com.madmike.opapc.war.WarManager;
 import com.madmike.opapc.war.command.util.WarProximity;
 import com.madmike.opapc.war.command.util.WarSuggestionProvider;
-import com.madmike.opapc.war.data.WarData;
-import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -60,6 +58,8 @@ public class WarCommand {
                             §6====== War Command Help ======
                             
                             §e/war declare <party> §7- Declare war on a party
+                            §e/war join §7- Join your party's war
+                            §e/war join <party> §7- Join an ally's war
                             §e/war info §7- View your current war status
                             §e/war top §7- View top performing war parties
                             §e/war insurance §7- View your claim's insurance info
@@ -162,17 +162,17 @@ public class WarCommand {
                                 }
 
                                 // Check active wars
-                                for (War war : WarManager.INSTANCE.getActiveWars()) {
-                                    WarData data = war.getData();
-                                    if (data.getAttackingParty().getId().equals(attackingParty.getId())
-                                            || data.getDefendingParty().getId().equals(attackingParty.getId())) {
+                                if (WarManager.INSTANCE.isWarActive()) {
+                                    War war = WarManager.INSTANCE.findWarByParty(attackingParty);
+                                    if (war != null) {
                                         return fail(player, "You are already in a war!");
                                     }
-                                    if (data.getDefendingParty().getId().equals(defendingParty.getId())
-                                            || data.getAttackingParty().getId().equals(defendingParty.getId())) {
+                                    war = WarManager.INSTANCE.findWarByParty(defendingParty);
+                                    if (war != null) {
                                         return fail(player, "This party is already in a war!");
                                     }
                                 }
+
 
                                 // Check online defenders
                                 List<ServerPlayer> defenders = defendingParty.getOnlineMemberStream().toList();
@@ -189,6 +189,74 @@ public class WarCommand {
 
                                 WarManager.INSTANCE.declareWar(attackingParty, defendingParty, attackingClaim, defendingClaim, player.blockPosition());
                                 wallet.modify(-cost);
+                                return 1;
+                            })
+                    )
+            );
+            //endregion
+
+            //region Join
+            warCommand.then(literal("join")
+                    .requires(ctx -> ctx.getPlayer() != null)
+                    .executes(ctx -> {
+                        ServerPlayer player = ctx.getSource().getPlayer();
+                        if (player == null) return fail(ctx, "Must be a player to use this command.");
+
+                        if (OPAPCComponents.IN_DUEL.get(player).isInDuel())
+                            return fail(player, "You cannot join a war while in a duel.");
+
+                        // Find player's party
+                        IServerPartyAPI myParty = OPAPC.parties().getPartyByMember(player.getUUID());
+                        if (myParty == null)
+                            return fail(player, "You must be in a party to join a war.");
+
+                        // Find war involving your party
+                        War war = WarManager.INSTANCE.findWarByParty(myParty);
+                        if (war == null)
+                            return fail(player, "Your party is not currently in a war.");
+
+                        // Try join on the correct side based on party membership
+                        boolean ok = WarManager.INSTANCE.tryJoin(war, player, myParty, null);
+                        if (!ok) return fail(player, "Unable to join the war right now.");
+
+                        player.sendSystemMessage(Component.literal("§aJoined your party's war."));
+                        return 1;
+                    })
+                    .then(argument("ally", StringArgumentType.string())
+                            .suggests(WarSuggestionProvider::suggestAlliesInWar) // <-- implement or replace with your own
+                            .requires(ctx -> ctx.getPlayer() != null)
+                            .executes(ctx -> {
+                                ServerPlayer player = ctx.getSource().getPlayer();
+                                if (player == null) return fail(ctx, "Must be a player to use this command.");
+
+                                if (OPAPCComponents.IN_DUEL.get(player).isInDuel())
+                                    return fail(player, "You cannot join a war while in a duel.");
+
+                                // Your party:
+                                IServerPartyAPI myParty = OPAPC.parties().getPartyByMember(player.getUUID());
+                                if (myParty == null)
+                                    return fail(player, "You must be in a party to join an ally's war.");
+
+                                // Target ally party name -> party
+                                String allyName = StringArgumentType.getString(ctx, "ally");
+                                IServerPartyAPI allyParty = PartyLookup.findByName(allyName);
+                                if (allyParty == null)
+                                    return fail(player, "No party with that name was found.");
+
+                                // You must actually be allies
+                                if (!myParty.isAlly(allyParty.getId()))
+                                    return fail(player, "Your party is not allied with that party.");
+
+                                // Find war that ally is participating in
+                                War war = WarManager.INSTANCE.findWarByParty(allyParty);
+                                if (war == null)
+                                    return fail(player, "That ally is not currently in a war.");
+
+                                // Join on the ally's side
+                                boolean ok = WarManager.INSTANCE.tryJoin(war, player, myParty, allyParty);
+                                if (!ok) return fail(player, "Unable to join your ally's war right now.");
+
+                                player.sendSystemMessage(Component.literal("§aJoined your ally's war on their side."));
                                 return 1;
                             })
                     )

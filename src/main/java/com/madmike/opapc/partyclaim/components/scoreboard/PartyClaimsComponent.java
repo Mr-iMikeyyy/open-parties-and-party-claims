@@ -20,6 +20,7 @@ package com.madmike.opapc.partyclaim.components.scoreboard;
 
 import com.madmike.opapc.partyclaim.data.PartyClaim;
 import dev.onyxstudios.cca.api.v3.component.ComponentV3;
+import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -32,7 +33,6 @@ import java.util.*;
 public class PartyClaimsComponent implements ComponentV3 {
     private final Scoreboard provider;
     private final MinecraftServer server;
-
     private final Map<UUID, PartyClaim> partyClaims = new HashMap<>();
 
     public PartyClaimsComponent(Scoreboard scoreboard, MinecraftServer server) {
@@ -45,14 +45,13 @@ public class PartyClaimsComponent implements ComponentV3 {
         partyClaims.clear();
         ListTag claimsList = nbt.getList("PartyClaims", Tag.TAG_COMPOUND);
 
-        for (Tag element : claimsList) {
-            CompoundTag claimTag = (CompoundTag) element;
+        for (int i = 0; i < claimsList.size(); i++) {
+            CompoundTag claimTag = claimsList.getCompound(i);
             if (!claimTag.hasUUID("PartyId")) continue;
 
-            UUID partyId = claimTag.getUUID("PartyId");
-            PartyClaim claim = new PartyClaim(partyId);
-            claim.readFromNbt(claimTag);
-            partyClaims.put(partyId, claim);
+            PartyClaim claim = PartyClaim.fromNbt(claimTag, server);
+            claim.normalize(server); // guarantees non-null warpPos etc.
+            partyClaims.put(claim.getPartyId(), claim);
         }
     }
 
@@ -60,26 +59,18 @@ public class PartyClaimsComponent implements ComponentV3 {
     public void writeToNbt(@NotNull CompoundTag nbt) {
         ListTag claimsList = new ListTag();
         for (PartyClaim claim : partyClaims.values()) {
-            CompoundTag claimTag = claim.writeToNbt();
-            claimTag.putUUID("PartyId", claim.getPartyId());
-            claimsList.add(claimTag);
+            claim.normalize(server);
+            claimsList.add(claim.writeToNbt());
         }
         nbt.put("PartyClaims", claimsList);
     }
 
-    public void createClaim(UUID partyId) {
-        partyClaims.putIfAbsent(partyId, new PartyClaim(partyId));
+    /** Create a claim, using the leader’s current position as the warp. */
+    public void createClaim(UUID partyId, BlockPos leadersCurrentPos) {
+        partyClaims.putIfAbsent(partyId, new PartyClaim(partyId, leadersCurrentPos));
     }
 
-    public PartyClaim getClaim(UUID partyId) {
-        return partyClaims.get(partyId);
-    }
-
-    public Collection<PartyClaim> getAllClaims() {
-        return Collections.unmodifiableCollection(partyClaims.values());
-    }
-
-    public void removeClaim(UUID partyId) {
-        partyClaims.remove(partyId);
-    }
+    public PartyClaim getClaim(UUID partyId) { return partyClaims.get(partyId); }
+    public Collection<PartyClaim> getAllClaims() { return Collections.unmodifiableCollection(partyClaims.values()); }
+    public void removeClaim(UUID partyId) { partyClaims.remove(partyId); }
 }

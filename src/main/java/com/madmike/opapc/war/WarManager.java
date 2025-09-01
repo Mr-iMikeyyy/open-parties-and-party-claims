@@ -62,22 +62,17 @@ public class WarManager {
         }
     }
 
-    public void handlePlayerDeath(ServerPlayer player, War war) {
-            WarData data = war.getData();
-            if (data.getAttackerIds().contains(player.getUUID())) {
-                war.onAttackerDeath(player);
+    public void handlePlayerDeath(ServerPlayer player) {
+        for (War war : activeWars) {
+            if (war.isPlayerParticipant(player)) {
+                war.onPlayerDeath(player);
             }
-            else {
-                war.onDefenderDeath(player);
-            }
+        }
     }
 
     public void handleWarBlockBroken(BlockPos pos) {
         for (War war : activeWars) {
-            if (war.getData().getWarBlockPosition().equals(pos)) {
-                war.onBlockBroken(pos);
-                break;
-            }
+            war.onWarBlockBroken(pos);
         }
     }
 
@@ -93,6 +88,15 @@ public class WarManager {
     public War findWarByParty(IServerPartyAPI party) {
         for (War war : activeWars) {
             if (war.isPartyParticipant(party)) {
+                return war;
+            }
+        }
+        return null;
+    }
+
+    public War findWarByWarBlock(BlockPos pos) {
+        for (War war : activeWars) {
+            if (war.getData().getWarBlockPosition().equals(pos)) {
                 return war;
             }
         }

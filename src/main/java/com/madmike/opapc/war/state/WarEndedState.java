@@ -75,13 +75,17 @@ public class WarEndedState implements IWarState {
     public void tick(War war) { }
 
     @Override
-    public void onAttackerDeath(ServerPlayer player, War war) { }
+    public void onPlayerDeath(ServerPlayer player, War war) {
 
-    @Override
-    public void onDefenderDeath(ServerPlayer player, War war) { }
+    }
 
     @Override
     public void onWarBlockBroken(BlockPos pos, War war) { }
+
+    @Override
+    public void onPlayerQuit(ServerPlayer player, War war) {
+
+    }
 
     @Override
     public void end(War war, EndOfWarType type) { }

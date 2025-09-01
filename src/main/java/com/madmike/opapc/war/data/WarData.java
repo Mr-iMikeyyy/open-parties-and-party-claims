@@ -37,10 +37,10 @@ public class WarData {
     private final IServerPartyAPI attackingParty;
     private final IServerPartyAPI defendingParty;
 
-    private List<UUID> attackerIds;
+    private final List<UUID> attackerIds;
     private final List<UUID> defenderIds;
 
-    private List<UUID> mercenaryIds;
+    private List<UUID> killedAttackers;
 
     private final String attackingPartyName;
     private final String defendingPartyName;
@@ -64,8 +64,6 @@ public class WarData {
 
         this.attackerIds = attackingParty.getOnlineMemberStream().map(ServerPlayer::getUUID).toList();
         this.defenderIds = defendingParty.getOnlineMemberStream().map(ServerPlayer::getUUID).toList();
-
-        this.mercenaryIds = new ArrayList<>();
 
         this.attackingPartyName = attackingClaim.getPartyName();
 
@@ -133,6 +131,7 @@ public class WarData {
     public void setStartTime(long startTime) { this.startTime = startTime; }
     public void decrementWarBlocksLeft() { warBlocksLeft--; }
     public void removeAttacker(UUID id) { attackerIds.remove(id); }
+    public void removeMercenary(UUID id) { mercenaryIds.remove(id); }
     public void setIsExpired(boolean t) { this.isExpired = t; }
 
     // --- Messaging ---

@@ -27,6 +27,7 @@ import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import xaero.pac.common.server.player.config.api.PlayerConfigOptions;
@@ -38,190 +39,102 @@ public class PartyClaim {
     private final Map<UUID, Donor> donations = new HashMap<>();
     private UUID partyId;
     private int boughtClaims;
-    private BlockPos warpPos = null;
+    private BlockPos warpPos; // never null after normalize()
     private long lastWarInsuranceTime;
-    private long lastRaidInsuranceTime;
-    private int warDefencesWon;
-    private int warDefencesLost;
-    private int warAttacksLost;
-    private int warAttacksWon;
-    private int claimsLostToWar;
-    private int claimsGainedFromWar;
-    private int raidsWon;
-    private int raidsLost;
+    private int warDefencesWon, warDefencesLost, warAttacksLost, warAttacksWon;
+    private int claimsLostToWar, claimsGainedFromWar;
 
-    public PartyClaim(UUID partyId) {
-        this.partyId = partyId;
-        this.lastWarInsuranceTime = System.currentTimeMillis();
-        this.lastRaidInsuranceTime = System.currentTimeMillis();
+    /* ------------ construction / invariants ------------ */
+
+    public PartyClaim(UUID partyId, BlockPos warpPos) {
+        this.partyId = java.util.Objects.requireNonNull(partyId, "partyId");
+        this.warpPos  = java.util.Objects.requireNonNull(warpPos, "warpPos");
         this.boughtClaims = 1;
-        this.warDefencesWon = 0;
-        this.warAttacksLost = 0;
-        this.warDefencesLost = 0;
-        this.warAttacksWon = 0;
-        this.claimsLostToWar = 0;
-        this.claimsGainedFromWar = 0;
-        this.raidsWon = 0;
-        this.raidsLost = 0;
     }
+
+    /** Ensure invariants after loads or before writes. */
+    public void normalize(MinecraftServer server) {
+        if (this.warpPos == null) {
+            this.warpPos = resolveFallbackWarpInsideClaim(this.partyId, server);
+        }
+        if (this.boughtClaims <= 0) this.boughtClaims = 1;
+        if (this.partyId == null) throw new IllegalStateException("PartyClaim missing partyId");
+    }
+
+    /* ------------ live logic ------------ */
 
     public boolean isWarInsured() {
-        long currentTime = System.currentTimeMillis();
-        long insuranceDurationMillis = OPAPCConfig.warInsuranceDurationDays * 24L * 60 * 60 * 1000;
-        return currentTime - lastWarInsuranceTime <= insuranceDurationMillis;
+        long insuranceDurationMillis = OPAPCConfig.warInsuranceDurationDays * 24L * 60 * 60 * 1000L;
+        return System.currentTimeMillis() - lastWarInsuranceTime <= insuranceDurationMillis;
     }
 
-    public void renewWarInsurance() {
-        this.lastWarInsuranceTime = System.currentTimeMillis();
-    }
-
-    public boolean isRaidInsured() {
-        long currentTime = System.currentTimeMillis();
-        long insuranceDurationMillis = OPAPCConfig.raidInsuranceDurationDays * 24L * 60 * 60 * 1000;
-        return currentTime - lastRaidInsuranceTime <= insuranceDurationMillis;
-    }
-
-    public void renewRaidInsurance() {
-        this.lastRaidInsuranceTime = System.currentTimeMillis();
-    }
+    public void renewWarInsurance() { this.lastWarInsuranceTime = System.currentTimeMillis(); }
 
     public String getPartyName() {
-        return OPAPC.getPlayerConfigs()
-                .getLoadedConfig(OPAPC.getPartyManager()
-                        .getPartyById(partyId)
-                        .getOwner()
-                        .getUUID())
+        return OPAPC.playerConfigs()
+                .getLoadedConfig(OPAPC.parties().getPartyById(partyId).getOwner().getUUID())
                 .getFromEffectiveConfig(PlayerConfigOptions.PARTY_NAME);
     }
+
     public List<ChunkPos> getClaimedChunksList() {
         List<ChunkPos> chunkClaims = new ArrayList<>();
-        OPAPC.getClaimsManager().getPlayerInfo(OPAPC.getPartyManager()
-                        .getPartyById(partyId).getOwner().getUUID())
-                        .getDimension(Level.OVERWORLD.location())
-                        .getStream().forEach(e -> e.getStream()
-                        .forEach(chunkClaims::add));
+        OPAPC.claims().getPlayerInfo(OPAPC.parties().getPartyById(partyId).getOwner().getUUID()).getDimension(Level.OVERWORLD.location()).getStream().forEach(list -> list.getStream().forEach(chunkClaims::add));
         return chunkClaims;
     }
 
-    public void setBoughtClaims(int boughtClaims) {
-        this.boughtClaims = boughtClaims;
-    }
+    /* ------------ getters/setters ------------ */
 
-    public int getBoughtClaims() {
-        return boughtClaims;
-    }
+    public void setBoughtClaims(int boughtClaims) { this.boughtClaims = boughtClaims; }
+    public int getBoughtClaims() { return boughtClaims; }
 
-    public Map<UUID, Donor> getDonations() {
-        return donations;
-    }
-
+    public Map<UUID, Donor> getDonations() { return donations; }
     public void addDonation(UUID playerId, String name, long value) {
         Donor existing = donations.get(playerId);
         long total = value + (existing != null ? existing.amount() : 0);
         donations.put(playerId, new Donor(name, total));
     }
 
-    public BlockPos getWarpPos() {
-        return warpPos;
-    }
+    public BlockPos getWarpPos() { return warpPos; }
 
+    /** never null */
     public void setWarpPos(BlockPos warpPos) {
-        this.warpPos = warpPos;
+        this.warpPos = java.util.Objects.requireNonNull(warpPos, "warpPos");
     }
 
-    public UUID getPartyId() {
-        return partyId;
-    }
+    public UUID getPartyId() { return partyId; }
 
     public boolean chunkContainsWarpPos(ChunkPos chunk) {
         return new ChunkPos(warpPos).equals(chunk);
     }
 
-    // --- Stats Getters, Setters, and Incrementers ---
+    // stats ...
+    public int getWarDefencesWon() { return warDefencesWon; }
+    public void setWarDefencesWon(int v) { warDefencesWon = v; }
+    public void incrementWarDefencesWon() { warDefencesWon++; }
+    public int getWarDefencesLost() { return warDefencesLost; }
+    public void setWarDefencesLost(int v) { warDefencesLost = v; }
+    public void incrementWarDefencesLost() { warDefencesLost++; }
+    public int getWarAttacksLost() { return warAttacksLost; }
+    public void setWarAttacksLost(int v) { warAttacksLost = v; }
+    public void incrementWarAttacksLost() { warAttacksLost++; }
+    public int getWarAttacksWon() { return warAttacksWon; }
+    public void setWarAttacksWon(int v) { warAttacksWon = v; }
+    public void incrementWarAttacksWon() { warAttacksWon++; }
+    public int getClaimsLostToWar() { return claimsLostToWar; }
+    public void setClaimsLostToWar(int v) { claimsLostToWar = v; }
+    public void incrementClaimsLostToWar() { claimsLostToWar++; }
+    public int getClaimsGainedFromWar() { return claimsGainedFromWar; }
+    public void setClaimsGainedFromWar(int v) { claimsGainedFromWar = v; }
+    public void incrementClaimsGainedFromWar() { claimsGainedFromWar++; }
 
-    public int getWarDefencesWon() {
-        return warDefencesWon;
-    }
+    /* ------------ NBT I/O ------------ */
 
-    public void setWarDefencesWon(int warDefencesWon) {
-        this.warDefencesWon = warDefencesWon;
-    }
-
-    public void incrementWarDefencesWon() {
-        this.warDefencesWon++;
-    }
-
-    public int getWarDefencesLost() {
-        return warDefencesLost;
-    }
-
-    public void setWarDefencesLost(int warDefencesLost) {
-        this.warDefencesLost = warDefencesLost;
-    }
-
-    public void incrementWarDefencesLost() {
-        this.warDefencesLost++;
-    }
-
-    public int getWarAttacksLost() {
-        return warAttacksLost;
-    }
-
-    public void setWarAttacksLost(int warAttacksLost) {
-        this.warAttacksLost = warAttacksLost;
-    }
-
-    public void incrementWarAttacksLost() {
-        this.warAttacksLost++;
-    }
-
-    public int getWarAttacksWon() {
-        return warAttacksWon;
-    }
-
-    public void setWarAttacksWon(int warAttacksWon) {
-        this.warAttacksWon = warAttacksWon;
-    }
-
-    public void incrementWarAttacksWon() {
-        this.warAttacksWon++;
-    }
-
-    public int getClaimsLostToWar() {
-        return claimsLostToWar;
-    }
-
-    public void setClaimsLostToWar(int claimsLostToWar) {
-        this.claimsLostToWar = claimsLostToWar;
-    }
-
-    public void incrementClaimsLostToWar() {
-        this.claimsLostToWar++;
-    }
-
-    public int getClaimsGainedFromWar() {
-        return claimsGainedFromWar;
-    }
-
-    public void setClaimsGainedFromWar(int claimsGainedFromWar) {
-        this.claimsGainedFromWar = claimsGainedFromWar;
-    }
-
-    public void incrementClaimsGainedFromWar() {
-        this.claimsGainedFromWar++;
-    }
-
-    // === NBT SERIALIZATION ===
     public CompoundTag writeToNbt() {
         CompoundTag nbt = new CompoundTag();
-
-        // basic fields
         nbt.putUUID("PartyId", partyId);
         nbt.putInt("BoughtClaims", boughtClaims);
         nbt.putLong("LastWarInsuranceTime", lastWarInsuranceTime);
-        nbt.putLong("LastRaidInsuranceTime", lastRaidInsuranceTime);
 
-        // stats
         nbt.putInt("WarDefencesWon", warDefencesWon);
         nbt.putInt("WarDefencesLost", warDefencesLost);
         nbt.putInt("WarAttacksLost", warAttacksLost);
@@ -229,102 +142,77 @@ public class PartyClaim {
         nbt.putInt("ClaimsLostToWar", claimsLostToWar);
         nbt.putInt("ClaimsGainedFromWar", claimsGainedFromWar);
 
-        // teleport position (if set)
-        if (warpPos != null) {
-            nbt.put("WarpPos", NbtUtils.writeBlockPos(warpPos));
-        }
+        nbt.put("WarpPos", NbtUtils.writeBlockPos(warpPos));
 
-        // donations list
         ListTag donorList = new ListTag();
-        for (Map.Entry<UUID, Donor> entry : donations.entrySet()) {
-            donorList.add(entry.getValue().toNbt(entry.getKey()));
+        for (Map.Entry<UUID, Donor> e : donations.entrySet()) {
+            donorList.add(e.getValue().toNbt(e.getKey()));
         }
         nbt.put("Donations", donorList);
-
         return nbt;
     }
 
-    public void readFromNbt(CompoundTag nbt) {
-        // overwrite fields
-        this.partyId = nbt.getUUID("PartyId");
-        this.boughtClaims = nbt.getInt("BoughtClaims");
-        this.lastWarInsuranceTime = nbt.getLong("LastWarInsuranceTime");
-        this.lastRaidInsuranceTime = nbt.getLong("LastRaidInsuranceTime");
+    public static PartyClaim fromNbt(CompoundTag nbt, MinecraftServer server) {
+        UUID partyId = nbt.getUUID("PartyId");
 
-        // stats (with default fallback if missing)
-        this.warDefencesWon = nbt.getInt("DefencesWon");
-        this.warDefencesLost = nbt.getInt("DefencesLost");
-        this.warAttacksLost = nbt.getInt("AttacksLost");
-        this.warAttacksWon = nbt.getInt("AttacksWon");
-        this.claimsLostToWar = nbt.getInt("ClaimsLostToWar");
-        this.claimsGainedFromWar = nbt.getInt("ClaimsGainedFromWar");
-
-        // teleport
+        BlockPos warp;
         if (nbt.contains("WarpPos", Tag.TAG_COMPOUND)) {
-            this.warpPos = NbtUtils.readBlockPos(nbt.getCompound("WarpPos"));
+            warp = NbtUtils.readBlockPos(nbt.getCompound("WarpPos"));
         } else {
-            this.warpPos = null;
+            // old saves: pick something *inside* the claim
+            warp = resolveFallbackWarpInsideClaim(partyId, server);
         }
 
-        //donations
-        this.donations.clear();
-        ListTag donorList = nbt.getList("Donations", Tag.TAG_COMPOUND);
+        PartyClaim claim = new PartyClaim(partyId, warp);
+        claim.boughtClaims = nbt.getInt("BoughtClaims");
+        claim.lastWarInsuranceTime = nbt.getLong("LastWarInsuranceTime");
 
-        for (Tag element : donorList) {
-            CompoundTag donorTag = (CompoundTag) element;
+        // keys match write
+        claim.warDefencesWon = nbt.getInt("WarDefencesWon");
+        claim.warDefencesLost = nbt.getInt("WarDefencesLost");
+        claim.warAttacksLost = nbt.getInt("WarAttacksLost");
+        claim.warAttacksWon = nbt.getInt("WarAttacksWon");
+        claim.claimsLostToWar = nbt.getInt("ClaimsLostToWar");
+        claim.claimsGainedFromWar = nbt.getInt("ClaimsGainedFromWar");
+
+        // donations
+        claim.donations.clear();
+        ListTag donorList = nbt.getList("Donations", Tag.TAG_COMPOUND);
+        for (int i = 0; i < donorList.size(); i++) {
+            CompoundTag donorTag = donorList.getCompound(i);
             UUID playerId = donorTag.getUUID("PlayerId");
             Donor donor = Donor.fromNbt(donorTag);
-            donations.put(playerId, donor);
+            claim.donations.put(playerId, donor);
         }
+
+        claim.normalize(server);
+        return claim;
     }
 
-    public Component getInfo() {
-        MutableComponent info = Component.literal("§6--- Party Claim Info ---\n");
+    /* ------------ UI ------------ */
 
-        // Party name & ID
-        info.append(Component.literal("§eParty: §f" + getPartyName() + "\n"));
-        info.append(Component.literal("§eParty ID: §7" + partyId.toString() + "\n"));
+    public net.minecraft.network.chat.Component getInfo() {
+        var info = net.minecraft.network.chat.Component.literal("§6--- Party Claim Info ---\n")
+                .append(net.minecraft.network.chat.Component.literal("§eParty: §f" + getPartyName() + "\n"))
+                .append(net.minecraft.network.chat.Component.literal("§eParty ID: §7" + partyId + "\n"))
+                .append(net.minecraft.network.chat.Component.literal("§eClaims Bought: §f" + boughtClaims + "\n"))
+                .append(net.minecraft.network.chat.Component.literal("§eChunks Claimed: §f" + getClaimedChunksList().size() + "\n"))
+                .append(net.minecraft.network.chat.Component.literal("§eWarp Position: §f" + warpPos.getX() + ", " + warpPos.getY() + ", " + warpPos.getZ() + "\n"))
+                .append(net.minecraft.network.chat.Component.literal("§eWar Insurance: " + (isWarInsured() ? "§aActive" : "§cExpired") + "\n"))
+                .append(net.minecraft.network.chat.Component.literal("\n§6--- War Stats ---\n"))
+                .append(net.minecraft.network.chat.Component.literal("§eDefences Won: §f" + warDefencesWon + "\n"))
+                .append(net.minecraft.network.chat.Component.literal("§eDefences Lost: §f" + warDefencesLost + "\n"))
+                .append(net.minecraft.network.chat.Component.literal("§eAttacks Won: §f" + warAttacksWon + "\n"))
+                .append(net.minecraft.network.chat.Component.literal("§eAttacks Lost: §f" + warAttacksLost + "\n"))
+                .append(net.minecraft.network.chat.Component.literal("§eClaims Gained: §f" + claimsGainedFromWar + "\n"))
+                .append(net.minecraft.network.chat.Component.literal("§eClaims Lost: §f" + claimsLostToWar + "\n"));
 
-        // Claims
-        info.append(Component.literal("§eClaims Bought: §f" + boughtClaims + "\n"));
-        info.append(Component.literal("§eChunks Claimed: §f" + getClaimedChunksList().size() + "\n"));
-
-        // Warp
-        if (warpPos != null) {
-            info.append(Component.literal("§eWarp Position: §f" + warpPos.getX() + ", " + warpPos.getY() + ", " + warpPos.getZ() + "\n"));
-        } else {
-            info.append(Component.literal("§eWarp Position: §7Not Set\n"));
+        for (var e : donations.entrySet()) {
+            UUID donorId = e.getKey();
+            Donor donor = e.getValue();
+            String displayName = OPAPC.getServer().getPlayerList().getPlayer(donorId) != null ? donor.name() : donorId.toString();
+            info = info.append(net.minecraft.network.chat.Component.literal("§e" + displayName + ": §f" + donor.amount() + "\n"));
         }
-
-        // Insurance
-        info.append(Component.literal("§eWar Insurance: " + (isWarInsured() ? "§aActive" : "§cExpired") + "\n"));
-        info.append(Component.literal("§eRaid Insurance: " + (isRaidInsured() ? "§aActive" : "§cExpired") + "\n"));
-
-        // War Stats
-        info.append(Component.literal("\n§6--- War Stats ---\n"));
-        info.append(Component.literal("§eDefences Won: §f" + warDefencesWon + "\n"));
-        info.append(Component.literal("§eDefences Lost: §f" + warDefencesLost + "\n"));
-        info.append(Component.literal("§eAttacks Won: §f" + warAttacksWon + "\n"));
-        info.append(Component.literal("§eAttacks Lost: §f" + warAttacksLost + "\n"));
-        info.append(Component.literal("§eClaims Gained: §f" + claimsGainedFromWar + "\n"));
-        info.append(Component.literal("§eClaims Lost: §f" + claimsLostToWar + "\n"));
-
-        // Raid Stats
-        info.append(Component.literal("\n§6--- Raid Stats ---\n"));
-        info.append(Component.literal("§eRaids Won: §f" + raidsWon + "\n"));
-        info.append(Component.literal("§eRaids Lost: §f" + raidsLost + "\n"));
-
-        for (Map.Entry<UUID, Donor> entry : donations.entrySet()) {
-            UUID donorId = entry.getKey();
-            Donor donor = entry.getValue();
-
-            String displayName = OPAPC.getServer().getPlayerList().getPlayer(donorId) != null
-                    ? donor.name()  // use saved name if player is known
-                    : donorId.toString();
-
-            info.append(Component.literal("§e" + displayName + ": §f" + donor.amount() + "\n"));
-        }
-
         return info;
     }
 }

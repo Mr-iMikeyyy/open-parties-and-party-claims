@@ -24,7 +24,7 @@ import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCComponents;
 import com.madmike.opapc.partyclaim.components.scoreboard.PartyClaimsComponent;
 import com.madmike.opapc.partyclaim.data.PartyClaim;
-import com.madmike.opapc.util.ClaimAdjacencyChecker;
+import com.madmike.opapc.partyclaim.util.ClaimAdjacencyChecker;
 import com.madmike.opapc.util.CurrencyUtil;
 import com.madmike.opapc.war.War;
 import com.madmike.opapc.war.WarManager;
@@ -46,7 +46,7 @@ import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 import java.util.*;
 
 import static com.madmike.opapc.util.CommandFailureHandler.fail;
-import static com.madmike.opapc.util.NetherClaimAdjuster.mirrorOverworldClaimsToNether;
+import static com.madmike.opapc.partyclaim.util.NetherClaimAdjuster.mirrorOverworldClaimsToNether;
 import static net.minecraft.commands.Commands.literal;
 
 public class PartyClaimCommand {
@@ -63,10 +63,10 @@ public class PartyClaimCommand {
                             §e/partyclaim unclaim §7- Attempt to un-claim a chunk
                             §e/partyclaim abandon confirm §7- Delete your party claim and progress
                             
-                            §6--- Only available to Party Members ---
+                            §6--- Available to all Party Members ---
                             §e/partyclaim info §7- Get details of your party's claim and donations
-                            §e/partyclaim top §7- Increase your party's max claims by 1
-                            §e/partyclaim donate §7- Use inside your party's or an ally's claim to purchase the next claim
+                            §e/partyclaim top §7- Get details of top performing parties
+                            §e/partyclaim donate §7- Use inside your party claim or an ally's claim to purchase the next claim
                             """)
                     );
                     return 1;
@@ -79,7 +79,7 @@ public class PartyClaimCommand {
                     .requires(ctx -> {
                         ServerPlayer player = ctx.getPlayer();
                         if (player != null) {
-                            return OPAPC.getPartyManager().getPartyByOwner(player.getUUID()) != null;
+                            return OPAPC.parties().getPartyByOwner(player.getUUID()) != null;
                         }
                         return false;
                     })
@@ -94,15 +94,14 @@ public class PartyClaimCommand {
 
                         //Check if in overworld
                         if (!player.level().dimension().location().equals(Level.OVERWORLD.location())) {
-                            ctx.getSource().sendFailure(Component.literal("You are only allowed to claim in the Overworld"));
-                            return 0;
+                            return fail(player, "You are only allowed to claim in the Overworld");
                         }
 
-                        IServerPartyAPI party = OPAPC.getPartyManager().getPartyByOwner(player.getUUID());
+                        IServerPartyAPI party = OPAPC.parties().getPartyByOwner(player.getUUID());
 
+                        //Check is party leader
                         if (party == null) {
-                            ctx.getSource().sendFailure(Component.literal("Only party leaders can use this command"));
-                            return 0;
+                            return fail(player, "Only party leaders can use this command");
                         }
 
                         // Check if in war
@@ -111,7 +110,7 @@ public class PartyClaimCommand {
                             return fail(player, "You cannot claim chunks while in a war.");
                         }
 
-                        PartyClaimsComponent comp = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard());
+                        PartyClaimsComponent comp = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.scoreboard());
                         PartyClaim partyClaim = comp.getClaim(party.getId());
 
                         // Handle the case where a party claim already exists
@@ -130,7 +129,7 @@ public class PartyClaimCommand {
                         }
                         else {
                             // First claim for this party
-                            ClaimResult<IPlayerChunkClaimAPI> firstClaim = OPAPC.getClaimsManager().tryToClaim(
+                            ClaimResult<IPlayerChunkClaimAPI> firstClaim = OPAPC.claims().tryToClaim(
                                     Level.OVERWORLD.location(),
                                     player.getUUID(),
                                     0,
@@ -142,8 +141,7 @@ public class PartyClaimCommand {
                             player.sendSystemMessage(firstClaim.getResultType().message);
 
                             if (firstClaim.getResultType().success) {
-                                comp.createClaim(party.getId());
-                                comp.getClaim(party.getId()).setWarpPos(player.blockPosition());
+                                comp.createClaim(party.getId(), player.blockPosition());
                                 mirrorOverworldClaimsToNether(player.getUUID());
                                 return 1;
                             }
@@ -152,7 +150,7 @@ public class PartyClaimCommand {
                         }
 
                         // Attempt to claim for an existing party
-                        ClaimResult<IPlayerChunkClaimAPI> result = OPAPC.getClaimsManager().tryToClaim(
+                        ClaimResult<IPlayerChunkClaimAPI> result = OPAPC.claims().tryToClaim(
                                 Level.OVERWORLD.location(),
                                 player.getUUID(),
                                 0,
@@ -178,7 +176,7 @@ public class PartyClaimCommand {
                     .requires(ctx -> {
                         ServerPlayer player = ctx.getPlayer();
                         if (player != null) {
-                            return OPAPC.getPartyManager().getPartyByOwner(player.getUUID()) != null;
+                            return OPAPC.parties().getPartyByOwner(player.getUUID()) != null;
                         }
                         return false;
                     })
@@ -197,7 +195,7 @@ public class PartyClaimCommand {
                             return 0;
                         }
 
-                        IServerPartyAPI party = OPAPC.getPartyManager().getPartyByOwner(player.getUUID());
+                        IServerPartyAPI party = OPAPC.parties().getPartyByOwner(player.getUUID());
 
                         if (party == null) {
                             player.sendSystemMessage(Component.literal("Only party leaders can use this command"));
@@ -232,7 +230,7 @@ public class PartyClaimCommand {
                         }
 
                         //All checks passed, un-claim chunk
-                        ClaimResult<IPlayerChunkClaimAPI> result = OPAPC.getClaimsManager().tryToUnclaim(Level.OVERWORLD.location(), player.getUUID(), player.chunkPosition().x, player.chunkPosition().z, player.chunkPosition().x, player.chunkPosition().z, false);
+                        ClaimResult<IPlayerChunkClaimAPI> result = OPAPC.claims().tryToUnclaim(Level.OVERWORLD.location(), player.getUUID(), player.chunkPosition().x, player.chunkPosition().z, player.chunkPosition().x, player.chunkPosition().z, false);
                         player.sendSystemMessage(result.getResultType().message);
                         if (result.getResultType().success) {
                             if (new ChunkPos(partyClaim.getWarpPos()).equals(player.chunkPosition())) {
@@ -253,7 +251,7 @@ public class PartyClaimCommand {
                     .requires(ctx -> {
                         ServerPlayer player = ctx.getPlayer();
                         if (player != null) {
-                            return OPAPC.getPartyManager().getPartyByOwner(player.getUUID()) != null;
+                            return OPAPC.parties().getPartyByOwner(player.getUUID()) != null;
                         }
                         return false;
                     })
@@ -274,7 +272,7 @@ public class PartyClaimCommand {
                         ServerPlayer player = ctx.getSource().getPlayer();
                         if (player == null) return 0;
 
-                        IPartyAPI party = OPAPC.getPartyManager().getPartyByOwner(player.getUUID());
+                        IPartyAPI party = OPAPC.parties().getPartyByOwner(player.getUUID());
 
                         //Check if leader of a party
                         if (party == null) {
@@ -292,7 +290,7 @@ public class PartyClaimCommand {
 
 
                         //All checks passed, un-claim all chunks and destroy party claim
-                        IPlayerClaimInfoAPI info = OPAPC.getClaimsManager().getPlayerInfo(player.getUUID());
+                        IPlayerClaimInfoAPI info = OPAPC.claims().getPlayerInfo(player.getUUID());
 
                         List<ChunkPos> overworldClaims = new ArrayList<>();
                         List<ChunkPos> netherClaims = new ArrayList<>();
@@ -304,11 +302,11 @@ public class PartyClaimCommand {
                         info.getDimension(netherKey).getStream().forEach(e -> e.getStream().forEach(netherClaims::add));
 
                         for (ChunkPos pos : overworldClaims) {
-                            OPAPC.getClaimsManager().unclaim(overworld, pos.x, pos.z);
+                            OPAPC.claims().unclaim(overworld, pos.x, pos.z);
                         }
 
                         for (ChunkPos pos : netherClaims) {
-                            OPAPC.getClaimsManager().unclaim(netherKey, pos.x, pos.z);
+                            OPAPC.claims().unclaim(netherKey, pos.x, pos.z);
                         }
 
                         OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard()).removeClaim(party.getId());
@@ -368,13 +366,13 @@ public class PartyClaimCommand {
                             return 0;
                         }
 
-                        var donatersParty = OPAPC.getPartyManager().getPartyByMember(player.getUUID());
+                        var donatersParty = OPAPC.parties().getPartyByMember(player.getUUID());
                         if (donatersParty == null) {
                             ctx.getSource().sendFailure(Component.literal("Must be in a party to donate."));
                             return 0;
                         }
 
-                        IServerClaimsManagerAPI cm = OPAPC.getClaimsManager();
+                        IServerClaimsManagerAPI cm = OPAPC.claims();
 
                         ChunkPos target = player.chunkPosition();
                         IPlayerChunkClaimAPI chunkClaim = cm.get(Level.OVERWORLD.location(), target.x, target.z);
@@ -385,7 +383,7 @@ public class PartyClaimCommand {
                         }
 
                         UUID owner = chunkClaim.getPlayerId();
-                        IServerPartyAPI ownersParty = OPAPC.getPartyManager().getPartyByOwner(owner);
+                        IServerPartyAPI ownersParty = OPAPC.parties().getPartyByOwner(owner);
                         PartyClaim partyClaim = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard()).getClaim(ownersParty.getId());
 
                         boolean isAlly = ownersParty.isAlly(donatersParty.getId());

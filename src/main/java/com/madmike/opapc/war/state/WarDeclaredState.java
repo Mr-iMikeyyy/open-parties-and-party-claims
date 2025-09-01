@@ -21,12 +21,15 @@ package com.madmike.opapc.war.state;
 import com.madmike.opapc.OPAPCConfig;
 import com.madmike.opapc.war.EndOfWarType;
 import com.madmike.opapc.war.War;
+import com.madmike.opapc.war.data.WarData;
 import com.madmike.opapc.war.event.bus.WarEventBus;
 import com.madmike.opapc.war.event.events.WarEndedEvent;
 import com.madmike.opapc.war.event.events.WarStartedEvent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+
+import java.util.UUID;
 
 public class WarDeclaredState implements IWarState {
     private long declareTime;
@@ -57,26 +60,23 @@ public class WarDeclaredState implements IWarState {
     }
 
     @Override
-    public void onAttackerDeath(ServerPlayer player, War war) {
-        player.setHealth(player.getMaxHealth());
-    }
-
-    @Override
-    public void onDefenderDeath(ServerPlayer player, War war) {
-        player.setHealth(player.getMaxHealth());
+    public void onPlayerDeath(ServerPlayer player, War war) {
     }
 
     @Override
     public void onWarBlockBroken(BlockPos pos, War war) { }
 
     @Override
-    public void onDefenderQuit(ServerPlayer player, War war) {
+    public void onPlayerQuit(ServerPlayer player, War war) {
+        WarData data = war.getData();
+        UUID playerId = player.getUUID();
+        if (data.getMercenaryIds().contains(playerId)) {
+            data.removeMercenary(playerId);
+            return;
+        }
+        if (data.getAttackerIds().contains(playerId)) {
 
-    }
-
-    @Override
-    public void onAttackerQuit(ServerPlayer player, War war) {
-
+        }
     }
 
     @Override

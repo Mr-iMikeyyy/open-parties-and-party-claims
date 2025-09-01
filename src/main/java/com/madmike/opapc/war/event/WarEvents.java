@@ -140,12 +140,7 @@ public class WarEvents {
         ServerLivingEntityEvents.ALLOW_DEATH.register((entity, damageSource, amount) -> {
 
             if (entity instanceof ServerPlayer player) {
-                War war = WarManager.INSTANCE.findWarByPlayer(player);
-                if (war != null) {
-                    WarManager.INSTANCE.handlePlayerDeath(player, war);
-                    //Disallow Death
-                    return false;
-                }
+                WarManager.INSTANCE.handlePlayerDeath(player);
             }
 
             // Allows death
@@ -157,7 +152,7 @@ public class WarEvents {
             WarManager.INSTANCE.tickAll();
         });
 
-        // If player's party is in war on join
+        // If player's party is in war on join and player was not there at the start, then kick.
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             ServerPlayer player = handler.player;
             UUID uuid = player.getUUID();
@@ -168,7 +163,7 @@ public class WarEvents {
             WarManager wm = WarManager.INSTANCE;
 
             War warByParty = wm.findWarByParty(party);
-            if (warByParty != null) {
+            if (warByParty != null && !warByParty.isPlayerParticipant(player)) {
                 player.connection.disconnect(Component.literal("Your party is currently engaged in a war. You cannot join right now."));
             }
         });

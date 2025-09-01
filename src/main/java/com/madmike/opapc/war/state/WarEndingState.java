@@ -27,6 +27,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
+import java.util.UUID;
+
 public class WarEndingState implements IWarState{
     EndOfWarType endType;
     long endedAt;
@@ -61,6 +63,15 @@ public class WarEndingState implements IWarState{
     }
 
     @Override
+    public void onPlayerDeath(ServerPlayer player, War war) {
+        WarData data = war.getData();
+        UUID playerId = player.getUUID();
+        if (data.getAttackerIds().contains(playerId)) {
+
+        }
+    }
+
+    @Override
     public void onAttackerDeath(ServerPlayer player, War war) {
         player.setHealth(player.getMaxHealth());
         WarData data = war.getData();
@@ -87,6 +98,11 @@ public class WarEndingState implements IWarState{
 
     @Override
     public void onWarBlockBroken(BlockPos pos, War war) {
+
+    }
+
+    @Override
+    public void onPlayerQuit(ServerPlayer player, War war) {
 
     }
 

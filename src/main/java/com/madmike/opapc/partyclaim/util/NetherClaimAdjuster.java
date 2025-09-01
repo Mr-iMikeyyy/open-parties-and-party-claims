@@ -16,16 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.madmike.opapc.util;
+package com.madmike.opapc.partyclaim.util;
 
 import com.madmike.opapc.OPAPC;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
-import xaero.pac.common.claims.player.api.IPlayerChunkClaimAPI;
-import xaero.pac.common.claims.result.api.ClaimResult;
 
 import java.util.*;
 
