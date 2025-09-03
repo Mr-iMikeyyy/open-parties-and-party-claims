@@ -32,6 +32,7 @@ import com.madmike.opapc.war.event.events.WarEndedEvent;
 import com.madmike.opapc.war.event.events.WarStartedEvent;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.core.BlockPos;
@@ -142,6 +143,20 @@ public class WarEvents {
             }
         });
 
+        AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
+            if (!world.isClientSide) {
+                War war = WarManager.INSTANCE.findWarByPlayerId(player.getUUID());
+                if (war == null) return InteractionResult.PASS;
+                BlockState state = world.getBlockState(pos);
+
+                if (state.getBlock() instanceof ChestBlock && war.getData().getMercenaryIds().contains(player.getUUID())) {
+                    player.displayClientMessage(Component.literal("You can't break this chest!"), true);
+                    return InteractionResult.FAIL; // cancels break
+                }
+            }
+            return InteractionResult.PASS;
+        });
+
         UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
             if (!world.isClientSide) {
                 
@@ -165,7 +180,7 @@ public class WarEvents {
 
             //Cancel Death
             if (entity instanceof ServerPlayer player) {
-                War war = WarManager.INSTANCE.findWarByPlayer(player);
+                War war = WarManager.INSTANCE.findWarByPlayerId(player.getUUID());
                 if (war != null) {
                     war.onPlayerDeath(player);
                     return false;
@@ -199,7 +214,7 @@ public class WarEvents {
 
         ServerPlayConnectionEvents.DISCONNECT.register((t, w) -> {
             ServerPlayer player = t.getPlayer();
-            War war = WarManager.INSTANCE.findWarByPlayer(player);
+            War war = WarManager.INSTANCE.findWarByPlayerId(player.getUUID());
             if (war != null) {
                 war.onPlayerQuit(player);
             }

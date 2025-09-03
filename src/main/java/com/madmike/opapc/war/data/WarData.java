@@ -21,7 +21,6 @@ package com.madmike.opapc.war.data;
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCComponents;
 import com.madmike.opapc.partyclaim.data.PartyClaim;
-import com.madmike.opapc.player.component.scoreboard.PlayerNameComponent;
 import com.madmike.opapc.war.merc.data.MercContract;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -29,66 +28,113 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
+
 
 public class WarData {
+    // ---- Identity (lookup-safe) ----
+    private final UUID attackingPartyId;
+    private final UUID defendingPartyId;
 
-    private final IServerPartyAPI attackingParty;
-    private final IServerPartyAPI defendingParty;
-
-    private final List<UUID> attackerIds;
-    private List<UUID> attackersLeftToKill;
-
-    private final List<UUID> defenderIds;
-
-    private List<UUID> allyIds;
-
-    private List<UUID> mercenaryIds;
-    private List<MercContract> mercOffers;
-    private List<MercContract> contracts;
-
+    // Names captured at creation time (stable for messaging; party may be renamed later)
     private final String attackingPartyName;
     private final String defendingPartyName;
 
-    private final PartyClaim attackingClaim;
-    private final PartyClaim defendingClaim;
+    // We store the party IDs for claims; resolve via component on demand
+    private final UUID attackingClaimPartyId;
+    private final UUID defendingClaimPartyId;
 
+    // ---- Participants ----
+    private final Set<UUID> attackerIds;           // all attackers at start
+    private final Set<UUID> defendersIds;          // all defenders at start
+    private final Set<UUID> attackersLeftToKill;   // remaining attackers to eliminate
+
+    private final Set<UUID> allyIds;               // optional: allies
+    private final Set<UUID> mercenaryIds;          // optional: mercs
+
+    private final List<MercContract> contracts;    // keep as list unless you need set semantics + equals/hashCode
+
+    // ---- War parameters ----
     private final int durationSeconds;
     private final long durationMilli;
-
     private final boolean wipe;
 
+    // ---- Runtime state ----
     private long startTime;
     private boolean isExpired;
     private BlockPos warBlockPosition;
     private int warBlocksLeft;
 
-    public WarData(IServerPartyAPI attackingParty, IServerPartyAPI defendingParty, PartyClaim defendingClaim, PartyClaim attackingClaim) {
-        this.attackingParty = attackingParty;
-        this.defendingParty = defendingParty;
+    /* ---------------- Constructors ---------------- */
 
-        this.attackerIds = attackingParty.getOnlineMemberStream().map(ServerPlayer::getUUID).toList();
-        this.attackersLeftToKill.addAll(attackerIds);
+    /**
+     * Preferred constructor: supply party IDs; members will be captured from online streams at creation time.
+     */
+    public WarData(UUID attackingPartyId, UUID defendingPartyId) {
+        this(attackingPartyId, defendingPartyId,
+                // Resolve parties once to capture current online members and names
+                getParty(attackingPartyId), getParty(defendingPartyId),
+                // Resolve claims’ party IDs (usually same as party IDs if your PartyClaim is keyed by party)
+                attackingPartyId, defendingPartyId,
+                Collections.emptySet(), Collections.emptySet(), Collections.emptyList());
+    }
 
-        this.defenderIds = defendingParty.getOnlineMemberStream().map(ServerPlayer::getUUID).toList();
+    /**
+     * Flexible constructor if you need to pass allies/mercs/contracts up front.
+     */
+    public WarData(UUID attackingPartyId,
+                   UUID defendingPartyId,
+                   IServerPartyAPI attackingParty,
+                   IServerPartyAPI defendingParty,
+                   UUID attackingClaimPartyId,
+                   UUID defendingClaimPartyId,
+                   Set<UUID> allyIds,
+                   Set<UUID> mercenaryIds,
+                   List<MercContract> contracts) {
 
-        this.attackingPartyName = attackingClaim.getPartyName();
+        // Identity
+        this.attackingPartyId = Objects.requireNonNull(attackingPartyId, "attackingPartyId");
+        this.defendingPartyId = Objects.requireNonNull(defendingPartyId, "defendingPartyId");
 
-        this.defendingPartyName = defendingClaim.getPartyName();
+        // Names captured now (safe for messaging even if party names change later)
+        this.attackingPartyName = getSafePartyName(attackingParty);
+        this.defendingPartyName = getSafePartyName(defendingParty);
 
-        this.attackingClaim = attackingClaim;
-        this.defendingClaim = defendingClaim;
+        // Claims
+        this.attackingClaimPartyId = Objects.requireNonNull(attackingClaimPartyId, "attackingClaimPartyId");
+        this.defendingClaimPartyId = Objects.requireNonNull(defendingClaimPartyId, "defendingClaimPartyId");
 
-        int defenderCount = this.defenderIds.size();
+        // Participants captured from current online members
+        this.attackerIds = attackingParty.getOnlineMemberStream()
+                .map(ServerPlayer::getUUID)
+                .collect(Collectors.toCollection(HashSet::new));
 
+        this.defendersIds = defendingParty.getOnlineMemberStream()
+                .map(ServerPlayer::getUUID)
+                .collect(Collectors.toCollection(HashSet::new));
+
+        // Attackers to kill starts as a copy of all attackers
+        this.attackersLeftToKill = new HashSet<>(this.attackerIds);
+
+        // Allies / Mercs / Contracts
+        this.allyIds = new HashSet<>(Objects.requireNonNullElse(allyIds, Collections.emptySet()));
+        this.mercenaryIds = new HashSet<>(Objects.requireNonNullElse(mercenaryIds, Collections.emptySet()));
+        this.contracts = new ArrayList<>(Objects.requireNonNullElse(contracts, Collections.emptyList()));
+
+        // Duration scaled by defender count
+        int defenderCount = this.defendersIds.size();
         this.durationSeconds = defenderCount * 3 * 60;
         this.durationMilli = this.durationSeconds * 1000L;
-        if (this.defendingClaim.getClaimedChunksList().size() < defenderCount * 3) {
+
+        // War blocks & wipe decision based on defending claim size
+        PartyClaim defendingClaim = getDefendingClaim();
+        int claimedChunks = defendingClaim != null ? defendingClaim.getClaimedChunksList().size() : 0;
+
+        if (claimedChunks < defenderCount * 3) {
             this.wipe = true;
-            this.warBlocksLeft = this.defendingClaim.getClaimedChunksList().size();
-        }
-        else {
+            this.warBlocksLeft = claimedChunks;
+        } else {
             this.wipe = false;
             this.warBlocksLeft = defenderCount * 3;
         }
@@ -96,24 +142,97 @@ public class WarData {
         this.isExpired = false;
     }
 
-    // --- Core Getters ---
-    public IServerPartyAPI getAttackingParty() { return attackingParty; }
-    public IServerPartyAPI getDefendingParty() { return defendingParty; }
-    public String getAttackingPartyName() { return attackingPartyName; }
-    public String getDefendingPartyName() { return defendingPartyName; }
-    public List<UUID> getAttackerIds() { return attackerIds; }
-    public List<UUID> getAttackersLeftToKill() { return attackersLeftToKill; }
-    public List<UUID> getDefenderIds() { return defenderIds; }
-    public PartyClaim getDefendingClaim() { return defendingClaim; }
-    public PartyClaim getAttackingClaim() { return attackingClaim; }
-    public int getWarBlocksLeft() { return warBlocksLeft; }
-    public int getDurationSeconds() { return durationSeconds; }
-    public long getDurationMilli() { return durationMilli; }
-    public boolean getWipe() { return wipe; }
-    public BlockPos getWarBlockPosition() { return warBlockPosition; }
+    /* ---------------- On-demand resolvers (no long-lived refs) ---------------- */
 
+    public IServerPartyAPI getAttackingParty() {
+        return getParty(attackingPartyId);
+    }
 
-    // --- Time Keeping ---
+    public IServerPartyAPI getDefendingParty() {
+        return getParty(defendingPartyId);
+    }
+
+    public PartyClaim getAttackingClaim() {
+        return OPAPCComponents.PARTY_CLAIMS.get(OPAPC.scoreboard()).getClaim(attackingPartyId);
+    }
+
+    public PartyClaim getDefendingClaim() {
+        return OPAPCComponents.PARTY_CLAIMS.get(OPAPC.scoreboard()).getClaim(attackingPartyId);
+    }
+
+    private static IServerPartyAPI getParty(UUID id) {
+        return OPAPC.parties().getPartyById(id);
+    }
+
+    private static String getSafePartyName(IServerPartyAPI party) {
+        if (party == null) return "(unknown)";
+        try {
+            return party.getName(); // or your accessor for party name
+        } catch (Exception e) {
+            return "(unknown)";
+        }
+    }
+
+    /* ---------------- Core getters ---------------- */
+
+    public UUID getAttackingPartyId() {
+        return attackingPartyId;
+    }
+
+    public UUID getDefendingPartyId() {
+        return defendingPartyId;
+    }
+
+    public String getAttackingPartyName() {
+        return attackingPartyName;
+    }
+
+    public String getDefendingPartyName() {
+        return defendingPartyName;
+    }
+
+    public Set<UUID> getAttackerIds() {
+        return Collections.unmodifiableSet(attackerIds);
+    }
+
+    public Set<UUID> getAttackersLeftToKill() {
+        return Collections.unmodifiableSet(attackersLeftToKill);
+    }
+
+    public Set<UUID> getDefenderIds() {
+        return Collections.unmodifiableSet(defendersIds);
+    }
+
+    public Set<UUID> getAllyIds() {
+        return Collections.unmodifiableSet(allyIds);
+    }
+
+    public Set<UUID> getMercenaryIds() {
+        return Collections.unmodifiableSet(mercenaryIds);
+    }
+
+    public int getWarBlocksLeft() {
+        return warBlocksLeft;
+    }
+
+    public int getDurationSeconds() {
+        return durationSeconds;
+    }
+
+    public long getDurationMilli() {
+        return durationMilli;
+    }
+
+    public boolean getWipe() {
+        return wipe;
+    }
+
+    public BlockPos getWarBlockPosition() {
+        return warBlockPosition;
+    }
+
+    /* ---------------- Time keeping ---------------- */
+
     public long getSecondsRemaining() {
         if (startTime <= 0) return durationSeconds;
         long elapsedMillis = System.currentTimeMillis() - startTime;
@@ -125,48 +244,65 @@ public class WarData {
         return isExpired;
     }
 
-    // --- Tracking ---
-    public boolean isPlayerParticipant(ServerPlayer player) {
-        UUID id = player.getUUID();
-        return attackerIds.contains(id) || defenderIds.contains(id) || mercenaryIds.contains(id);
+    /* ---------------- Participation / checks ---------------- */
+
+    public boolean isPlayerParticipant(UUID id) {
+        return attackerIds.contains(id) || defendersIds.contains(id) || mercenaryIds.contains(id) || allyIds.contains(id);
     }
 
-    public boolean isPartyParticipant(IServerPartyAPI party) {
-        return attackingParty.equals(party) || defendingParty.equals(party);
+    public boolean isPartyParticipant(UUID partyId) {
+        return attackingPartyId.equals(partyId) || defendingPartyId.equals(partyId);
     }
 
-    // --- Setters / Mutators ---
-    public void setWarBlockPosition(BlockPos newPos) { this.warBlockPosition = newPos; }
-    public void setStartTime(long startTime) { this.startTime = startTime; }
-    public void decrementWarBlocksLeft() { warBlocksLeft--; }
-    public void removeAttacker(UUID id) { attackersLeftToKill.remove(id); }
-    public void removeMercenary(UUID id) { mercenaryIds.remove(id); }
-    public void setIsExpired(boolean t) { this.isExpired = t; }
+    /* ---------------- Mutators ---------------- */
 
-    // --- Messaging ---
+    public void setWarBlockPosition(BlockPos newPos) {
+        this.warBlockPosition = newPos;
+    }
+
+    public void setStartTime(long startTime) {
+        this.startTime = startTime;
+    }
+
+    public void decrementWarBlocksLeft() {
+        warBlocksLeft = Math.max(0, warBlocksLeft - 1);
+    }
+
+    public void removeAttacker(UUID id) {
+        attackersLeftToKill.remove(id);
+    }
+
+    public void removeMercenary(UUID id) {
+        mercenaryIds.remove(id);
+    }
+
+    public void setIsExpired(boolean t) {
+        this.isExpired = t;
+    }
+
+    /* ---------------- Messaging ---------------- */
+
     public void broadcastToAttackers(Component msg) {
-        attackingParty.getOnlineMemberStream().forEach(p -> p.sendSystemMessage(msg));
+        IServerPartyAPI party = getAttackingParty();
+        if (party != null) party.getOnlineMemberStream().forEach(p -> p.sendSystemMessage(msg));
     }
 
     public void broadcastToDefenders(Component msg) {
-        defendingParty.getOnlineMemberStream().forEach(p -> p.sendSystemMessage(msg));
+        IServerPartyAPI party = getDefendingParty();
+        if (party != null) party.getOnlineMemberStream().forEach(p -> p.sendSystemMessage(msg));
     }
-
-
 
     public void broadcastToWar(Component msg) {
         broadcastToAttackers(msg);
         broadcastToDefenders(msg);
     }
 
-    // --- Info Builder ---
+    /* ---------------- Info builder ---------------- */
+
     public Component getInfo() {
-        long elapsedSeconds = startTime > 0
-                ? (System.currentTimeMillis() - startTime) / 1000
-                : 0;
+        long elapsedSeconds = startTime > 0 ? (System.currentTimeMillis() - startTime) / 1000 : 0;
         long remainingSeconds = Math.max(durationSeconds - elapsedSeconds, 0);
 
-        // Build base info
         MutableComponent info = Component.literal("§6--- War Info ---\n")
                 .append(Component.literal("§eAttacking Party: §c" + attackingPartyName + "\n"))
                 .append(Component.literal("§eDefending Party: §a" + defendingPartyName + "\n"))
@@ -175,20 +311,33 @@ public class WarData {
                 .append(Component.literal("§eTime Remaining: §a"
                         + (remainingSeconds / 60) + " min "
                         + (remainingSeconds % 60) + " sec\n"))
-                .append(Component.literal("§eAttackers Remaining: §c" + attackerIds.size()))
-                .append(Component.literal("§eClaim Wipe Possible: §c" + (wipe ? "Yes!" : "No") +"\n\n"));
+                .append(Component.literal("§eAttackers Remaining: §c" + attackersLeftToKill.size() + "\n"))
+                .append(Component.literal("§eClaim Wipe Possible: §c" + (wipe ? "Yes!" : "No") + "\n\n"));
 
-        // List attackers
-        PlayerNameComponent pnc = OPAPCComponents.PLAYER_NAMES.get(OPAPC.scoreboard());
+        var pnc = OPAPCComponents.PLAYER_NAMES.get(OPAPC.getServer().getScoreboard());
+
         info.append(Component.literal("§cAttackers (" + attackerIds.size() + "):\n"));
         for (UUID id : attackerIds) {
             info.append(Component.literal(" §7- §c" + pnc.getPlayerNameById(id) + "\n"));
         }
 
-        // List defenders
-        info.append(Component.literal("§aDefenders (" + defenderIds.size() + "):\n"));
-        for (UUID id : defenderIds) {
+        info.append(Component.literal("§aDefenders (" + defendersIds.size() + "):\n"));
+        for (UUID id : defendersIds) {
             info.append(Component.literal(" §7- §a" + pnc.getPlayerNameById(id) + "\n"));
+        }
+
+        if (!mercenaryIds.isEmpty()) {
+            info.append(Component.literal("§eMercenaries (" + mercenaryIds.size() + "):\n"));
+            for (UUID id : mercenaryIds) {
+                info.append(Component.literal(" §7- §e" + pnc.getPlayerNameById(id) + "\n"));
+            }
+        }
+
+        if (!allyIds.isEmpty()) {
+            info.append(Component.literal("§bAllies (" + allyIds.size() + "):\n"));
+            for (UUID id : allyIds) {
+                info.append(Component.literal(" §7- §b" + pnc.getPlayerNameById(id) + "\n"));
+            }
         }
 
         return info;

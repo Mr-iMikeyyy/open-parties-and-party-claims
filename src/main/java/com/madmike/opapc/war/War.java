@@ -24,6 +24,9 @@ import com.madmike.opapc.war.state.WarDeclaredState;
 import net.minecraft.server.level.ServerPlayer;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 
+import java.util.Objects;
+import java.util.UUID;
+
 public class War {
     private IWarState state;
     private final WarData data;
@@ -58,8 +61,8 @@ public class War {
         state.onWarBlockBroken( this);
     }
 
-    public boolean isPlayerParticipant(ServerPlayer player) {
-        return data.isPlayerParticipant(player);
+    public boolean isPlayerParticipant(UUID id) {
+        return data.isPlayerParticipant(id);
     }
 
     public boolean isPartyParticipant(IServerPartyAPI party) {
@@ -68,5 +71,18 @@ public class War {
 
     public void onRequestInfo(ServerPlayer player) {
         player.sendSystemMessage(data.getInfo());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof War other)) return false;
+        return data.getAttackingParty().getId().equals(other.getData().getAttackingParty().getId())
+                && defendingPartyId.equals(other.defendingPartyId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(attackingPartyId, defendingPartyId);
     }
 }

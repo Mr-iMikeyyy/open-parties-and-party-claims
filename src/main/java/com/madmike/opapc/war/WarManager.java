@@ -28,16 +28,14 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 public class WarManager {
-    private final List<War> activeWars = new ArrayList<>();
+    private final Set<War> activeWars = new HashSet<>();
 
     public static WarManager INSTANCE = new WarManager();
 
-    public List<War> getActiveWars() {
+    public Set<War> getActiveWars() {
         return activeWars;
     }
 
@@ -77,9 +75,9 @@ public class WarManager {
 
     }
 
-    public War findWarByPlayer(ServerPlayer player) {
+    public War findWarByPlayerId(UUID id) {
         for (War war : activeWars) {
-            if (war.isPlayerParticipant(player)) {
+            if (war.isPlayerParticipant(id)) {
                 return war;
             }
         }
