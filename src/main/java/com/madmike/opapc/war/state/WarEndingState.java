@@ -18,6 +18,7 @@
 
 package com.madmike.opapc.war.state;
 
+import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCConfig;
 import com.madmike.opapc.warp.util.SafeWarpHelper;
 import com.madmike.opapc.war.EndOfWarType;
@@ -42,15 +43,16 @@ public class WarEndingState implements IWarState{
 
     @Override
     public void enter(War war) {
+        WarData data = war.getData();
 
         if (endType == EndOfWarType.ATTACKERS_WIN_BLOCKS || endType == EndOfWarType.ATTACKERS_LOSE_TIME) {
-            war.getData().broadcastToAttackers(Component.literal("The War is Ending! You have " + OPAPCConfig.warEndingDurationSeconds + " seconds to get the ship out of the claim!"));
-            war.getData().broadcastToDefenders(Component.literal("The War is Ending! If the enemy ship is in your claim now is the time to steal! They will be forced out in " + OPAPCConfig.warEndingDurationSeconds + " seconds!"));
+            data.broadcastToAttackers(Component.literal("The War is Ending! You have " + OPAPCConfig.warEndingDurationSeconds + " seconds to get any ships out of the claim!"));
+            data.broadcastToDefenders(Component.literal("The War is Ending! If the enemy ship is in your claim now is the time to steal! They will be forced out in " + OPAPCConfig.warEndingDurationSeconds + " seconds!"));
         }
         else {
             war.setState(new WarEndedState(endType));
         }
-
+        OPAPC.getServer().overworld().removeBlock(war.getData().getWarBlockPosition(), false);
     }
 
     @Override
@@ -97,7 +99,7 @@ public class WarEndingState implements IWarState{
     }
 
     @Override
-    public void onWarBlockBroken(BlockPos pos, War war) {
+    public void onWarBlockBroken(War war) {
 
     }
 

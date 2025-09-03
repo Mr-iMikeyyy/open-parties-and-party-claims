@@ -19,6 +19,7 @@
 package com.madmike.opapc.war.event;
 
 import com.madmike.opapc.OPAPC;
+import com.madmike.opapc.OPAPCComponents;
 import com.madmike.opapc.OPAPCConfig;
 import com.madmike.opapc.partyclaim.data.PartyClaim;
 import com.madmike.opapc.war.EndOfWarType;
@@ -31,10 +32,15 @@ import com.madmike.opapc.war.event.events.WarEndedEvent;
 import com.madmike.opapc.war.event.events.WarStartedEvent;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.state.BlockState;
 import xaero.pac.common.server.player.config.api.PlayerConfigOptions;
 
 import java.util.UUID;
@@ -136,11 +142,34 @@ public class WarEvents {
             }
         });
 
+        UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
+            if (!world.isClientSide) {
+                
+                BlockPos pos = hitResult.getBlockPos();
+                BlockState state = world.getBlockState(pos);
+
+                // Check if it’s a chest
+                if (state.getBlock() instanceof ChestBlock) {
+                    // Your condition to block the player
+                    if (shouldBlock(player, pos)) {
+                        player.displayClientMessage(Component.literal("You can't open this chest!"), true);
+                        return InteractionResult.FAIL; // Prevent opening
+                    }
+                }
+            }
+            return InteractionResult.PASS; // Let it continue
+        });
+
         //Cancel death and inform WarManager if player died while in war
         ServerLivingEntityEvents.ALLOW_DEATH.register((entity, damageSource, amount) -> {
 
+            //Cancel Death
             if (entity instanceof ServerPlayer player) {
-                WarManager.INSTANCE.handlePlayerDeath(player);
+                War war = WarManager.INSTANCE.findWarByPlayer(player);
+                if (war != null) {
+                    war.onPlayerDeath(player);
+                    return false;
+                }
             }
 
             // Allows death
@@ -152,7 +181,7 @@ public class WarEvents {
             WarManager.INSTANCE.tickAll();
         });
 
-        // If player's party is in war on join and player was not there at the start, then kick.
+        // If player's party is in war on join then kick.
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             ServerPlayer player = handler.player;
             UUID uuid = player.getUUID();
@@ -160,17 +189,17 @@ public class WarEvents {
             var party = OPAPC.parties().getPartyByMember(uuid);
             if (party == null) return;
 
-            WarManager wm = WarManager.INSTANCE;
-
-            War warByParty = wm.findWarByParty(party);
-            if (warByParty != null && !warByParty.isPlayerParticipant(player)) {
+            War warByParty = WarManager.INSTANCE.findWarByParty(party);
+            if (warByParty != null) {
                 player.connection.disconnect(Component.literal("Your party is currently engaged in a war. You cannot join right now."));
             }
+
+            OPAPCComponents.MERC_REFUNDS.get(OPAPC.scoreboard()).onPlayerJoin(player);
         });
 
         ServerPlayConnectionEvents.DISCONNECT.register((t, w) -> {
             ServerPlayer player = t.getPlayer();
-            War war = WarManager.INSTANCE.findWarByPlayer(t.getPlayer());
+            War war = WarManager.INSTANCE.findWarByPlayer(player);
             if (war != null) {
                 war.onPlayerQuit(player);
             }

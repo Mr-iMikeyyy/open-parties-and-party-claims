@@ -80,7 +80,7 @@ public class WarEndedState implements IWarState {
     }
 
     @Override
-    public void onWarBlockBroken(BlockPos pos, War war) { }
+    public void onWarBlockBroken(War war) { }
 
     @Override
     public void onPlayerQuit(ServerPlayer player, War war) {

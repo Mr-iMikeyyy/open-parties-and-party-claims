@@ -16,18 +16,25 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.madmike.opapc.war.state;
+package com.madmike.opapc.war.merc.component.scoreboard;
 
-import com.madmike.opapc.war.EndOfWarType;
-import com.madmike.opapc.war.War;
-import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerPlayer;
+import dev.onyxstudios.cca.api.v3.component.ComponentV3;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.scores.Scoreboard;
 
-public interface IWarState {
-    void enter(War war);
-    void tick(War war);
-    void onPlayerDeath(ServerPlayer player, War war);
-    void onWarBlockBroken(War war);
-    void onPlayerQuit(ServerPlayer player, War war);
-    void end(War war, EndOfWarType type);
+public class MercStatsComponent implements ComponentV3 {
+
+    private Scoreboard provider;
+    private MinecraftServer server;
+
+    @Override
+    public void readFromNbt(CompoundTag tag) {
+
+    }
+
+    @Override
+    public void writeToNbt(CompoundTag tag) {
+
+    }
 }

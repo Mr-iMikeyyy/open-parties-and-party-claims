@@ -22,7 +22,9 @@ import com.madmike.opapc.duel.components.player.InDuelComponent;
 import com.madmike.opapc.duel.components.scoreboard.DuelBannedItemsComponent;
 import com.madmike.opapc.duel.components.scoreboard.DuelMapsComponent;
 import com.madmike.opapc.partyclaim.components.player.PartyRejoinCooldownComponent;
-import com.madmike.opapc.player.name.PlayerNameComponent;
+import com.madmike.opapc.player.component.scoreboard.PlayerNameComponent;
+import com.madmike.opapc.war.merc.component.player.MercComponent;
+import com.madmike.opapc.war.merc.component.scoreboard.MercOfferRefundComponent;
 import com.madmike.opapc.warp.components.player.WarpCombatCooldownComponent;
 import com.madmike.opapc.warp.components.player.WarpCooldownComponent;
 import com.madmike.opapc.trade.components.player.UnlockedStoreSlotsComponent;
@@ -58,6 +60,9 @@ public class OPAPCComponents implements ScoreboardComponentInitializer, EntityCo
     public static final ComponentKey<InDuelComponent> IN_DUEL =
             ComponentRegistryV3.INSTANCE.getOrCreate(new ResourceLocation(OPAPC.MOD_ID, "in_duel"), InDuelComponent.class);
 
+    public static final ComponentKey<MercComponent> MERC =
+            ComponentRegistryV3.INSTANCE.getOrCreate(new ResourceLocation(OPAPC.MOD_ID, "merc"), MercComponent.class);
+
     //Scoreboard Components
 
     public static final ComponentKey<OffersComponent> OFFERS =
@@ -81,6 +86,9 @@ public class OPAPCComponents implements ScoreboardComponentInitializer, EntityCo
     public static final ComponentKey<DuelBannedItemsComponent> DUEL_BANNED_ITEMS =
             ComponentRegistryV3.INSTANCE.getOrCreate(new ResourceLocation(OPAPC.MOD_ID, "duel_banned_items"), DuelBannedItemsComponent.class);
 
+    public static final ComponentKey<MercOfferRefundComponent> MERC_REFUNDS =
+            ComponentRegistryV3.INSTANCE.getOrCreate(new ResourceLocation(OPAPC.MOD_ID, "merc_refunds"), MercOfferRefundComponent.class);
+
 
 
     @Override
@@ -90,6 +98,7 @@ public class OPAPCComponents implements ScoreboardComponentInitializer, EntityCo
         registry.registerForPlayers(WARP_COOLDOWN, WarpCooldownComponent::new, RespawnCopyStrategy.ALWAYS_COPY);
         registry.registerForPlayers(PARTY_REJOIN_COOLDOWN, PartyRejoinCooldownComponent::new, RespawnCopyStrategy.ALWAYS_COPY);
         registry.registerForPlayers(IN_DUEL, InDuelComponent::new, RespawnCopyStrategy.ALWAYS_COPY);
+        registry.registerForPlayers(MERC, MercComponent::new, RespawnCopyStrategy.ALWAYS_COPY);
     }
 
     @Override
@@ -101,5 +110,6 @@ public class OPAPCComponents implements ScoreboardComponentInitializer, EntityCo
         registry.registerScoreboardComponent(SELLERS, SellersComponent::new);
         registry.registerScoreboardComponent(PLAYER_NAMES, PlayerNameComponent::new);
         registry.registerScoreboardComponent(DUEL_BANNED_ITEMS, DuelBannedItemsComponent::new);
+        registry.registerScoreboardComponent(MERC_REFUNDS, MercOfferRefundComponent::new);
     }
 }

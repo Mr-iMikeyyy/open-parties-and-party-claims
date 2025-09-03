@@ -29,6 +29,7 @@ import com.madmike.opapc.war.War;
 import com.madmike.opapc.war.WarManager;
 import com.madmike.opapc.war.command.util.WarProximity;
 import com.madmike.opapc.war.command.util.WarSuggestionProvider;
+import com.madmike.opapc.war.data.WarData;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -58,29 +59,48 @@ public class WarCommand {
                             §6====== War Command Help ======
                             
                             §e/war declare <party> §7- Declare war on a party
-                            §e/war join §7- Join your party's war
-                            §e/war join <party> §7- Join an ally's war
+                            §e/war warp §7- (Def Only) Free warp to your claim
+                            §e/war enlist <party> §7- (Def Ally Only) Help defend an ally's claim
                             §e/war info §7- View your current war status
                             §e/war top §7- View top performing war parties
                             §e/war insurance §7- View your claim's insurance info
+                            §e/war merc info <player> §7- View a mercenary's record and fee
+                            §e/war merc hire <player> §7- (Def Only) Hire the mercenary
+                            §e/war merc kick <player> §7- (Def Only) Kick a mercenary
+                            §e/war merc set <bool> §7- (Merc Only) Set hiring status
+                            §e/war merc set fee <gold> §7- (Merc Only) Set hiring fee
                             
                             §6--- Objectives ---
-                            §7• Declaring war disables the target party claims protections and barriers
-                            §7• Destroy war blocks that spawn in the defenders territory
-                            §7• Destroying war blocks unclaims the defenders chunk claim
-                            §7• And also awards the attacking party a bonus claim
+                            §7• Declare war by getting close to an enemy's claim
+                            §7• All members of attacking party will be teleported to party leader
+                            §7• Defenders get time to set up defences, hire mercenaries and gather allies.
+                            §7• After prep, the defending parties claim protections are dropped
+                            §7• Destroy the war blocks that spawn in the defenders territory
+                            §7• Destroying war blocks unclaims the defenders chunk it is in
+                            §7• It also awards the attacking party a bonus claim
+                            §7• If defending, kill all attackers OR
+                            §7• Hold them off until time runs out
                             
                             §6--- Rules & Mechanics ---
                             §7• Only party leaders can declare wars
+                            §7• Leaving the server removes you from the war
                             §7• Logins from offline players on either team are blocked
+                            §7• Defenders have infinite lives
+                            §7• Attackers each have 1 life
+                            §7• On death, player's will be sent to their party claims warp point
+                            §7• Only defenders can hire mercenaries
+                            §7• Mercenaries are paid if their team wins
+                            §7• Mercenaries cannot open chests 
                             §7• When all blocks are destroyed, attackers win
                             §7• When time runs out, or all attacker lives are lost, defenders win
                             §7• After a war ends, defenders are given war insurance
                             §7• Insurance lasts for 3 days and protects from war
+                            §7• /warp command does not work for anyone participating in a war
+                            §7• Dying while in a war will not trigger you to lose your items
+                            §7• Killing players in a war will not increase your wilderness player kill count
                             
                             §6--- Dynamic War Scaling ---
                             §7• Duration: §e3 minutes §7per online defender
-                            §7• Attacker Lives: §e1 life per attacker
                             §7• War Block Spawns: §e3 per online defender
                             
                             §6--- Buff System ---
@@ -180,15 +200,7 @@ public class WarCommand {
                                     return fail(player, "There's no one online to defend that claim.");
                                 }
 
-                                //Check player has enough money
-                                CurrencyComponent wallet = ModComponents.CURRENCY.get(player);
-                                int cost = defendingClaim.getClaimedChunksList().size();
-                                if (wallet.getValue() < defendingClaim.getClaimedChunksList().size()) {
-                                    return fail(player, "You don't have enough gold to attack this claim. Requires " + cost + " gold.");
-                                }
-
                                 WarManager.INSTANCE.declareWar(attackingParty, defendingParty, attackingClaim, defendingClaim, player.blockPosition());
-                                wallet.modify(-cost);
                                 return 1;
                             })
                     )
@@ -215,7 +227,12 @@ public class WarCommand {
                         if (war == null)
                             return fail(player, "Your party is not currently in a war.");
 
-                        // Try join on the correct side based on party membership
+                        WarData data = war.getData();
+
+                        if (!data.getDefenderIds().contains(player.getUUID())) {
+                            return fail(player, "You are not a defender in the war you are in, you should be already teleported")
+                        }
+
                         boolean ok = WarManager.INSTANCE.tryJoin(war, player, myParty, null);
                         if (!ok) return fail(player, "Unable to join the war right now.");
 

@@ -68,7 +68,7 @@ public final class WarBlockSpawner {
         List<ChunkPos> ownedChunks = new ArrayList<>(claim.getClaimedChunksList());
         if (ownedChunks.isEmpty()) return CompletableFuture.completedFuture(null);
 
-        // Avoid mutating claim data: optionally exclude warp chunk
+        // Avoid mutating warp chunk
         BlockPos warpPos = claim.getWarpPos();
         if (warpPos != null) {
             ownedChunks.remove(new ChunkPos(warpPos));

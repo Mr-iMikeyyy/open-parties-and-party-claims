@@ -16,18 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.madmike.opapc.war.state;
+package com.madmike.opapc.war.merc.data;
 
-import com.madmike.opapc.war.EndOfWarType;
-import com.madmike.opapc.war.War;
-import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerPlayer;
+import java.util.UUID;
 
-public interface IWarState {
-    void enter(War war);
-    void tick(War war);
-    void onPlayerDeath(ServerPlayer player, War war);
-    void onWarBlockBroken(War war);
-    void onPlayerQuit(ServerPlayer player, War war);
-    void end(War war, EndOfWarType type);
+public record MercContract(UUID offererId, UUID mercId, long amount){
 }

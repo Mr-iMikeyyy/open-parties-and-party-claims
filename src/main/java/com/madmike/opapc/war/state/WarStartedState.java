@@ -18,9 +18,11 @@
 
 package com.madmike.opapc.war.state;
 
+import com.glisco.numismaticoverhaul.ModComponents;
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCComponents;
 import com.madmike.opapc.partyclaim.data.PartyClaim;
+import com.madmike.opapc.war.merc.data.MercContract;
 import com.madmike.opapc.warp.util.SafeWarpHelper;
 import com.madmike.opapc.war.EndOfWarType;
 import com.madmike.opapc.war.War;
@@ -61,6 +63,16 @@ public class WarStartedState implements IWarState {
             }
         }
 
+        for (MercContract offer : data.getMercOffers()) {
+            ServerPlayer player = OPAPC.getServer().getPlayerList().getPlayer(offer.offererId());
+            if (player != null) {
+                ModComponents.CURRENCY.get(player).modify(offer.amount());
+            }
+            else {
+                OPAPCComponents.MERC_REFUNDS.get(OPAPC.scoreboard()).addRefund(offer.offererId(), offer.amount());
+            }
+        }
+
         data.broadcastToWar(Component.literal("The War Has Commenced!"));
     }
 
@@ -69,6 +81,21 @@ public class WarStartedState implements IWarState {
         if (war.getData().isExpired()) {
             end(war, EndOfWarType.ATTACKERS_LOSE_TIME);
         }
+    }
+
+    @Override
+    public void onPlayerDeath(ServerPlayer player, War war) {
+
+    }
+
+    @Override
+    public void onWarBlockBroken(War war) {
+
+    }
+
+    @Override
+    public void onPlayerQuit(ServerPlayer player, War war) {
+
     }
 
     @Override

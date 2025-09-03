@@ -21,14 +21,14 @@ package com.madmike.opapc.war.data;
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCComponents;
 import com.madmike.opapc.partyclaim.data.PartyClaim;
-import com.madmike.opapc.player.name.PlayerNameComponent;
+import com.madmike.opapc.player.component.scoreboard.PlayerNameComponent;
+import com.madmike.opapc.war.merc.data.MercContract;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -38,9 +38,15 @@ public class WarData {
     private final IServerPartyAPI defendingParty;
 
     private final List<UUID> attackerIds;
+    private List<UUID> attackersLeftToKill;
+
     private final List<UUID> defenderIds;
 
-    private List<UUID> killedAttackers;
+    private List<UUID> allyIds;
+
+    private List<UUID> mercenaryIds;
+    private List<MercContract> mercOffers;
+    private List<MercContract> contracts;
 
     private final String attackingPartyName;
     private final String defendingPartyName;
@@ -63,6 +69,8 @@ public class WarData {
         this.defendingParty = defendingParty;
 
         this.attackerIds = attackingParty.getOnlineMemberStream().map(ServerPlayer::getUUID).toList();
+        this.attackersLeftToKill.addAll(attackerIds);
+
         this.defenderIds = defendingParty.getOnlineMemberStream().map(ServerPlayer::getUUID).toList();
 
         this.attackingPartyName = attackingClaim.getPartyName();
@@ -94,6 +102,7 @@ public class WarData {
     public String getAttackingPartyName() { return attackingPartyName; }
     public String getDefendingPartyName() { return defendingPartyName; }
     public List<UUID> getAttackerIds() { return attackerIds; }
+    public List<UUID> getAttackersLeftToKill() { return attackersLeftToKill; }
     public List<UUID> getDefenderIds() { return defenderIds; }
     public PartyClaim getDefendingClaim() { return defendingClaim; }
     public PartyClaim getAttackingClaim() { return attackingClaim; }
@@ -130,7 +139,7 @@ public class WarData {
     public void setWarBlockPosition(BlockPos newPos) { this.warBlockPosition = newPos; }
     public void setStartTime(long startTime) { this.startTime = startTime; }
     public void decrementWarBlocksLeft() { warBlocksLeft--; }
-    public void removeAttacker(UUID id) { attackerIds.remove(id); }
+    public void removeAttacker(UUID id) { attackersLeftToKill.remove(id); }
     public void removeMercenary(UUID id) { mercenaryIds.remove(id); }
     public void setIsExpired(boolean t) { this.isExpired = t; }
 
@@ -142,6 +151,8 @@ public class WarData {
     public void broadcastToDefenders(Component msg) {
         defendingParty.getOnlineMemberStream().forEach(p -> p.sendSystemMessage(msg));
     }
+
+
 
     public void broadcastToWar(Component msg) {
         broadcastToAttackers(msg);

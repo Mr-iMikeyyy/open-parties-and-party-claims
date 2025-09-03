@@ -50,7 +50,7 @@ public class DuelEvents {
             ServerPlayer player = listener.getPlayer();
             InDuelComponent comp = OPAPCComponents.IN_DUEL.get(player);
             if (comp.isInDuel()) {
-                IServerPartyAPI party = OPAPC.getPartyManager().getPartyByMember(listener.getPlayer().getUUID());
+                IServerPartyAPI party = OPAPC.parties().getPartyByMember(listener.getPlayer().getUUID());
                 if ( party != null) {
                     PartyClaim pc = OPAPCComponents.PARTY_CLAIMS.get(sv.getScoreboard()).getClaim(party.getId());
                     if (pc != null && pc.getWarpPos() != null) {
@@ -71,7 +71,7 @@ public class DuelEvents {
         });
 
         ServerLifecycleEvents.SERVER_STARTED.register((s) -> {
-            OPAPCComponents.DUEL_BANNED_ITEMS.get(s.getScoreboard()).setAll(OPAPCConfig.duelBannedItemsRaw, OPAPCConfig.duelBannedItemTagsRaw, OPAPCConfig.allowBlockPlacementInDuel);
+            OPAPCComponents.DUEL_BANNED_ITEMS.get(s.getScoreboard()).setAll(OPAPCConfig.duelBannedItemsRaw, OPAPCConfig.duelBannedItemTagsRaw);
         });
     }
 }

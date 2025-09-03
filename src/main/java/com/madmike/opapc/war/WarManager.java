@@ -24,6 +24,7 @@ import com.madmike.opapc.war.data.WarData;
 import com.madmike.opapc.war.event.bus.WarEventBus;
 import com.madmike.opapc.war.event.events.WarDeclaredEvent;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 
@@ -44,9 +45,11 @@ public class WarManager {
         WarData data = new WarData(attackingParty, defendingParty, attackingClaim, defendingClaim);
         War war = new War(data);  // starts in PreparingState
         activeWars.add(war);
-        WarEventBus.post(new WarDeclaredEvent(war));
+
+        //Teleport all attackers immediately
         for (ServerPlayer player : attackingParty.getOnlineMemberStream().toList()) {
             SafeWarpHelper.warpPlayerToOverworldPos(player, ownersPos);
+            player.sendSystemMessage(Component.literal("You have been teleported to your party leader in preparation for the war."));
         }
     }
 
@@ -62,18 +65,16 @@ public class WarManager {
         }
     }
 
-    public void handlePlayerDeath(ServerPlayer player) {
+    public void handleWarBlockBroken(BlockPos pos) {
         for (War war : activeWars) {
-            if (war.isPlayerParticipant(player)) {
-                war.onPlayerDeath(player);
+            if (war.getData().getWarBlockPosition().equals(pos)) {
+                war.onWarBlockBroken();
             }
         }
     }
 
-    public void handleWarBlockBroken(BlockPos pos) {
-        for (War war : activeWars) {
-            war.onWarBlockBroken(pos);
-        }
+    public void handlePlayerQuit() {
+
     }
 
     public War findWarByPlayer(ServerPlayer player) {

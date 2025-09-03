@@ -21,7 +21,6 @@ package com.madmike.opapc.war;
 import com.madmike.opapc.war.data.WarData;
 import com.madmike.opapc.war.state.IWarState;
 import com.madmike.opapc.war.state.WarDeclaredState;
-import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 
@@ -55,8 +54,8 @@ public class War {
 
     public void onPlayerQuit(ServerPlayer player) { state.onPlayerQuit(player, this); }
 
-    public void onWarBlockBroken(BlockPos pos) {
-        state.onWarBlockBroken(pos, this);
+    public void onWarBlockBroken() {
+        state.onWarBlockBroken( this);
     }
 
     public boolean isPlayerParticipant(ServerPlayer player) {
