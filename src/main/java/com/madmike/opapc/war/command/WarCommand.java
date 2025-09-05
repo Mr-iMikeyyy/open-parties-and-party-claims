@@ -59,7 +59,7 @@ public class WarCommand {
                             §6====== War Command Help ======
                             
                             §e/war declare <party> §7- Declare war on a party
-                            §e/war warp §7- (Def Only) Free warp to your claim
+                            §e/war warp §7- (Def & Merc Only) Free warp to the defending claim
                             §e/war enlist <party> §7- (Def Ally Only) Help defend an ally's claim
                             §e/war info §7- View your current war status
                             §e/war top §7- View top performing war parties

@@ -65,8 +65,8 @@ public class War {
         return data.isPlayerParticipant(id);
     }
 
-    public boolean isPartyParticipant(IServerPartyAPI party) {
-        return data.isPartyParticipant(party);
+    public boolean isPartyParticipant(UUID partyId) {
+        return data.isPartyParticipant(partyId);
     }
 
     public void onRequestInfo(ServerPlayer player) {

@@ -18,6 +18,5 @@
 
 package com.madmike.opapc.war.merc.data;
 
-public class MercStat {
-
+public record MercStat(int warsWon, int warsLost, int timesKicked) {
 }

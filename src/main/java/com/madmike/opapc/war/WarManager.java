@@ -84,9 +84,9 @@ public class WarManager {
         return null;
     }
 
-    public War findWarByParty(IServerPartyAPI party) {
+    public War findWarByPartyId(UUID partyId) {
         for (War war : activeWars) {
-            if (war.isPartyParticipant(party)) {
+            if (war.isPartyParticipant(partyId)) {
                 return war;
             }
         }

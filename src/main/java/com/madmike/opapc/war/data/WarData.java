@@ -20,6 +20,7 @@ package com.madmike.opapc.war.data;
 
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCComponents;
+import com.madmike.opapc.OPAPCConfig;
 import com.madmike.opapc.partyclaim.data.PartyClaim;
 import com.madmike.opapc.war.merc.data.MercContract;
 import net.minecraft.core.BlockPos;
@@ -41,19 +42,14 @@ public class WarData {
     private final String attackingPartyName;
     private final String defendingPartyName;
 
-    // We store the party IDs for claims; resolve via component on demand
-    private final UUID attackingClaimPartyId;
-    private final UUID defendingClaimPartyId;
-
     // ---- Participants ----
     private final Set<UUID> attackerIds;           // all attackers at start
     private final Set<UUID> defendersIds;          // all defenders at start
     private final Set<UUID> attackersLeftToKill;   // remaining attackers to eliminate
 
-    private final Set<UUID> allyIds;               // optional: allies
-    private final Set<UUID> mercenaryIds;          // optional: mercs
-
-    private final List<MercContract> contracts;    // keep as list unless you need set semantics + equals/hashCode
+    private Set<UUID> allyIds = new HashSet<>();
+    private Set<UUID> mercenaryIds = new HashSet<>();
+    private Set<MercContract> contracts = new HashSet<>();
 
     // ---- War parameters ----
     private final int durationSeconds;
@@ -66,44 +62,17 @@ public class WarData {
     private BlockPos warBlockPosition;
     private int warBlocksLeft;
 
-    /* ---------------- Constructors ---------------- */
+    /* ---------------- Constructor ---------------- */
 
-    /**
-     * Preferred constructor: supply party IDs; members will be captured from online streams at creation time.
-     */
-    public WarData(UUID attackingPartyId, UUID defendingPartyId) {
-        this(attackingPartyId, defendingPartyId,
-                // Resolve parties once to capture current online members and names
-                getParty(attackingPartyId), getParty(defendingPartyId),
-                // Resolve claims’ party IDs (usually same as party IDs if your PartyClaim is keyed by party)
-                attackingPartyId, defendingPartyId,
-                Collections.emptySet(), Collections.emptySet(), Collections.emptyList());
-    }
-
-    /**
-     * Flexible constructor if you need to pass allies/mercs/contracts up front.
-     */
-    public WarData(UUID attackingPartyId,
-                   UUID defendingPartyId,
-                   IServerPartyAPI attackingParty,
-                   IServerPartyAPI defendingParty,
-                   UUID attackingClaimPartyId,
-                   UUID defendingClaimPartyId,
-                   Set<UUID> allyIds,
-                   Set<UUID> mercenaryIds,
-                   List<MercContract> contracts) {
+    public WarData(IServerPartyAPI attackingParty, IServerPartyAPI defendingParty, PartyClaim defendingClaim, PartyClaim attackingClaim) {
 
         // Identity
-        this.attackingPartyId = Objects.requireNonNull(attackingPartyId, "attackingPartyId");
-        this.defendingPartyId = Objects.requireNonNull(defendingPartyId, "defendingPartyId");
+        this.attackingPartyId = attackingParty.getId();
+        this.defendingPartyId = defendingParty.getId();
 
         // Names captured now (safe for messaging even if party names change later)
-        this.attackingPartyName = getSafePartyName(attackingParty);
-        this.defendingPartyName = getSafePartyName(defendingParty);
-
-        // Claims
-        this.attackingClaimPartyId = Objects.requireNonNull(attackingClaimPartyId, "attackingClaimPartyId");
-        this.defendingClaimPartyId = Objects.requireNonNull(defendingClaimPartyId, "defendingClaimPartyId");
+        this.attackingPartyName = attackingClaim.getPartyName();
+        this.defendingPartyName = defendingClaim.getPartyName();
 
         // Participants captured from current online members
         this.attackerIds = attackingParty.getOnlineMemberStream()
@@ -117,19 +86,13 @@ public class WarData {
         // Attackers to kill starts as a copy of all attackers
         this.attackersLeftToKill = new HashSet<>(this.attackerIds);
 
-        // Allies / Mercs / Contracts
-        this.allyIds = new HashSet<>(Objects.requireNonNullElse(allyIds, Collections.emptySet()));
-        this.mercenaryIds = new HashSet<>(Objects.requireNonNullElse(mercenaryIds, Collections.emptySet()));
-        this.contracts = new ArrayList<>(Objects.requireNonNullElse(contracts, Collections.emptyList()));
-
         // Duration scaled by defender count
         int defenderCount = this.defendersIds.size();
-        this.durationSeconds = defenderCount * 3 * 60;
+        this.durationSeconds = defenderCount * OPAPCConfig.warSecondsPerDefender;
         this.durationMilli = this.durationSeconds * 1000L;
 
         // War blocks & wipe decision based on defending claim size
-        PartyClaim defendingClaim = getDefendingClaim();
-        int claimedChunks = defendingClaim != null ? defendingClaim.getClaimedChunksList().size() : 0;
+        int claimedChunks = defendingClaim.getClaimedChunksList().size();
 
         if (claimedChunks < defenderCount * 3) {
             this.wipe = true;
@@ -145,11 +108,11 @@ public class WarData {
     /* ---------------- On-demand resolvers (no long-lived refs) ---------------- */
 
     public IServerPartyAPI getAttackingParty() {
-        return getParty(attackingPartyId);
+        return OPAPC.parties().getPartyById(attackingPartyId);
     }
 
     public IServerPartyAPI getDefendingParty() {
-        return getParty(defendingPartyId);
+        return OPAPC.parties().getPartyById(attackingPartyId);
     }
 
     public PartyClaim getAttackingClaim() {
@@ -157,20 +120,7 @@ public class WarData {
     }
 
     public PartyClaim getDefendingClaim() {
-        return OPAPCComponents.PARTY_CLAIMS.get(OPAPC.scoreboard()).getClaim(attackingPartyId);
-    }
-
-    private static IServerPartyAPI getParty(UUID id) {
-        return OPAPC.parties().getPartyById(id);
-    }
-
-    private static String getSafePartyName(IServerPartyAPI party) {
-        if (party == null) return "(unknown)";
-        try {
-            return party.getName(); // or your accessor for party name
-        } catch (Exception e) {
-            return "(unknown)";
-        }
+        return OPAPCComponents.PARTY_CLAIMS.get(OPAPC.scoreboard()).getClaim(defendingPartyId);
     }
 
     /* ---------------- Core getters ---------------- */
@@ -314,7 +264,7 @@ public class WarData {
                 .append(Component.literal("§eAttackers Remaining: §c" + attackersLeftToKill.size() + "\n"))
                 .append(Component.literal("§eClaim Wipe Possible: §c" + (wipe ? "Yes!" : "No") + "\n\n"));
 
-        var pnc = OPAPCComponents.PLAYER_NAMES.get(OPAPC.getServer().getScoreboard());
+        var pnc = OPAPCComponents.PLAYER_NAMES.get(OPAPC.scoreboard());
 
         info.append(Component.literal("§cAttackers (" + attackerIds.size() + "):\n"));
         for (UUID id : attackerIds) {

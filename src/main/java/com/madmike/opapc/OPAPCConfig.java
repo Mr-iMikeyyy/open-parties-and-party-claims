@@ -34,7 +34,6 @@ public class OPAPCConfig {
 
     private static CommentedFileConfig config;
 
-    public static int maxClaimsPerParty;
     public static int maxStoreSlotsPerPlayer;
     public static boolean enableTariffs;
     public static double discount;
@@ -46,8 +45,8 @@ public class OPAPCConfig {
     public static boolean shouldBroadcastWarResultsToServer;
     public static int warInsuranceDurationDays;
     public static int warPreparationSeconds;
+    public static int warSecondsPerDefender;
     public static int warEndingDurationSeconds;
-    public static int raidInsuranceDurationDays;
     public static int duelMaxTime;
     public static int duelMaxLives;
     public static int duelChallengeMaxTime;
@@ -62,19 +61,16 @@ public class OPAPCConfig {
         config = CommentedFileConfig.builder(CONFIG_PATH).autosave().build();
         config.load();
 
-        config.setComment("maxClaimsPerParty", "Maximum number of claims allowed per party");
-        maxClaimsPerParty = config.getOrElse("maxClaimsPerParty", 300);
-
         config.setComment("maxStoreSlotsPerPlayer", "Maximum number of item slots one can earn in the store");
         maxStoreSlotsPerPlayer = config.getOrElse("maxStoreSlotsPerPlayer", 30);
 
         config.setComment("enableTariffs", "Enable tariff system for trades");
         enableTariffs = config.getOrElse("enableTariffs", true);
 
-        config.setComment("discount", "Discount to apply when a discount is warranted, i.e. between lone wolves or between parties and it's allies");
+        config.setComment("discount", "Discount to apply when a discount is warranted, i.e. between pirates or between allies");
         discount = config.getOrElse("discount", 0.5);
 
-        config.setComment("markup", "Markup to apply when a markup is warranted, i.e. when a lone wolf buys from a party or vice versa");
+        config.setComment("markup", "Markup to apply when a markup is warranted, i.e. when a pirate buys from a party or vice versa");
         markup = config.getOrElse("markup", 2.0);
 
         config.setComment("warpCooldownCombatSeconds", "Duration (in seconds) that a player cannot warp after taking damage");
@@ -92,14 +88,14 @@ public class OPAPCConfig {
         config.setComment("shouldBroadcastWarResultsToServer", "Should end war results be shown to everybody");
         shouldBroadcastWarResultsToServer = config.getOrElse("shouldBroadcastWarResultsToServer", true);
 
-        config.setComment("raidInsuranceDurationDays", "How long (in days) insurance lasts for raids");
-        raidInsuranceDurationDays = config.getOrElse("raidInsuranceDurationDays", 3);
-
         config.setComment("warInsuranceDurationDays", "How long (in days) insurance lasts for wars, insurance for wars only given after losing a war");
         warInsuranceDurationDays = config.getOrElse("warInsuranceDurationDays", 3);
 
         config.setComment("warPreparationSeconds", "How long (in seconds) the teams get to prepare after a war is declared");
         warPreparationSeconds = config.getOrElse("warPreparationSeconds", 10);
+
+        config.setComment("warSecondsPerDefender", "How long (in seconds) will the war last, this number is multiplied by number of defenders, not including allies or hired mercs");
+        warSecondsPerDefender = config.getOrElse("warSecondsPerDefender", 60);
 
         config.setComment("warEndingDurationSeconds", "How long (in seconds) the teams get to retreat before being teleported back to their claims if left in the defending claim.");
         warEndingDurationSeconds = config.getOrElse("warEndingDurationSeconds", 10);
