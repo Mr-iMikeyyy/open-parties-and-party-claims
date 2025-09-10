@@ -20,7 +20,7 @@ package com.madmike.opapc.war.command.util;
 
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCComponents;
-import com.madmike.opapc.partyclaim.data.PartyClaim;
+import com.madmike.opapc.pioneer.data.PartyClaim;
 import com.mojang.brigadier.suggestion.Suggestions;
 import net.minecraft.server.level.ServerPlayer;
 import xaero.pac.common.server.parties.party.api.IPartyManagerAPI;

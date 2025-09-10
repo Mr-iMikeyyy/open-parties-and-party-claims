@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.madmike.opapc.partyclaim.components.scoreboard;
+package com.madmike.opapc.pioneer.components.scoreboard;
 
-import com.madmike.opapc.partyclaim.data.PartyClaim;
+import com.madmike.opapc.pioneer.data.PartyClaim;
 import dev.onyxstudios.cca.api.v3.component.ComponentV3;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;

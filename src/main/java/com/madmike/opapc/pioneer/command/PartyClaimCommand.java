@@ -16,15 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.madmike.opapc.partyclaim.command;
+package com.madmike.opapc.pioneer.command;
 
 import com.glisco.numismaticoverhaul.ModComponents;
 import com.glisco.numismaticoverhaul.currency.CurrencyComponent;
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCComponents;
-import com.madmike.opapc.partyclaim.components.scoreboard.PartyClaimsComponent;
-import com.madmike.opapc.partyclaim.data.PartyClaim;
-import com.madmike.opapc.partyclaim.util.ClaimAdjacencyChecker;
+import com.madmike.opapc.pioneer.components.scoreboard.PartyClaimsComponent;
+import com.madmike.opapc.pioneer.data.PartyClaim;
+import com.madmike.opapc.pioneer.util.ClaimAdjacencyChecker;
 import com.madmike.opapc.util.CurrencyUtil;
 import com.madmike.opapc.war.War;
 import com.madmike.opapc.war.WarManager;
@@ -46,7 +46,7 @@ import xaero.pac.common.server.parties.party.api.IServerPartyAPI;
 import java.util.*;
 
 import static com.madmike.opapc.util.CommandFailureHandler.fail;
-import static com.madmike.opapc.partyclaim.util.NetherClaimAdjuster.mirrorOverworldClaimsToNether;
+import static com.madmike.opapc.pioneer.util.NetherClaimAdjuster.mirrorOverworldClaimsToNether;
 import static net.minecraft.commands.Commands.literal;
 
 public class PartyClaimCommand {
@@ -105,7 +105,7 @@ public class PartyClaimCommand {
                         }
 
                         // Check if in war
-                        War war = WarManager.INSTANCE.findWarByParty(party);
+                        War war = WarManager.INSTANCE.findWarByPartyId(party.getId());
                         if (war != null) {
                             return fail(player, "You cannot claim chunks while in a war.");
                         }
@@ -203,12 +203,12 @@ public class PartyClaimCommand {
                         }
 
                         // Check if in war
-                        War war = WarManager.INSTANCE.findWarByParty(party);
+                        War war = WarManager.INSTANCE.findWarByPartyId(party.getId());
                         if (war != null) {
                             return fail(player, "You cannot un-claim chunks while in a war.");
                         }
 
-                        PartyClaimsComponent comp = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard());
+                        PartyClaimsComponent comp = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.scoreboard());
                         PartyClaim partyClaim = comp.getClaim(party.getId());
 
                         //Check for party claim
@@ -280,7 +280,7 @@ public class PartyClaimCommand {
                             return 0;
                         }
 
-                        PartyClaim claim = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard()).getClaim(party.getId());
+                        PartyClaim claim = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.scoreboard()).getClaim(party.getId());
 
                         //Check if party claim exists
                         if (claim == null) {
@@ -309,7 +309,7 @@ public class PartyClaimCommand {
                             OPAPC.claims().unclaim(netherKey, pos.x, pos.z);
                         }
 
-                        OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard()).removeClaim(party.getId());
+                        OPAPCComponents.PARTY_CLAIMS.get(OPAPC.scoreboard()).removeClaim(party.getId());
 
                         player.sendSystemMessage(Component.literal("Party claim abandoned successfully."));
                         return 1;
@@ -325,7 +325,7 @@ public class PartyClaimCommand {
             partyClaimCommand.then(literal("top")
                     .executes(ctx -> {
                         Collection<PartyClaim> allClaims = OPAPCComponents.PARTY_CLAIMS
-                                .get(OPAPC.getServer().getScoreboard())
+                                .get(OPAPC.scoreboard())
                                 .getAllClaims();
 
                         // Convert to a list for sorting
@@ -384,7 +384,7 @@ public class PartyClaimCommand {
 
                         UUID owner = chunkClaim.getPlayerId();
                         IServerPartyAPI ownersParty = OPAPC.parties().getPartyByOwner(owner);
-                        PartyClaim partyClaim = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.getServer().getScoreboard()).getClaim(ownersParty.getId());
+                        PartyClaim partyClaim = OPAPCComponents.PARTY_CLAIMS.get(OPAPC.scoreboard()).getClaim(ownersParty.getId());
 
                         boolean isAlly = ownersParty.isAlly(donatersParty.getId());
                         boolean isMember = ownersParty.getMemberInfo(player.getUUID()) != null;

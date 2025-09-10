@@ -24,7 +24,7 @@ import com.madmike.opapc.OPAPCConfig;
 import com.madmike.opapc.duel.DuelChallengeManager;
 import com.madmike.opapc.duel.DuelManager;
 import com.madmike.opapc.duel.components.player.InDuelComponent;
-import com.madmike.opapc.partyclaim.data.PartyClaim;
+import com.madmike.opapc.pioneer.data.PartyClaim;
 import com.madmike.opapc.warp.util.SafeWarpHelper;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;

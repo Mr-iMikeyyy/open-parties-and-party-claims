@@ -20,7 +20,7 @@ package com.madmike.opapc.mixin;
 
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCComponents;
-import com.madmike.opapc.partyclaim.components.player.PartyRejoinCooldownComponent;
+import com.madmike.opapc.player.component.player.PartyRejoinCooldownComponent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import org.spongepowered.asm.mixin.Mixin;

@@ -18,11 +18,9 @@
 
 package com.madmike.opapc.war.command;
 
-import com.glisco.numismaticoverhaul.ModComponents;
-import com.glisco.numismaticoverhaul.currency.CurrencyComponent;
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCComponents;
-import com.madmike.opapc.partyclaim.data.PartyClaim;
+import com.madmike.opapc.pioneer.data.PartyClaim;
 import com.madmike.opapc.util.PartyLookup;
 import com.madmike.opapc.util.ServerRestartChecker;
 import com.madmike.opapc.war.War;

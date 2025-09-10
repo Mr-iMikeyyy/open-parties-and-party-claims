@@ -20,8 +20,8 @@ package com.madmike.opapc.war.features.block;
 
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCComponents;
-import com.madmike.opapc.partyclaim.data.PartyClaim;
-import com.madmike.opapc.partyclaim.util.ClaimAdjacencyChecker;
+import com.madmike.opapc.pioneer.data.PartyClaim;
+import com.madmike.opapc.pioneer.util.ClaimAdjacencyChecker;
 import com.madmike.opapc.war.data.WarData;
 import com.madmike.opapc.war.features.WarFeatures;
 import com.mojang.datafixers.util.Either;

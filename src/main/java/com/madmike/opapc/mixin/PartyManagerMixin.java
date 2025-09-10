@@ -19,10 +19,10 @@
 package com.madmike.opapc.mixin;
 
 import com.madmike.opapc.OPAPC;
-import com.madmike.opapc.partyclaim.components.scoreboard.PartyClaimsComponent;
+import com.madmike.opapc.pioneer.components.scoreboard.PartyClaimsComponent;
 import com.madmike.opapc.trade.components.scoreboard.OffersComponent;
 import com.madmike.opapc.OPAPCComponents;
-import com.madmike.opapc.partyclaim.util.NetherClaimAdjuster;
+import com.madmike.opapc.pioneer.util.NetherClaimAdjuster;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
@@ -71,7 +71,7 @@ public abstract class PartyManagerMixin {
     @Inject(method = "onOwnerChange", at = @At("TAIL"), remap = false)
     private void onOwnerChange(PartyMember oldOwner, PartyMember newOwner, CallbackInfo ci) {
         if (oldOwner != null && newOwner != null) {
-            IServerClaimsManagerAPI claimManager = OPAPC.getClaimsManager();
+            IServerClaimsManagerAPI claimManager = OPAPC.claims();
 
             List<ChunkPos> chunksToTransfer = claimManager
                     .getPlayerInfo(oldOwner.getUUID())
@@ -104,7 +104,7 @@ public abstract class PartyManagerMixin {
             List<ChunkPos> claimedChunks = comp.getClaim(party.getId()).getClaimedChunksList();
 
             for (ChunkPos chunk : claimedChunks) {
-                OPAPC.getClaimsManager().unclaim(Level.OVERWORLD.location(), chunk.x, chunk.z);
+                OPAPC.claims().unclaim(Level.OVERWORLD.location(), chunk.x, chunk.z);
             }
 
             NetherClaimAdjuster.mirrorOverworldClaimsToNether(party.getOwner().getUUID());

@@ -19,7 +19,7 @@
 package com.madmike.opapc.warp.util;
 
 import com.madmike.opapc.OPAPC;
-import com.madmike.opapc.partyclaim.data.PartyClaim;
+import com.madmike.opapc.pioneer.data.PartyClaim;
 import com.madmike.opapc.util.SimpleTickScheduler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;

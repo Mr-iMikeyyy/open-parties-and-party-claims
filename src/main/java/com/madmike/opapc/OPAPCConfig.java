@@ -35,9 +35,10 @@ public class OPAPCConfig {
     private static CommentedFileConfig config;
 
     public static int maxStoreSlotsPerPlayer;
-    public static boolean enableTariffs;
-    public static double discount;
-    public static double markup;
+    public static int startingStoreSlotsPerPlayer;
+//    public static boolean enableTariffs;
+//    public static double discount;
+//    public static double markup;
     public static int warpCooldownCombatSeconds;
     public static int warpCooldownSeconds;
     public static int partyRejoinCooldownHours;
@@ -64,14 +65,14 @@ public class OPAPCConfig {
         config.setComment("maxStoreSlotsPerPlayer", "Maximum number of item slots one can earn in the store");
         maxStoreSlotsPerPlayer = config.getOrElse("maxStoreSlotsPerPlayer", 30);
 
-        config.setComment("enableTariffs", "Enable tariff system for trades");
-        enableTariffs = config.getOrElse("enableTariffs", true);
-
-        config.setComment("discount", "Discount to apply when a discount is warranted, i.e. between pirates or between allies");
-        discount = config.getOrElse("discount", 0.5);
-
-        config.setComment("markup", "Markup to apply when a markup is warranted, i.e. when a pirate buys from a party or vice versa");
-        markup = config.getOrElse("markup", 2.0);
+//        config.setComment("enableTariffs", "Enable tariff system for trades");
+//        enableTariffs = config.getOrElse("enableTariffs", true);
+//
+//        config.setComment("discount", "Discount to apply when a discount is warranted, i.e. between pirates or between allies");
+//        discount = config.getOrElse("discount", 0.5);
+//
+//        config.setComment("markup", "Markup to apply when a markup is warranted, i.e. when a pirate buys from a party or vice versa");
+//        markup = config.getOrElse("markup", 2.0);
 
         config.setComment("warpCooldownCombatSeconds", "Duration (in seconds) that a player cannot warp after taking damage");
         warpCooldownCombatSeconds = config.getOrElse("warpCooldownCombatSeconds", 60);
@@ -114,8 +115,7 @@ public class OPAPCConfig {
         duelBannedItemsRaw = config.getOrElse("duelBannedItems", List.of());
 
         config.setComment("duelBannedItemTags",
-                "Ban ALL items that are members of these item tags (e.g. \"minecraft:logs\", \"fabric:tools\"). " +
-                        "Leave empty to disable tag-based blocking.");
+                "Ban ALL items that are members of these item tags (e.g. \"minecraft:logs\", \"fabric:tools\").");
         duelBannedItemTagsRaw = config.getOrElse("duelBannedItemTags", List.of());
 
         config.setComment("restartTimes", "List of daily server restart times in HH:mm format (e.g., \"04:00\", \"12:00\", \"20:00\"). The mod will block wars and duels 30 min before these times.");

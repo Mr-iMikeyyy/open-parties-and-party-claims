@@ -18,11 +18,9 @@
 
 package com.madmike.opapc.war;
 
-import com.madmike.opapc.partyclaim.data.PartyClaim;
+import com.madmike.opapc.pioneer.data.PartyClaim;
 import com.madmike.opapc.warp.util.SafeWarpHelper;
 import com.madmike.opapc.war.data.WarData;
-import com.madmike.opapc.war.event.bus.WarEventBus;
-import com.madmike.opapc.war.event.events.WarDeclaredEvent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;

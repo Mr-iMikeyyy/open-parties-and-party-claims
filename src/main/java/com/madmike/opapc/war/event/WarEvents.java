@@ -21,7 +21,7 @@ package com.madmike.opapc.war.event;
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCComponents;
 import com.madmike.opapc.OPAPCConfig;
-import com.madmike.opapc.partyclaim.data.PartyClaim;
+import com.madmike.opapc.pioneer.data.PartyClaim;
 import com.madmike.opapc.war.EndOfWarType;
 import com.madmike.opapc.war.War;
 import com.madmike.opapc.war.WarManager;

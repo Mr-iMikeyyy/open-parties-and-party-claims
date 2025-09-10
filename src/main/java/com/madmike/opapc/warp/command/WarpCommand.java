@@ -20,7 +20,7 @@ package com.madmike.opapc.warp.command;
 
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCComponents;
-import com.madmike.opapc.partyclaim.data.PartyClaim;
+import com.madmike.opapc.pioneer.data.PartyClaim;
 import com.madmike.opapc.warp.util.SafeWarpHelper;
 import com.madmike.opapc.war.War;
 import com.madmike.opapc.war.WarManager;

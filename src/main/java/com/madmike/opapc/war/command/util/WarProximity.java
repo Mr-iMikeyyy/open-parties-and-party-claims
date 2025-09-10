@@ -18,7 +18,7 @@
 
 package com.madmike.opapc.war.command.util;
 
-import com.madmike.opapc.partyclaim.data.PartyClaim;
+import com.madmike.opapc.pioneer.data.PartyClaim;
 import net.minecraft.server.level.ServerPlayer;
 
 public final class WarProximity {

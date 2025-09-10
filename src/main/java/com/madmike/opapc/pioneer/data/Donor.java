@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.madmike.opapc.partyclaim.data;
+package com.madmike.opapc.pioneer.data;
 
 
 import net.minecraft.nbt.CompoundTag;
