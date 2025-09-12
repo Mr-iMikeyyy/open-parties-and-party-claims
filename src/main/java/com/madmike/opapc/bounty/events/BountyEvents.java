@@ -21,23 +21,45 @@ package com.madmike.opapc.bounty.events;
 import com.glisco.numismaticoverhaul.ModComponents;
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCComponents;
+import com.madmike.opapc.bounty.components.scoreboard.BountyBoardComponent;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
 public class BountyEvents {
     public static void register() {
-        ServerLivingEntityEvents.AFTER_DEATH.register((listener, source) -> {
-            if (listener instanceof ServerPlayer player) {
-                if (source.getEntity() instanceof ServerPlayer killer) {
-                    if (OPAPCComponents.MERC.get(killer).isMerc()) {
-                        Long bounty = OPAPCComponents.BOUNTIES.get(OPAPC.scoreboard()).getBounty(player.getUUID());
-                        if (bounty != null) {
-                            ModComponents.CURRENCY.get(killer).modify(bounty);
-                            OPAPCComponents.BOUNTIES.get(OPAPC.scoreboard()).removeBounty(player.getUUID());
-                        }
-                    }
-                }
-            }
+        ServerLivingEntityEvents.AFTER_DEATH.register((victim, damageSource) -> {
+
+            // Only care about player victims
+            if (!(victim instanceof ServerPlayer dead)) return;
+
+            // Only pay out for player killers
+            if (!(damageSource.getEntity() instanceof ServerPlayer killer)) return;
+
+            // No self-farming
+            if (killer.getUUID().equals(dead.getUUID())) return;
+
+            // Only mercs can claim (per your rule)
+            var mercComp = OPAPCComponents.MERC.get(killer);
+            if (!mercComp.isMerc()) return;
+
+            BountyBoardComponent bbc = OPAPCComponents.BOUNTY_BOARD.get(OPAPC.scoreboard());
+
+            //Get bounty
+            long bounty = bbc.getBounty(dead.getUUID());
+            if (bounty <= 0L) return;
+
+            // Pay out
+            var currency = ModComponents.CURRENCY.get(killer);
+            currency.modify(bounty);
+
+            // Remove bounty after successful payout
+            bbc.removeBounty(dead.getUUID());
+
+            // Feedback
+            killer.sendSystemMessage(Component.literal("§aBounty claimed: §e" + bounty + " coins§a for " + dead.getGameProfile().getName() + "."));
+            dead.sendSystemMessage(Component.literal("§cYour bounty was claimed by " + killer.getGameProfile().getName() + "."));
+            OPAPC.LOGGER.info("[Bounty] {} claimed {} from bounty on {}.", killer.getGameProfile().getName(), bounty, dead.getGameProfile().getName());
         });
     }
 }

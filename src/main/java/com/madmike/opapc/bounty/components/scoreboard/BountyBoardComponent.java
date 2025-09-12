@@ -46,7 +46,7 @@ public class BountyBoardComponent implements ComponentV3 {
 
     /** Get the reward value for a target. Returns null if none exists. */
     public long getBounty(UUID target) {
-        return bounties.get(target);
+        return bounties.getOrDefault(target, 0L);
     }
 
     /** Set or update a bounty. Overwrites if one already exists. */
