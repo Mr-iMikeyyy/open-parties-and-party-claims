@@ -35,7 +35,7 @@ public class BountyBoardComponent implements ComponentV3 {
     private final MinecraftServer server;
 
     // Active bounties: target -> reward
-    private final Map<UUID, Long> bounties = new HashMap<>();
+    private final Map<UUID, Integer> bounties = new HashMap<>();
 
     public BountyBoardComponent(Scoreboard sb, MinecraftServer sv) {
         this.provider = sb;
@@ -44,13 +44,13 @@ public class BountyBoardComponent implements ComponentV3 {
 
     /* ---------------- Public API ---------------- */
 
-    /** Get the reward value for a target. Returns null if none exists. */
-    public long getBounty(UUID target) {
-        return bounties.getOrDefault(target, 0L);
+    /** Get the reward value for a target. Returns 0 if none exists. */
+    public int getBounty(UUID target) {
+        return bounties.get(target);
     }
 
     /** Set or update a bounty. Overwrites if one already exists. */
-    public void setBounty(UUID target, long reward) {
+    public void setBounty(UUID target, int reward) {
         if (reward <= 0) {
             bounties.remove(target);
         } else {
@@ -59,9 +59,9 @@ public class BountyBoardComponent implements ComponentV3 {
     }
 
     /** Increase an existing bounty by amount. Creates a new one if missing. */
-    public void addToBounty(UUID target, long amount) {
+    public void addToBounty(UUID target, int amount) {
         if (amount <= 0) return;
-        bounties.merge(target, amount, Long::sum);
+        bounties.merge(target, amount, Integer::sum);
     }
 
     /** Remove a bounty completely. */
@@ -70,7 +70,7 @@ public class BountyBoardComponent implements ComponentV3 {
     }
 
     /** Get all current bounties. */
-    public Map<UUID, Long> getAllBounties() {
+    public Map<UUID, Integer> getAllBounties() {
         return bounties;
     }
 
@@ -91,7 +91,7 @@ public class BountyBoardComponent implements ComponentV3 {
             if (!bountyTag.hasUUID("Target")) continue;
 
             UUID target = bountyTag.getUUID("Target");
-            long reward = bountyTag.getLong("Reward");
+            int reward = bountyTag.getInt("Reward");
             bounties.put(target, reward);
         }
     }
@@ -100,7 +100,7 @@ public class BountyBoardComponent implements ComponentV3 {
     public void writeToNbt(@NotNull CompoundTag tag) {
         ListTag list = new ListTag();
 
-        for (Map.Entry<UUID, Long> entry : bounties.entrySet()) {
+        for (Map.Entry<UUID, Integer> entry : bounties.entrySet()) {
             CompoundTag bountyTag = new CompoundTag();
             bountyTag.putUUID("Target", entry.getKey());
             bountyTag.putLong("Reward", entry.getValue());

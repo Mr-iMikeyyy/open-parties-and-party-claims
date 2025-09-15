@@ -181,11 +181,11 @@ public class WarCommand {
 
                                 // Check active wars
                                 if (WarManager.INSTANCE.isWarActive()) {
-                                    War war = WarManager.INSTANCE.findWarByParty(attackingParty);
+                                    War war = WarManager.INSTANCE.findWarByPartyId(attackingParty.getId());
                                     if (war != null) {
                                         return fail(player, "You are already in a war!");
                                     }
-                                    war = WarManager.INSTANCE.findWarByParty(defendingParty);
+                                    war = WarManager.INSTANCE.findWarByPartyId(defendingParty.getId());
                                     if (war != null) {
                                         return fail(player, "This party is already in a war!");
                                     }

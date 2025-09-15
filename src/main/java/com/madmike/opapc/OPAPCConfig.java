@@ -51,6 +51,7 @@ public class OPAPCConfig {
     public static int duelMaxTime;
     public static int duelMaxLives;
     public static int duelChallengeMaxTime;
+    public static int mercTrackingFee;
     public static List<String> duelBannedItemsRaw;
     public static List<String> duelBannedItemTagsRaw;
     public static List<String> restartTimesRaw;
@@ -109,6 +110,9 @@ public class OPAPCConfig {
 
         config.setComment("duelChallengeMaxTime", "How long (in sec) should a duel challenge invite last before expiring");
         duelChallengeMaxTime = config.getOrElse("duelChallengeMaxTime", 30);
+
+        config.setComment("mercTrackingFee", "How much (in gold) should it costs mercs to track a bounty");
+        mercTrackingFee = config.getOrElse("mercTrackingFee", 10);
 
         config.setComment("duelBannedItems",
                 "Ban these specific items during duels. Item IDs like \"minecraft:ender_pearl\".");

@@ -25,18 +25,14 @@ import com.madmike.opapc.OPAPCConfig;
 import com.madmike.opapc.bounty.components.scoreboard.BountyBoardComponent;
 import com.madmike.opapc.util.CurrencyUtil;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.mojang.brigadier.arguments.LongArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-
-import java.util.Comparator;
-import java.util.Map;
-import java.util.UUID;
+import net.minecraft.world.phys.Vec3;
 
 import static com.madmike.opapc.util.CommandFailureHandler.fail;
 import static net.minecraft.commands.Commands.argument;
@@ -88,7 +84,7 @@ public class BountyCommand {
                             return fail(ctx, "Only a player can use this command");
                         }
                         BountyBoardComponent board = OPAPCComponents.BOUNTY_BOARD.get(ctx.getSource().getServer().getScoreboard());
-                        long bounty = board.getBounty(self.getUUID());
+                        int bounty = board.getBounty(self.getUUID());
                         ctx.getSource().sendSystemMessage(Component.literal("§6Your bounty: §e" + CurrencyUtil.fromTotalBronze(bounty).gold()));
                         return 1;
                     })
@@ -96,10 +92,7 @@ public class BountyCommand {
                     .then(literal("all")
                             .executes(ctx -> {
                                 BountyBoardComponent board = OPAPCComponents.BOUNTY_BOARD.get(ctx.getSource().getServer().getScoreboard());
-                                var all = board.getAllBounties().entrySet().stream()
-                                        .filter(e -> e.getValue() > 0)
-                                        .sorted(Map.Entry.<UUID, Long>comparingByValue(Comparator.reverseOrder()))
-                                        .toList();
+                                var all = board.getAllBounties().entrySet().stream().toList();
 
                                 if (all.isEmpty()) {
                                     ctx.getSource().sendSystemMessage(Component.literal("§7No active bounties."));
@@ -111,112 +104,120 @@ public class BountyCommand {
                                 for (int i = 0; i < all.size(); i++) {
                                     var e = all.get(i);
                                     String name = OPAPCComponents.PLAYER_NAMES.get(OPAPC.scoreboard()).getPlayerNameById(e.getKey());
-                                    ctx.getSource().sendSystemMessage(Component.literal("  §e" + (i + 1) + ". §f" + name + " §7- §6" + CurrencyUtil.fromTotalBronze(e.getValue()).gold() fmtCoins(e.getValue())));
+                                    ctx.getSource().sendSystemMessage(Component.literal("  §e" + (i + 1) + ". §f" + name + " §7- §6" + e.getValue()));
                                 }
                                 return 1;
                             })
                     )
             );
 
-                    // /bounty add <player> <amount>
-                    bountyCommand.then(literal("add")
-                            .then(argument("target", EntityArgument.player())
-                                    .then(argument("amount", IntegerArgumentType.integer(1))
-                                            .executes(ctx -> {
-                                                ServerPlayer setter = ctx.getSource().getPlayerOrException();
-                                                ServerPlayer target = EntityArgument.getPlayer(ctx, "target");
-                                                int amountInt = IntegerArgumentType.getInteger(ctx, "amount");
-                                                long amount = amountInt * 10000L;
-
-                                                // Only non-mercs may set bounties
-                                                if (OPAPCComponents.MERC.get(setter).isMerc()) {
-                                                    fail(ctx.getSource(), "Only non-mercs can set or contribute to bounties.");
-                                                    return 0;
-                                                }
-                                                // Target must not be a merc
-                                                if (OPAPCComponents.MERC.get(target).isMerc()) {
-                                                    fail(ctx.getSource(), "You cannot place a bounty on a merc.");
-                                                    return 0;
-                                                }
-                                                // No self-bounty
-                                                if (setter.getUUID().equals(target.getUUID())) {
-                                                    return fail(ctx.getSource(), "You cannot place a bounty on yourself.");
-                                                }
-
-                                                var currency = ModComponents.CURRENCY.get(setter);
-                                                long bal = currency.getValue(); // assumes your component exposes a getter
-                                                if (bal < amount) {
-                                                    return fail(ctx.getSource(), "Insufficient funds. Needed: " +  fmtCoins(amount) + ", you have: " + fmtCoins(bal) + ".");
-                                                }
-
-                                                // Withdraw funds and add to bounty
-                                                currency.modify(-amount);
-
-                                                BountyBoardComponent board = OPAPCComponents.BOUNTIES.get(ctx.getSource().getServer().getScoreboard());
-                                                board.addToBounty(target.getUUID(), amount);
-
-                                                long newTotal = board.getBounty(target.getUUID());
-                                                ctx.getSource().sendSystemMessage(Component.literal("§aAdded §e" + fmtCoins(amount) + " §ato bounty on §f" + target.getGameProfile().getName() + "§a. New total: §6" + fmtCoins(newTotal)));
-                                                // Optional broadcast:
-                                                // broadcast(ctx.getSource().getServer(), "§6Bounty Update: §f" + setter.getGameProfile().getName() + " §7added §e" + fmtCoins(amount) + " §7to §f" + target.getGameProfile().getName() + "§7.");
-                                                return 1;
-                                            })
-                                    )
-                            )
-                    )
-                    // /bounty track <player>
-                    .then(literal("track")
-                            .then(argument("target", EntityArgument.player())
+            // /bounty add <player> <amount>
+            bountyCommand.then(literal("add")
+                    .requires(src -> {
+                        ServerPlayer player = src.getPlayer();
+                        if (player == null) {
+                            return false;
+                        }
+                        return !OPAPCComponents.MERC.get(player).isMerc();
+                    })
+                    .then(argument("target", EntityArgument.player())
+                            .then(argument("amount", IntegerArgumentType.integer(1))
                                     .executes(ctx -> {
-                                        ServerPlayer tracker = ctx.getSource().getPlayerOrException();
+                                        ServerPlayer self = ctx.getSource().getPlayer();
+                                        if (self == null) {
+                                            return fail(ctx, "Only a player can use this command");
+                                        }
                                         ServerPlayer target = EntityArgument.getPlayer(ctx, "target");
+                                        int amountInt = IntegerArgumentType.getInteger(ctx, "amount");
+                                        long amount = amountInt * 10000L;
 
-                                        // Merc-only
-                                        if (!OPAPCComponents.MERC.get(tracker).isMerc()) {
-                                            fail(ctx.getSource(), "Only mercs can use /bounty track.");
+                                        // Only non-mercs may set bounties
+                                        if (OPAPCComponents.MERC.get(self).isMerc()) {
+                                            return fail(self, "Only non-mercs can set or contribute to bounties.");
+                                        }
+                                        // Target must not be a merc
+                                        if (OPAPCComponents.MERC.get(target).isMerc()) {
+                                            fail(self, "You cannot place a bounty on a merc.");
                                             return 0;
                                         }
-
-                                        // Require the target to actually have a bounty
-                                        BountyBoardComponent board = OPAPCComponents.BOUNTIES.get(ctx.getSource().getServer().getScoreboard());
-                                        long bounty = board.getBounty(target.getUUID());
-                                        if (bounty <= 0L) {
-                                            fail(ctx.getSource(), "That player does not currently have a bounty.");
-                                            return 0;
+                                        // No self-bounty
+                                        if (self.getUUID().equals(target.getUUID())) {
+                                            return fail(self, "You cannot place a bounty on yourself.");
                                         }
 
-                                        // Pay the fee (10 gold)
-                                        var wallet = ModComponents.CURRENCY.get(tracker);
-                                        long bal = wallet.get();
-                                        if (bal < TRACK_COST) {
-                                            fail(ctx.getSource(), "Tracking costs §e" + fmtCoins(TRACK_COST) + "§7. You only have §e" + fmtCoins(bal) + "§7.");
-                                            return 0;
-                                        }
-                                        wallet.modify(-TRACK_COST);
-
-                                        // Dimension check
-                                        if (!tracker.level().dimension().equals(target.level().dimension())) {
-                                            ctx.getSource().sendSystemMessage(Component.literal("§7" + target.getGameProfile().getName() + " is in another dimension."));
-                                            return 1;
+                                        var currency = ModComponents.CURRENCY.get(self);
+                                        long bal = currency.getValue();
+                                        if (bal < amount) {
+                                            return fail(self, "Insufficient gold. Needed: " + amountInt + ", you have: " + CurrencyUtil.fromTotalBronze(bal).gold() + ".");
                                         }
 
-                                        // Direction + distance
-                                        Vec3 a = tracker.position();
-                                        Vec3 b = target.position();
-                                        double dx = b.x - a.x;
-                                        double dz = b.z - a.z;
-                                        double dist = Math.sqrt(dx * dx + dz * dz);
-                                        String dir = dirFrom(dx, dz);
+                                        // Withdraw funds and add to bounty
+                                        currency.modify(-amount);
 
-                                        ctx.getSource().sendSystemMessage(Component.literal(
-                                                "§6Tracking §f" + target.getGameProfile().getName() + "§6 → §e" + dir + " §7(~" + (int) dist + "m)"
-                                        ));
+                                        BountyBoardComponent board = OPAPCComponents.BOUNTY_BOARD.get(OPAPC.scoreboard());
+                                        board.addToBounty(target.getUUID(), amountInt);
+
+                                        int newTotal = board.getBounty(target.getUUID());
+                                        ctx.getSource().sendSystemMessage(Component.literal("§aAdded §e" + amountInt + " §ato bounty on §f" + target.getGameProfile().getName() + "§a. New total: §6" + newTotal));
                                         return 1;
                                     })
                             )
                     )
-            )
-            )
+            );
+            // /bounty track <player>
+            bountyCommand.then(literal("track")
+                    .then(argument("target", EntityArgument.player())
+                            .executes(ctx -> {
+                                ServerPlayer tracker = ctx.getSource().getPlayer();
+
+                                if (tracker == null) {
+                                    return fail(ctx, "Only players can use this command");
+                                }
+
+                                ServerPlayer target = EntityArgument.getPlayer(ctx, "target");
+
+                                // Merc-only
+                                if (!OPAPCComponents.MERC.get(tracker).isMerc()) {
+                                    return fail(tracker, "Only mercs can use /bounty track.");
+                                }
+
+                                // Require the target to actually have a bounty
+                                BountyBoardComponent board = OPAPCComponents.BOUNTY_BOARD.get(OPAPC.scoreboard());
+                                long bounty = board.getBounty(target.getUUID());
+                                if (bounty <= 0L) {
+                                    return fail(tracker, "That player does not currently have a bounty.");
+                                }
+
+                                // Pay the fee (10 gold)
+                                var wallet = ModComponents.CURRENCY.get(tracker);
+                                long bal = wallet.getValue();
+                                long fee = OPAPCConfig.mercTrackingFee * 10000L;
+                                if (bal < fee) {
+                                    return fail(tracker, "Tracking costs §e" + fee + "§7 gold. You only have §e" + CurrencyUtil.fromTotalBronze(bal).gold() + "§7 gold.");
+                                }
+                                wallet.modify(-fee);
+
+                                // Dimension check
+                                if (!tracker.level().dimension().equals(target.level().dimension())) {
+                                    ctx.getSource().sendSystemMessage(Component.literal("§7" + target.getGameProfile().getName() + " is in another dimension."));
+                                    return 1;
+                                }
+
+                                // Direction + distance
+                                Vec3 a = tracker.position();
+                                Vec3 b = target.position();
+                                double dx = b.x - a.x;
+                                double dz = b.z - a.z;
+                                double dist = Math.sqrt(dx * dx + dz * dz);
+                                String dir = dirFrom(dx, dz);
+
+                                ctx.getSource().sendSystemMessage(Component.literal(
+                                        "§6Tracking §f" + target.getGameProfile().getName() + "§6 → §e" + dir + " §7(~" + (int) dist + "m)"
+                                ));
+                                return 1;
+                            })
+                    )
+            );
         });
 
     }
