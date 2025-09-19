@@ -21,6 +21,7 @@ package com.madmike.opapc.duel;
 import com.madmike.opapc.OPAPCConfig;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
 import java.util.UUID;
 
 public final class DuelChallenge {
@@ -49,6 +50,23 @@ public final class DuelChallenge {
         this.wager = wager;
         this.createdAtMs = createdAtMs;
         this.expiresAtMs = createdAtMs + (OPAPCConfig.duelChallengeMaxTime * 1000L);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof DuelChallenge other)) return false;
+        return data.getAttackingParty().getId().equals(other.getData().getAttackingParty().getId())
+                && data.getDefendingPartyId().equals(other.getData().getDefendingPartyId());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(challengerId, opponentId);
+    }
+
+    public void expire() {
+
     }
 
     public long remainingMs() { return Math.max(0L, expiresAtMs - System.currentTimeMillis()); }

@@ -20,6 +20,7 @@ package com.madmike.opapc.war.command;
 
 import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCComponents;
+import com.madmike.opapc.duel.DuelManager;
 import com.madmike.opapc.pioneer.data.PartyClaim;
 import com.madmike.opapc.util.PartyLookup;
 import com.madmike.opapc.util.ServerRestartChecker;
@@ -145,13 +146,13 @@ public class WarCommand {
                                     return fail(player, "You cannot declare war on your allies.");
 
                                 for (ServerPlayer attackingPlayer : attackingParty.getOnlineMemberStream().toList()) {
-                                    if (OPAPCComponents.IN_DUEL.get(attackingPlayer).isInDuel()) {
+                                    if (DuelManager.INSTANCE.isPlayerInDuel(attackingPlayer.getUUID())) {
                                         return fail(player, "One of your players is in a duel.");
                                     }
                                 }
 
                                 for (ServerPlayer defendingPlayer : defendingParty.getOnlineMemberStream().toList()) {
-                                    if (OPAPCComponents.IN_DUEL.get(defendingPlayer).isInDuel()) {
+                                    if (DuelManager.INSTANCE.isPlayerInDuel(defendingPlayer.getUUID())) {
                                         return fail(player, "One of the defending players is in a duel.");
                                     }
                                 }
@@ -228,7 +229,7 @@ public class WarCommand {
                         WarData data = war.getData();
 
                         if (!data.getDefenderIds().contains(player.getUUID())) {
-                            return fail(player, "You are not a defender in the war you are in, you should be already teleported")
+                            return fail(player, "You are not a defender in the war you are in, you should be already teleported");
                         }
 
                         boolean ok = WarManager.INSTANCE.tryJoin(war, player, myParty, null);

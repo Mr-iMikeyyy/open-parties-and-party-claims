@@ -78,11 +78,11 @@ public class War {
         if (this == o) return true;
         if (!(o instanceof War other)) return false;
         return data.getAttackingParty().getId().equals(other.getData().getAttackingParty().getId())
-                && defendingPartyId.equals(other.defendingPartyId);
+                && data.getDefendingPartyId().equals(other.getData().getDefendingPartyId());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(attackingPartyId, defendingPartyId);
+        return Objects.hash(data.getAttackingPartyId(), data.getDefendingPartyId());
     }
 }

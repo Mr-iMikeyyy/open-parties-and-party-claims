@@ -19,7 +19,6 @@
 package com.madmike.opapc.duel;
 
 import com.madmike.opapc.duel.data.DuelMap;
-import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import org.jetbrains.annotations.Nullable;
@@ -42,7 +41,8 @@ public class DuelManager {
 
     /* ================= Active duels ================= */
 
-    private final List<Duel> activeDuels = new ArrayList<>();
+    private final Set<Duel> activeDuels = new HashSet<>();
+    private final Set<DuelChallenge> activeChallenges = new HashSet<>();
 
     /* ================= Queries ================= */
 
@@ -61,7 +61,7 @@ public class DuelManager {
                           DuelMap map,
                           long wager) {
 
-        // Adjust ctor/signature for your Duel class:
+
         Duel duel = new Duel(challenger, opponent, map, wager);
         activeDuels.add(duel);
         return duel;

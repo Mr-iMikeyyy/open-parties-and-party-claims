@@ -22,8 +22,6 @@ import com.madmike.opapc.OPAPC;
 import com.madmike.opapc.OPAPCConfig;
 import com.madmike.opapc.duel.data.DuelData;
 import com.madmike.opapc.duel.data.DuelMap;
-import com.madmike.opapc.duel.state.duel.DuelAcceptedState;
-import com.madmike.opapc.duel.state.DuelChallengedState;
 import com.madmike.opapc.duel.state.duel.DuelEndedState;
 import com.madmike.opapc.duel.state.duel.DuelStartedState;
 import com.madmike.opapc.duel.state.duel.IDuelState;
@@ -34,6 +32,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
 import java.util.UUID;
 
 public class Duel {
@@ -115,5 +114,17 @@ public class Duel {
         // payout / refund wager here if you want
         setState(new DuelEndedState());
         // Optionally warp players back to saved origin positions if you tracked them
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Duel other)) return false;
+        return data.getChallengerId().equals(other.getData().getChallengerId()) && data.getOpponentId().equals(other.getData().getOpponentId());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(data.getChallengerId(), data.getOpponentId());
     }
 }
